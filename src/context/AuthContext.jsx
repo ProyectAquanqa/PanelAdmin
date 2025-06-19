@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import apiClient from '../api/apiClient';
-import { jwtDecode } from 'jwt-decode'; // Necesitaremos instalar jwt-decode
+import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext(null);
 
@@ -14,18 +14,30 @@ export const AuthProvider = ({ children }) => {
     const bootstrapAuth = async () => {
       if (token) {
         try {
-          // Opcional: Podrías añadir una llamada para validar el token con el backend
-          // const response = await apiClient.get('/auth/validate-token');
-          // setUser(response.data.user);
+          // Verificar si el token ha expirado
           const decoded = jwtDecode(token);
-          setUser({ email: decoded.email, name: decoded.name }); // Asume que el payload tiene estos campos
+          const currentTime = Date.now() / 1000;
+          
+          if (decoded.exp && decoded.exp < currentTime) {
+            // Token expirado
+            console.warn("Token expirado, cerrando sesión");
+            logout();
+            return;
+          }
+          
+          // Token válido, establecer usuario
+          setUser({ 
+            email: decoded.email || decoded.sub, 
+            name: decoded.name || decoded.username,
+            roles: decoded.roles || []
+          });
           setIsAuthenticated(true);
+          
+          // Opcional: Validar el token con el backend
+          // await apiClient.get('/auth/validate-token/');
         } catch (error) {
-          console.error("Session expired or token is invalid", error);
-          localStorage.removeItem('authToken');
-          setToken(null);
-          setUser(null);
-          setIsAuthenticated(false);
+          console.error("Error al procesar el token:", error);
+          logout();
         }
       }
       setIsLoading(false);
@@ -35,22 +47,63 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (credentials) => {
-    const response = await apiClient.post('/v1/auth/token/', credentials);
-    const { access: accessToken } = response.data;
-    
-    localStorage.setItem('authToken', accessToken);
-    setToken(accessToken);
-    const decoded = jwtDecode(accessToken);
-    setUser({ email: decoded.email, name: decoded.name });
-    setIsAuthenticated(true);
+    try {
+      // Corregir la URL para que coincida con la API de Django
+      const response = await apiClient.post('/auth/login/', credentials);
+      
+      // Ajustar según la estructura de respuesta de la API
+      const { token, refresh, user } = response.data;
+      
+      // Guardar tokens
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('refreshToken', refresh);
+      
+      setToken(token);
+      
+      // Establecer la información del usuario directamente desde la respuesta
+      setUser({
+        id: user.id,
+        email: user.email,
+        role: user.role
+      });
+      
+      setIsAuthenticated(true);
+      return response.data;
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+      throw error;
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
-    // La redirección se manejará en el componente que llame a logout
+  };
+
+  const refreshAuthToken = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+      
+      const response = await apiClient.post('/auth/refresh-token/', {
+        refresh: refreshToken
+      });
+      
+      const { access } = response.data;
+      localStorage.setItem('authToken', access);
+      setToken(access);
+      
+      return true;
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      logout();
+      return false;
+    }
   };
 
   const value = {
@@ -60,6 +113,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     login,
     logout,
+    refreshAuthToken
   };
 
   return (
