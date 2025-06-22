@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "cross-env VITE_API_BASE_URL=http://localhost:8000/api vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -14,6 +15,7 @@
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.1.1",
     "@tanstack/react-query": "^5.80.7",
+    "@tanstack/react-query-devtools": "^5.80.10",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.10.0",
     "date-fns": "^4.1.0",
@@ -33,6 +35,7 @@
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

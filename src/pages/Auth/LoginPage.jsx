@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import { useTheme } from '../../context/ThemeContext';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Ingrese un email válido" }),
@@ -13,12 +15,18 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
   const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(loginSchema)
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: process.env.NODE_ENV === 'development' ? 'admin@hospital.pe' : '',
+      password: process.env.NODE_ENV === 'development' ? 'admin123' : ''
+    }
   });
   const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
 
   const onSubmit = async (data) => {
     setIsLoading(true);
@@ -60,56 +68,122 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Hospital Admin</h2>
-          <p className="mt-2 text-gray-600">Ingrese sus credenciales para acceder</p>
-        </div>
-        
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              {...register('email')}
-              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="admin@hospital.com"
-            />
-            {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contraseña</label>
-            <input
-              type="password"
-              {...register('password')}
-              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="••••••••"
-            />
-            {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
-          </div>
-          
-          {error && (
-            <div className="p-3 text-sm text-center text-red-700 bg-red-100 rounded-md">
-              {error}
-            </div>
+    <div className={`flex flex-col min-h-screen ${isDark ? 'bg-neutral-900' : 'bg-neutral-50'}`}>
+      <div className="absolute top-4 right-4">
+        <button
+          onClick={toggleTheme}
+          className={`p-2 rounded-full ${
+            isDark ? 'bg-neutral-800 text-neutral-200' : 'bg-white text-neutral-600'
+          } focus:outline-none`}
+        >
+          {isDark ? (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+            </svg>
           )}
-          
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
-            >
-              {isLoading ? 'Iniciando sesión...' : 'Acceder'}
-            </button>
+        </button>
+      </div>
+      
+      <div className="flex flex-col items-center justify-center flex-1 px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className={`w-full max-w-md ${
+            isDark ? 'bg-neutral-800 border border-neutral-700' : 'bg-white shadow-lg'
+          } rounded-xl overflow-hidden`}
+        >
+          <div className="px-8 pt-8 pb-6 text-center">
+            <div className="mx-auto h-12 w-12 bg-primary-500 rounded-xl flex items-center justify-center mb-4">
+              <svg className="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 5.5h-15v12h15v-12z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.5 9.5h5" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.5 13.5h5" />
+              </svg>
+            </div>
+            <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>Hospital Admin</h2>
+            <p className={`mt-2 text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+              Ingrese sus credenciales para acceder
+            </p>
           </div>
           
-          <div className="text-xs text-center text-gray-500">
-            <p>API URL: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}</p>
+          <div className="px-8 pb-8">
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+              <div>
+                <label className="label" htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  {...register('email')}
+                  className="input"
+                  placeholder="usuario@hospital.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label className="label" htmlFor="password">Contraseña</label>
+                <input
+                  id="password"
+                  type="password"
+                  {...register('password')}
+                  className="input"
+                  placeholder="••••••••"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                )}
+              </div>
+              
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 text-sm text-center text-red-700 bg-red-100 rounded-lg"
+                >
+                  {error}
+                </motion.div>
+              )}
+              
+              <div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full btn-primary flex justify-center items-center py-2.5"
+                >
+                  {isLoading ? (
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : null}
+                  {isLoading ? 'Iniciando sesión...' : 'Acceder'}
+                </button>
+              </div>
+
+              {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-center">
+                  <p className={`${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Credenciales preestablecidas en modo desarrollo:
+                  </p>
+                  <p className={`font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                    admin@hospital.pe / admin123
+                  </p>
+                </div>
+              )}
+            </form>
           </div>
-        </form>
+        </motion.div>
+        
+        <p className={`mt-8 text-xs ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+          API URL: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}
+        </p>
       </div>
     </div>
   );

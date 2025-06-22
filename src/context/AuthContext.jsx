@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-import apiClient from '../api/apiClient';
 import { jwtDecode } from 'jwt-decode';
+import * as authService from '../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -25,16 +25,20 @@ export const AuthProvider = ({ children }) => {
             return;
           }
           
-          // Token válido, establecer usuario
-          setUser({ 
-            email: decoded.email || decoded.sub, 
-            name: decoded.name || decoded.username,
-            roles: decoded.roles || []
-          });
-          setIsAuthenticated(true);
-          
-          // Opcional: Validar el token con el backend
-          // await apiClient.get('/auth/validate-token/');
+          // Token válido, obtener perfil de usuario
+          try {
+            const profileData = await authService.getProfile();
+            setUser(profileData);
+            setIsAuthenticated(true);
+          } catch (profileError) {
+            // Si falla obtener el perfil, usar datos del token
+            setUser({ 
+              email: decoded.email || decoded.sub, 
+              name: decoded.name || decoded.username,
+              roles: decoded.roles || []
+            });
+            setIsAuthenticated(true);
+          }
         } catch (error) {
           console.error("Error al procesar el token:", error);
           logout();
@@ -48,39 +52,40 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      // Corregir la URL para que coincida con la API de Django
-      const response = await apiClient.post('/auth/login/', credentials);
-      
-      // Ajustar según la estructura de respuesta de la API
-      const { token, refresh, user } = response.data;
+      setIsLoading(true);
+      const response = await authService.login(credentials);
       
       // Guardar tokens
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('refreshToken', response.refresh);
       
-      setToken(token);
-      
-      // Establecer la información del usuario directamente desde la respuesta
-      setUser({
-        id: user.id,
-        email: user.email,
-        role: user.role
-      });
-      
+      setToken(response.token);
+      setUser(response.user);
       setIsAuthenticated(true);
-      return response.data;
+      
+      return response;
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      // Intentar hacer logout en el servidor, pero continuar incluso si falla
+      await authService.logout();
+    } catch (error) {
+      console.warn("Error al cerrar sesión en el servidor:", error);
+    } finally {
+      // Siempre limpiar estado local
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+    }
   };
 
   const refreshAuthToken = async () => {
@@ -90,13 +95,10 @@ export const AuthProvider = ({ children }) => {
         throw new Error('No refresh token available');
       }
       
-      const response = await apiClient.post('/auth/refresh-token/', {
-        refresh: refreshToken
-      });
+      const response = await authService.refreshToken(refreshToken);
       
-      const { access } = response.data;
-      localStorage.setItem('authToken', access);
-      setToken(access);
+      localStorage.setItem('authToken', response.access);
+      setToken(response.access);
       
       return true;
     } catch (error) {

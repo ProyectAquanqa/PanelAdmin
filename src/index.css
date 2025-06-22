@@ -1,3 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-neutral-50 text-neutral-900 antialiased;
+  }
+  
+  body.dark {
+    @apply bg-neutral-900 text-neutral-50;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-card overflow-hidden dark:bg-neutral-800 dark:border dark:border-neutral-700;
+  }
+
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900;
+  }
+  
+  .btn-primary {
+    @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg shadow-sm hover:bg-primary-700 focus-ring;
+  }
+  
+  .btn-secondary {
+    @apply px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg shadow-sm hover:bg-neutral-50 focus-ring dark:bg-neutral-800 dark:text-neutral-100 dark:border-neutral-600 dark:hover:bg-neutral-700;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2 text-sm text-neutral-900 bg-white border border-neutral-300 rounded-lg shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none dark:bg-neutral-800 dark:text-neutral-100 dark:border-neutral-600 dark:focus:border-primary-500;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-neutral-700 mb-1 dark:text-neutral-200;
+  }
+  
+  .table-container {
+    @apply w-full overflow-hidden shadow-sm rounded-lg border border-neutral-200 dark:border-neutral-700;
+  }
+  
+  .table {
+    @apply min-w-full divide-y divide-neutral-200 dark:divide-neutral-700;
+  }
+  
+  .table-header {
+    @apply bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-100;
+  }
+  
+  .table-row {
+    @apply bg-white hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:bg-neutral-750;
+  }
+  
+  .table-cell {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-neutral-500 dark:text-neutral-300;
+  }
+  
+  .table-cell-header {
+    @apply px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider dark:text-neutral-300;
+  }
+}
+
+/* Transiciones suaves para cambios de tema */
+* {
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}

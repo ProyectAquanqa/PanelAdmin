@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import LoginPage from '../pages/Auth/LoginPage';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardPage from '../pages/DashboardPage';
+import UsersPage from '../pages/users/UsersPage';
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -45,7 +46,7 @@ const AppRouter = () => {
       <Route path="/" element={<ProtectedRoute />}>
         {/* Aquí van todas las rutas protegidas que usarán el DashboardLayout */}
         <Route index element={<DashboardPage />} />
-        {/* <Route path="users" element={<UserListPage />} /> */}
+        <Route path="users" element={<UsersPage />} />
         {/* ... otras rutas ... */}
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
