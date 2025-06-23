@@ -1,9 +1,14 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LoginPage from '../pages/Auth/LoginPage';
+import AuthDebugPage from '../pages/Auth/AuthDebugPage';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardPage from '../pages/DashboardPage';
 import UsersPage from '../pages/users/UsersPage';
+import DoctorListPage from '../pages/doctors/DoctorListPage';
+import PatientListPage from '../pages/patients/PatientListPage';
+import SpecialtyListPage from '../pages/specialties/SpecialtyListPage';
+import AppointmentListPage from '../pages/appointments/AppointmentListPage';
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -43,11 +48,20 @@ const AppRouter = () => {
         path="/login" 
         element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} 
       />
+      
+      {/* Página de depuración de autenticación - solo en desarrollo */}
+      {process.env.NODE_ENV === 'development' && (
+        <Route path="/auth-debug" element={<AuthDebugPage />} />
+      )}
+      
       <Route path="/" element={<ProtectedRoute />}>
         {/* Aquí van todas las rutas protegidas que usarán el DashboardLayout */}
         <Route index element={<DashboardPage />} />
         <Route path="users" element={<UsersPage />} />
-        {/* ... otras rutas ... */}
+        <Route path="doctors" element={<DoctorListPage />} />
+        <Route path="patients" element={<PatientListPage />} />
+        <Route path="appointments" element={<AppointmentListPage />} />
+        <Route path="specialties" element={<SpecialtyListPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

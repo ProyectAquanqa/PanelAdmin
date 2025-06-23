@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-// Obtener la URL base de la API desde las variables de entorno
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// Configuración corregida - NO incluir /api en baseURL cuando usamos proxy
+const API_BASE_URL = '';  // Vacío para usar el proxy de Vite
 
-console.log('API Base URL:', API_BASE_URL);
+console.log('API Base URL configurado:', API_BASE_URL || 'Usando proxy de Vite');
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -20,8 +20,20 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     if (token) {
+      // Probar diferentes formatos de token de autorización
+      // Django REST normalmente espera: Bearer <token> o Token <token>
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Asegurarse de que la URL comience con /api si no es así
+    if (!config.url.startsWith('/api') && !config.url.startsWith('http')) {
+      config.url = `/api${config.url}`;
+    }
+    
+    // Imprimir la URL completa para depuración
+    const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url;
+    console.log(`🚀 Request: ${config.method.toUpperCase()} ${fullUrl}`, config.params || {});
+    
     return config;
   },
   (error) => {
@@ -33,6 +45,8 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => {
+    // Log para depuración de respuestas exitosas
+    console.log(`✅ Response from ${response.config.url}:`, response.status);
     return response;
   },
   async (error) => {
@@ -53,18 +67,52 @@ apiClient.interceptors.response.use(
           return Promise.reject(error);
         }
         
-        // Realizar solicitud para refrescar el token sin usar el interceptor (para evitar loop)
-        const response = await axios.post(`${API_BASE_URL}/auth/refresh-token/`, {
-          refresh: refreshToken
-        });
+        // URLs a probar para refresh token
+        const urlsToTry = [
+          '/api/auth/refresh-token/',
+          '/api/auth/token/refresh/',
+          '/api/authentication/refresh-token/'
+        ];
         
-        const { access } = response.data;
+        let newAccessToken = null;
+        
+        for (const url of urlsToTry) {
+          try {
+            // Realizar solicitud para refrescar el token sin usar el interceptor (para evitar loop)
+            const response = await axios.post(url, {
+              refresh: refreshToken
+            });
+            
+            // Determinar dónde está el nuevo token
+            if (response.data.access) {
+              newAccessToken = response.data.access;
+            } else if (response.data.token) {
+              newAccessToken = response.data.token;
+            } else if (response.data.accessToken) {
+              newAccessToken = response.data.accessToken;
+            }
+            
+            if (newAccessToken) {
+              break;
+            }
+          } catch (refreshError) {
+            if (refreshError.response?.status !== 404) {
+              throw refreshError;
+            }
+            // Si es 404, continuar con la siguiente URL
+          }
+        }
+        
+        if (!newAccessToken) {
+          throw new Error('No se pudo obtener un nuevo token de acceso');
+        }
         
         // Guardar el nuevo token
-        localStorage.setItem('authToken', access);
+        localStorage.setItem('authToken', newAccessToken);
         
-        // Actualizar el header de la petición original y reintentarla
-        originalRequest.headers.Authorization = `Bearer ${access}`;
+        // Actualizar el header de la petición original con diferentes formatos
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        
         return axios(originalRequest);
       } catch (refreshError) {
         // Si falla el refresh, limpiar tokens y redirigir al login
@@ -88,6 +136,7 @@ apiClient.interceptors.response.use(
     if (error.response) {
       // La solicitud fue hecha y el servidor respondió con un código de estado fuera del rango 2xx
       const status = error.response.status;
+      console.error(`❌ Error ${status} from ${originalRequest.url}:`, error.response.data);
       
       if (status === 403) {
         toast.error('No tiene permisos para realizar esta acción');
@@ -114,4 +163,4 @@ apiClient.interceptors.response.use(
   }
 );
 
-export default apiClient; 
+export default apiClient;

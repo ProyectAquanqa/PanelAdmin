@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -25,15 +25,19 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [diagnosticInfo, setDiagnosticInfo] = useState(null);
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
 
   const onSubmit = async (data) => {
     setIsLoading(true);
     setError(null);
+    setDiagnosticInfo(null);
     
     try {
-      await login(data);
+      console.log('🔑 Intentando login con:', data.email);
+      const response = await login(data);
+      console.log('✅ Login exitoso:', response);
       toast.success('Inicio de sesión exitoso');
       navigate('/');
     } catch (err) {
@@ -41,15 +45,25 @@ export default function LoginPage() {
       
       // Mostrar mensaje de error detallado
       let errorMessage = "Error al iniciar sesión. Por favor, inténtelo de nuevo.";
+      let diagnosticData = null;
       
       if (err.response) {
         // El servidor respondió con un código de error
         console.log("Datos de respuesta:", err.response.data);
+        diagnosticData = {
+          status: err.response.status,
+          statusText: err.response.statusText,
+          url: err.response.config.url,
+          method: err.response.config.method,
+          data: err.response.data
+        };
         
         if (err.response.data?.error) {
           errorMessage = err.response.data.error;
         } else if (err.response.data?.detail) {
           errorMessage = err.response.data.detail;
+        } else if (err.response.data?.non_field_errors) {
+          errorMessage = err.response.data.non_field_errors.join(', ');
         } else if (err.response.status === 401) {
           errorMessage = "Credenciales inválidas. Verifique su email y contraseña.";
         } else if (err.response.status === 404) {
@@ -58,9 +72,16 @@ export default function LoginPage() {
       } else if (err.request) {
         // La solicitud se realizó pero no se recibió respuesta
         errorMessage = "No se pudo conectar con el servidor. Verifique su conexión a internet.";
+        diagnosticData = {
+          message: "No se recibió respuesta del servidor",
+          url: err.config?.url
+        };
+      } else if (err.message) {
+        errorMessage = err.message;
       }
       
       setError(errorMessage);
+      setDiagnosticInfo(diagnosticData);
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -178,6 +199,28 @@ export default function LoginPage() {
                 </div>
               )}
             </form>
+            
+            {/* Información de diagnóstico para desarrollo */}
+            {diagnosticInfo && process.env.NODE_ENV === 'development' && (
+              <div className="mt-6 p-3 border border-yellow-300 bg-yellow-50 rounded-lg">
+                <p className="text-xs font-semibold text-yellow-700 mb-1">Información de diagnóstico:</p>
+                <pre className="text-xs overflow-auto max-h-40 text-yellow-800">
+                  {JSON.stringify(diagnosticInfo, null, 2)}
+                </pre>
+              </div>
+            )}
+            
+            {/* Enlace a la página de depuración - solo en desarrollo */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-6 text-center">
+                <Link 
+                  to="/auth-debug" 
+                  className={`text-xs ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
+                >
+                  Herramientas de diagnóstico de autenticación
+                </Link>
+              </div>
+            )}
           </div>
         </motion.div>
         

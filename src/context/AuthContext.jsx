@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
             // Si falla obtener el perfil, usar datos del token
             setUser({ 
               email: decoded.email || decoded.sub, 
-              name: decoded.name || decoded.username,
+              name: decoded.name || decoded.username || decoded.email,
               roles: decoded.roles || []
             });
             setIsAuthenticated(true);
@@ -55,12 +55,79 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       const response = await authService.login(credentials);
       
-      // Guardar tokens
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('refreshToken', response.refresh);
+      console.log('Respuesta de login:', response);
       
-      setToken(response.token);
-      setUser(response.user);
+      // Determinar dónde están los tokens en la respuesta (diferentes backends pueden tener diferentes estructuras)
+      let accessToken = null;
+      let refreshToken = null;
+      let userData = null;
+      
+      // Caso 1: Formato estándar JWT con access y refresh
+      if (response.access && response.refresh) {
+        accessToken = response.access;
+        refreshToken = response.refresh;
+      }
+      // Caso 2: Formato con token y refresh
+      else if (response.token && response.refresh) {
+        accessToken = response.token;
+        refreshToken = response.refresh;
+      }
+      // Caso 3: Formato con accessToken y refreshToken
+      else if (response.accessToken && response.refreshToken) {
+        accessToken = response.accessToken;
+        refreshToken = response.refreshToken;
+      }
+      // Caso 4: Formato con token y refreshToken
+      else if (response.token && response.refreshToken) {
+        accessToken = response.token;
+        refreshToken = response.refreshToken;
+      }
+      // Caso 5: Formato con solo token
+      else if (response.token) {
+        accessToken = response.token;
+        // Puede que no haya refresh token
+      }
+      // Caso 6: Formato con solo access
+      else if (response.access) {
+        accessToken = response.access;
+        // Puede que no haya refresh token
+      }
+      
+      // Verificar que tenemos al menos un token de acceso
+      if (!accessToken) {
+        throw new Error('No se pudo obtener el token de acceso de la respuesta');
+      }
+      
+      // Buscar datos de usuario
+      if (response.user) {
+        userData = response.user;
+      } else if (response.userData) {
+        userData = response.userData;
+      } else if (response.profile) {
+        userData = response.profile;
+      } else {
+        // Intentar decodificar el token para obtener datos básicos
+        try {
+          const decoded = jwtDecode(accessToken);
+          userData = {
+            email: decoded.email || decoded.sub,
+            name: decoded.name || decoded.username || decoded.email,
+            roles: decoded.roles || []
+          };
+        } catch (decodeError) {
+          console.warn('No se pudo decodificar el token para obtener datos de usuario', decodeError);
+          userData = { email: credentials.email };
+        }
+      }
+      
+      // Guardar tokens
+      localStorage.setItem('authToken', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+      
+      setToken(accessToken);
+      setUser(userData);
       setIsAuthenticated(true);
       
       return response;
@@ -97,8 +164,23 @@ export const AuthProvider = ({ children }) => {
       
       const response = await authService.refreshToken(refreshToken);
       
-      localStorage.setItem('authToken', response.access);
-      setToken(response.access);
+      // Determinar dónde está el nuevo token de acceso
+      let newAccessToken = null;
+      
+      if (response.access) {
+        newAccessToken = response.access;
+      } else if (response.token) {
+        newAccessToken = response.token;
+      } else if (response.accessToken) {
+        newAccessToken = response.accessToken;
+      }
+      
+      if (!newAccessToken) {
+        throw new Error('No se pudo obtener el nuevo token de acceso');
+      }
+      
+      localStorage.setItem('authToken', newAccessToken);
+      setToken(newAccessToken);
       
       return true;
     } catch (error) {

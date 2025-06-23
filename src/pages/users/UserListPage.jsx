@@ -32,7 +32,7 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-export default function UsersPage() {
+export default function UserListPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
