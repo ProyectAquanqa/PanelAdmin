@@ -13,8 +13,11 @@ import { useGetAppointments } from '../../hooks/useAppointments';
 import AppointmentFormModal from '../../components/appointments/AppointmentFormModal';
 import { format, parseISO, isBefore, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useTheme } from '../../context/ThemeContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function AppointmentListPage() {
+  const { theme } = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,21 +44,40 @@ function AppointmentListPage() {
 
   // Función para obtener el color según el estado
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'SCHEDULED':
-        return 'bg-blue-100 text-blue-800';
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800';
-      case 'COMPLETED':
-        return 'bg-purple-100 text-purple-800';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
-      case 'NO_SHOW':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'RESCHEDULED':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    if (theme === 'dark') {
+      switch (status) {
+        case 'SCHEDULED':
+          return 'bg-blue-900/20 text-blue-400 border border-blue-500/20';
+        case 'CONFIRMED':
+          return 'bg-green-900/20 text-green-400 border border-green-500/20';
+        case 'COMPLETED':
+          return 'bg-purple-900/20 text-purple-400 border border-purple-500/20';
+        case 'CANCELLED':
+          return 'bg-red-900/20 text-red-400 border border-red-500/20';
+        case 'NO_SHOW':
+          return 'bg-yellow-900/20 text-yellow-400 border border-yellow-500/20';
+        case 'RESCHEDULED':
+          return 'bg-orange-900/20 text-orange-400 border border-orange-500/20';
+        default:
+          return 'bg-neutral-900/20 text-neutral-400 border border-neutral-500/20';
+      }
+    } else {
+      switch (status) {
+        case 'SCHEDULED':
+          return 'bg-blue-100 text-blue-800';
+        case 'CONFIRMED':
+          return 'bg-green-100 text-green-800';
+        case 'COMPLETED':
+          return 'bg-purple-100 text-purple-800';
+        case 'CANCELLED':
+          return 'bg-red-100 text-red-800';
+        case 'NO_SHOW':
+          return 'bg-yellow-100 text-yellow-800';
+        case 'RESCHEDULED':
+          return 'bg-orange-100 text-orange-800';
+        default:
+          return 'bg-gray-100 text-gray-800';
+      }
     }
   };
 
@@ -173,36 +195,70 @@ function AppointmentListPage() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
-      <div className="sm:flex sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Citas Médicas</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Gestiona las citas médicas del hospital
-          </p>
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`${
+          theme === 'dark' 
+            ? 'bg-neutral-800 border-neutral-700' 
+            : 'bg-white border-gray-200'
+        } shadow-sm border rounded-xl p-6 mb-6`}
+      >
+        <div className="sm:flex sm:items-center sm:justify-between">
+          <div>
+            <h1 className={`text-2xl font-semibold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            } flex items-center`}>
+              <CalendarIcon className="h-7 w-7 text-primary-600 mr-3" />
+              Citas Médicas
+            </h1>
+            <p className={`mt-2 text-sm ${
+              theme === 'dark' ? 'text-neutral-400' : 'text-gray-700'
+            }`}>
+              Gestiona las citas médicas del hospital
+            </p>
+          </div>
+          <div className="mt-4 sm:mt-0">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={() => handleOpenModal()}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 transition-all duration-200"
+            >
+              <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              Nueva Cita
+            </motion.button>
+          </div>
         </div>
-        <div className="mt-4 sm:mt-0">
-          <button
-            type="button"
-            onClick={() => handleOpenModal()}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#033662] hover:bg-[#022b4f] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662]"
-          >
-            <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Nueva Cita
-          </button>
-        </div>
-      </div>
+      </motion.div>
 
       {/* Filtros y búsqueda */}
-      <div className="mt-6 bg-white shadow rounded-lg p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className={`${
+          theme === 'dark' 
+            ? 'bg-neutral-800 border-neutral-700' 
+            : 'bg-white border-gray-200'
+        } shadow-sm border rounded-xl p-4 mb-6`}
+      >
         <form onSubmit={handleSearch} className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {/* Búsqueda por texto */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <MagnifyingGlassIcon className={`h-5 w-5 ${
+                theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'
+              }`} aria-hidden="true" />
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm"
+              className={`block w-full pl-10 pr-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                theme === 'dark' 
+                  ? 'bg-neutral-700 border-neutral-600 text-white placeholder-neutral-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
               placeholder="Buscar por paciente o doctor..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -212,7 +268,11 @@ function AppointmentListPage() {
           {/* Filtro por estado */}
           <div>
             <select
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm"
+              className={`block w-full px-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                theme === 'dark' 
+                  ? 'bg-neutral-700 border-neutral-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
               value={statusFilter}
               onChange={handleStatusFilterChange}
             >
@@ -230,7 +290,11 @@ function AppointmentListPage() {
           <div>
             <input
               type="date"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm"
+              className={`block w-full px-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                theme === 'dark' 
+                  ? 'bg-neutral-700 border-neutral-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
               value={dateFilter}
               onChange={handleDateFilterChange}
             />
@@ -238,112 +302,204 @@ function AppointmentListPage() {
 
           {/* Botones de acción */}
           <div className="flex space-x-2">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#033662] hover:bg-[#022b4f] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662]"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 transition-all duration-200"
             >
               Buscar
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={handleClearFilters}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662]"
+              className={`inline-flex items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium transition-colors ${
+                theme === 'dark' 
+                  ? 'border-neutral-600 text-neutral-300 bg-neutral-800 hover:bg-neutral-700' 
+                  : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+              }`}
             >
               Limpiar
-            </button>
+            </motion.button>
           </div>
         </form>
-      </div>
+      </motion.div>
 
       {/* Tabla de citas */}
-      <div className="mt-6 bg-white shadow overflow-hidden rounded-lg">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className={`${
+          theme === 'dark' 
+            ? 'bg-neutral-800 border-neutral-700' 
+            : 'bg-white border-gray-200'
+        } shadow-sm border rounded-xl overflow-hidden`}
+      >
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#033662] mx-auto"></div>
-            <p className="mt-4 text-gray-500">Cargando citas...</p>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center space-y-3"
+            >
+              <div className="w-12 h-12 border-4 border-primary-600 rounded-full border-t-transparent animate-spin"></div>
+              <p className={`text-sm ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>
+                Cargando citas...
+              </p>
+            </motion.div>
           </div>
         ) : isError ? (
           <div className="p-8 text-center">
-            <XCircleIcon className="h-12 w-12 text-red-500 mx-auto" />
-            <p className="mt-4 text-red-500">Error al cargar las citas. Intenta de nuevo más tarde.</p>
-            <button
-              onClick={refetch}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#033662] hover:bg-[#022b4f] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662]"
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`${
+                theme === 'dark' 
+                  ? 'bg-red-900/20 border-red-500/20 text-red-400' 
+                  : 'bg-red-50 border-red-200 text-red-700'
+              } border p-6 rounded-xl inline-block mx-auto`}
             >
-              <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Reintentar
-            </button>
+              <div className="flex">
+                <XCircleIcon className="h-12 w-12 mx-auto text-red-500" />
+                <div className="ml-3">
+                  <p className="mt-4 text-center">Error al cargar las citas. Intenta de nuevo más tarde.</p>
+                  <div className="mt-4 flex justify-center">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={refetch}
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 transition-all duration-200"
+                    >
+                      <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                      Reintentar
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         ) : appointmentsData?.results?.length === 0 ? (
           <div className="p-8 text-center">
-            <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto" />
-            <p className="mt-4 text-gray-500">No se encontraron citas con los filtros seleccionados.</p>
-            {(searchTerm || statusFilter || dateFilter) && (
-              <button
-                onClick={handleClearFilters}
-                className="mt-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662]"
-              >
-                Limpiar filtros
-              </button>
-            )}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center"
+            >
+              <CalendarIcon className={`h-12 w-12 mb-4 ${
+                theme === 'dark' ? 'text-neutral-600' : 'text-gray-300'
+              }`} />
+              <h3 className={`text-sm font-medium mb-1 ${
+                theme === 'dark' ? 'text-neutral-300' : 'text-gray-900'
+              }`}>
+                No se encontraron citas con los filtros seleccionados.
+              </h3>
+              {(searchTerm || statusFilter || dateFilter) && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleClearFilters}
+                  className={`mt-4 inline-flex items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium ${
+                    theme === 'dark' 
+                      ? 'border-neutral-600 text-neutral-300 bg-neutral-800 hover:bg-neutral-700' 
+                      : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  Limpiar filtros
+                </motion.button>
+              )}
+            </motion.div>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
+              <thead className={theme === 'dark' ? 'bg-neutral-900' : 'bg-gray-50'}>
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+                  }`}>
                     Paciente
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+                  }`}>
                     Doctor
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+                  }`}>
                     Especialidad
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+                  }`}>
                     Fecha y Hora
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+                  }`}>
                     Estado
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+                  }`}>
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {appointmentsData?.results?.map((appointment) => {
+              <tbody className={`divide-y ${
+                theme === 'dark' 
+                  ? 'bg-neutral-800 divide-neutral-700' 
+                  : 'bg-white divide-gray-200'
+              }`}>
+                {appointmentsData?.results?.map((appointment, index) => {
                   const isPast = isAppointmentPast(appointment.appointment_date, appointment.start_time);
                   const isToday = isAppointmentToday(appointment.appointment_date);
                   
                   return (
-                    <tr 
+                    <motion.tr 
                       key={appointment.id}
-                      className={`hover:bg-gray-50 ${
-                        isToday ? 'bg-blue-50' : isPast ? 'bg-gray-50' : ''
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={`transition-colors ${
+                        theme === 'dark' 
+                          ? isToday ? 'bg-blue-900/10' : isPast ? 'bg-neutral-700/30' : 'hover:bg-neutral-700'
+                          : isToday ? 'bg-blue-50' : isPast ? 'bg-gray-50' : 'hover:bg-gray-50'
                       }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className={`text-sm font-medium ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>
                           {appointment.patient_name || 'Paciente no especificado'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className={`text-sm ${
+                          theme === 'dark' ? 'text-neutral-300' : 'text-gray-900'
+                        }`}>
                           {appointment.doctor_name || 'Doctor no especificado'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className={`text-sm ${
+                          theme === 'dark' ? 'text-neutral-300' : 'text-gray-900'
+                        }`}>
                           {appointment.specialty_name || 'Especialidad no especificada'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className={`text-sm ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>
                           {formatDate(appointment.appointment_date)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className={`text-sm ${
+                          theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+                        }`}>
                           {appointment.start_time || 'Sin hora'}
                         </div>
                       </td>
@@ -354,52 +510,78 @@ function AppointmentListPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => handleOpenModal(appointment)}
-                          className="text-[#033662] hover:text-[#022b4f]"
+                          className={`p-2 rounded-lg transition-colors ${
+                            theme === 'dark' 
+                              ? 'text-primary-400 hover:text-primary-300 hover:bg-primary-900/20' 
+                              : 'text-primary-600 hover:text-primary-700 hover:bg-primary-50'
+                          }`}
+                          title="Editar cita"
                         >
                           Editar
-                        </button>
+                        </motion.button>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Paginación (simplificada) */}
       {appointmentsData && appointmentsData.count > 0 && (
-        <div className="mt-4 flex justify-between items-center">
-          <div className="text-sm text-gray-700">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-4 flex justify-between items-center"
+        >
+          <div className={`text-sm ${
+            theme === 'dark' ? 'text-neutral-400' : 'text-gray-700'
+          }`}>
             Mostrando <span className="font-medium">{appointmentsData.results.length}</span> de{' '}
             <span className="font-medium">{appointmentsData.count}</span> citas
           </div>
           <div className="flex space-x-2">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               disabled={!appointmentsData.previous}
               className={`px-3 py-1 border rounded-md text-sm ${
                 appointmentsData.previous
-                  ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                  : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                  ? theme === 'dark'
+                    ? 'border-neutral-600 bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  : theme === 'dark'
+                    ? 'border-neutral-700 bg-neutral-800 text-neutral-600 cursor-not-allowed'
+                    : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
               Anterior
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               disabled={!appointmentsData.next}
               className={`px-3 py-1 border rounded-md text-sm ${
                 appointmentsData.next
-                  ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                  : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                  ? theme === 'dark'
+                    ? 'border-neutral-600 bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  : theme === 'dark'
+                    ? 'border-neutral-700 bg-neutral-800 text-neutral-600 cursor-not-allowed'
+                    : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
               Siguiente
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Modal de formulario */}

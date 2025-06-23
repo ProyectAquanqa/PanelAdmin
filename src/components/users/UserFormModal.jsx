@@ -96,7 +96,14 @@ function UserFormModal({ isOpen, onClose, user = null }) {
       // NO cargar la contraseña al editar - dejar vacía
       setValue('password', '');
     } else {
-      reset();
+      reset({
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        phone: '',
+        role: '',
+      });
     }
   }, [user, isEditing, setValue, reset]);
 
@@ -155,13 +162,20 @@ function UserFormModal({ isOpen, onClose, user = null }) {
         } else if (errorData.detail) {
           toast.error(errorData.detail);
         } else if (errorData.non_field_errors) {
-          toast.error(errorData.non_field_errors[0] || 'Error de validación');
+          toast.error(Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors);
         } else {
           // Mostrar todos los errores de validación
-          const allErrors = Object.entries(errorData).map(([field, errors]) => 
-            `${field}: ${Array.isArray(errors) ? errors[0] : errors}`
-          ).join(', ');
-          toast.error(`Errores: ${allErrors}`);
+          const allErrors = Object.entries(errorData)
+            .filter(([_, value]) => !!value) // Filtrar solo valores con error
+            .map(([field, errors]) => 
+              `${field}: ${Array.isArray(errors) ? errors[0] : errors}`
+            ).join(', ');
+          
+          if (allErrors) {
+            toast.error(`Errores: ${allErrors}`);
+          } else {
+            toast.error('Error al procesar la solicitud');
+          }
         }
       } else {
         toast.error('Error de conexión. Verifica que el servidor esté funcionando.');

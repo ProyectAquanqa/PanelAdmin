@@ -6,7 +6,8 @@ import {
   ClockIcon,
   ArrowUpIcon,
   ArrowDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { 
   AreaChart, 
@@ -30,6 +31,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardStats, getRecentActivity } from '../services/dashboardService';
 import { getChartData } from '../services/dashboardService';
+import { useGetPatients } from '../hooks/usePatients';
+import { Link } from 'react-router-dom';
 
 // Datos de fallback para cuando la API no responda
 const fallbackData = {
@@ -138,6 +141,16 @@ export default function DashboardPage() {
     queryFn: getDashboardStats,
     refetchOnWindowFocus: false,
     retry: 1,
+  });
+
+  // Consulta para obtener la lista de pacientes (limitada a 5)
+  const { 
+    data: patientsData, 
+    isLoading: patientsLoading,
+    error: patientsError
+  } = useGetPatients({
+    page: 1,
+    page_size: 5
   });
 
   // Consulta para obtener datos de gráfico de citas
@@ -277,7 +290,7 @@ export default function DashboardPage() {
     }
   ];
 
-  const isLoading = statsLoading || citasLoading || ingresosLoading || especialidadesLoading || actividadLoading;
+  const isLoading = statsLoading || citasLoading || ingresosLoading || especialidadesLoading || actividadLoading || patientsLoading;
 
   return (
     <motion.div 
@@ -619,6 +632,136 @@ export default function DashboardPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Nueva sección de pacientes recientes */}
+      <motion.div className="card p-6" variants={item}>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+              Pacientes Recientes
+            </h2>
+            <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+              Últimos pacientes registrados en el sistema
+            </p>
+          </div>
+          <Link 
+            to="/patients" 
+            className={`text-sm text-primary-600 hover:text-primary-500 flex items-center`}
+          >
+            Ver todos
+            <ChevronRightIcon className="ml-1 h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50 dark:bg-neutral-800">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Paciente
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Documento
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Contacto
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Estado
+                </th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${isDark ? 'divide-neutral-700' : 'divide-gray-200'}`}>
+              {patientsLoading ? (
+                // Esqueletos de carga
+                [...Array(5)].map((_, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-neutral-700 animate-pulse"></div>
+                        <div className="ml-4">
+                          <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-24 animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 dark:bg-neutral-700 rounded w-16 mt-2 animate-pulse"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-20 animate-pulse"></div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-32 animate-pulse"></div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="h-5 bg-gray-200 dark:bg-neutral-700 rounded w-16 animate-pulse"></div>
+                    </td>
+                  </tr>
+                ))
+              ) : patientsError ? (
+                <tr>
+                  <td colSpan="4" className="px-6 py-4 text-center text-sm text-red-500">
+                    Error al cargar los pacientes
+                  </td>
+                </tr>
+              ) : !patientsData || !patientsData.results || patientsData.results.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="px-6 py-4 text-center">
+                    <div className="flex flex-col items-center">
+                      <UserCircleIcon className="h-12 w-12 text-gray-300 mb-4" />
+                      <h3 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-neutral-900'}`}>No hay pacientes</h3>
+                      <p className={`mt-1 text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                        Aún no hay pacientes registrados en el sistema.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                patientsData.results.map((patient) => (
+                  <tr key={patient.id} className={`hover:bg-gray-50 dark:hover:bg-neutral-800`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <img
+                            className="h-10 w-10 rounded-full"
+                            src={`https://ui-avatars.com/api/?name=${patient.first_name}+${patient.last_name}&background=0D8ABC&color=fff`}
+                            alt={`${patient.first_name} ${patient.last_name}`}
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                            {patient.first_name} {patient.last_name}
+                          </div>
+                          {patient.blood_type && (
+                            <div className="text-sm text-gray-500">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                Tipo {patient.blood_type}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className={`text-sm ${isDark ? 'text-neutral-300' : 'text-neutral-900'}`}>
+                        {patient.document_number || 'No registrado'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className={`text-sm ${isDark ? 'text-neutral-300' : 'text-neutral-900'}`}>
+                        {patient.email || patient.user?.email || 'No registrado'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Activo
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </motion.div>
   );
 } 

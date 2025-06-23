@@ -27,7 +27,7 @@ apiClient.interceptors.request.use(
     
     // Asegurarse de que la URL comience con /api si no es así
     if (!config.url.startsWith('/api') && !config.url.startsWith('http')) {
-      config.url = `/api${config.url}`;
+      config.url = `/api${config.url.startsWith('/') ? '' : '/'}${config.url}`;
     }
     
     // Imprimir la URL completa para depuración

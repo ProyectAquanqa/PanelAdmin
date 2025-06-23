@@ -17,6 +17,8 @@ import { useCreateAppointment, useUpdateAppointment, useGetDoctorsBySpecialty, u
 import { useGetSpecialties } from '../../hooks/useSpecialties';
 import { useGetPatients } from '../../hooks/usePatients';
 import { toast } from 'react-hot-toast';
+import { useTheme } from '../../context/ThemeContext';
+import { motion } from 'framer-motion';
 
 // Esquema de validación
 const appointmentSchema = z.object({
@@ -118,6 +120,7 @@ const STATUS_OPTIONS = [
 ];
 
 function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
+  const { theme } = useTheme();
   const isEditing = !!appointment;
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
@@ -371,17 +374,25 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <div className="flex justify-between items-center border-b pb-4 mb-4">
+              <Dialog.Panel className={`w-full max-w-2xl transform overflow-hidden rounded-2xl p-6 text-left align-middle shadow-xl transition-all ${
+                theme === 'dark' ? 'bg-neutral-800' : 'bg-white'
+              }`}>
+                <div className={`flex justify-between items-center border-b pb-4 mb-4 ${
+                  theme === 'dark' ? 'border-neutral-700' : 'border-gray-200'
+                }`}>
                   <Dialog.Title
                     as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900"
+                    className={`text-lg font-medium leading-6 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}
                   >
                     {isEditing ? 'Editar Cita' : 'Nueva Cita'}
                   </Dialog.Title>
                   <button
                     type="button"
-                    className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+                    className={`rounded-md focus:outline-none ${
+                      theme === 'dark' ? 'text-neutral-400 hover:text-neutral-300' : 'text-gray-400 hover:text-gray-500'
+                    }`}
                     onClick={onClose}
                   >
                     <span className="sr-only">Cerrar</span>
@@ -390,10 +401,18 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                 </div>
 
                 {/* Nota informativa sobre el flujo del formulario */}
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className={`mb-4 p-3 rounded-md ${
+                  theme === 'dark' 
+                    ? 'bg-blue-900/20 border border-blue-500/20' 
+                    : 'bg-blue-50 border border-blue-200'
+                }`}>
                   <div className="flex items-start">
-                    <InformationCircleIcon className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
-                    <p className="text-sm text-blue-700">
+                    <InformationCircleIcon className={`h-5 w-5 mr-2 mt-0.5 ${
+                      theme === 'dark' ? 'text-blue-400' : 'text-blue-500'
+                    }`} />
+                    <p className={`text-sm ${
+                      theme === 'dark' ? 'text-blue-300' : 'text-blue-700'
+                    }`}>
                       Primero seleccione una especialidad médica, luego podrá elegir un doctor disponible para esa especialidad.
                     </p>
                   </div>
@@ -403,82 +422,116 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Paciente */}
                     <div>
-                      <label htmlFor="patient" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="patient" className={`block text-sm font-medium ${
+                        theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'
+                      }`}>
                         Paciente *
                       </label>
                       <div className="mt-1 relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <UserCircleIcon className="h-5 w-5 text-gray-400" />
+                          <UserCircleIcon className={`h-5 w-5 ${
+                            theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+                          }`} />
                         </div>
                         <select
                           id="patient"
-                          className={`block w-full pl-10 pr-3 py-2 border ${errors.patient ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm`}
+                          className={`block w-full pl-10 pr-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                            errors.patient 
+                              ? theme === 'dark' ? 'border-red-500 bg-red-900/10' : 'border-red-300' 
+                              : theme === 'dark' ? 'border-neutral-600 bg-neutral-700' : 'border-gray-300'
+                          } ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}
                           {...register('patient', { 
                             setValueAs: value => value ? Number(value) : null 
                           })}
                           disabled={isLoadingPatients || isEditing}
                         >
-                          <option value="">Seleccionar paciente</option>
+                          <option value="" className={theme === 'dark' ? 'bg-neutral-800' : ''}>Seleccionar paciente</option>
                           {patients?.results?.map(patient => (
-                            <option key={patient.id} value={patient.id}>
+                            <option key={patient.id} value={patient.id} className={theme === 'dark' ? 'bg-neutral-800' : ''}>
                               {patient.full_name || `${patient.first_name} ${patient.last_name}`}
                             </option>
                           ))}
                         </select>
                       </div>
                       {errors.patient && (
-                        <p className="mt-1 text-sm text-red-600">{errors.patient.message}</p>
+                        <p className={`mt-1 text-sm ${
+                          theme === 'dark' ? 'text-red-400' : 'text-red-600'
+                        }`}>{errors.patient.message}</p>
                       )}
                     </div>
 
                     {/* Especialidad */}
                     <div>
-                      <label htmlFor="specialty" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="specialty" className={`block text-sm font-medium ${
+                        theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'
+                      }`}>
                         Especialidad *
                       </label>
                       <div className="mt-1 relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <TagIcon className="h-5 w-5 text-gray-400" />
+                          <TagIcon className={`h-5 w-5 ${
+                            theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+                          }`} />
                         </div>
                         <select
                           id="specialty"
-                          className={`block w-full pl-10 pr-3 py-2 border ${errors.specialty ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm`}
+                          className={`block w-full pl-10 pr-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                            errors.specialty 
+                              ? theme === 'dark' ? 'border-red-500 bg-red-900/10' : 'border-red-300' 
+                              : theme === 'dark' ? 'border-neutral-600 bg-neutral-700' : 'border-gray-300'
+                          } ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}
                           {...register('specialty', { 
                             setValueAs: value => value ? Number(value) : null 
                           })}
                           disabled={isLoadingSpecialties}
                         >
-                          <option value="">Seleccionar especialidad</option>
+                          <option value="" className={theme === 'dark' ? 'bg-neutral-800' : ''}>Seleccionar especialidad</option>
                           {specialties?.results?.map(specialty => (
-                            <option key={specialty.id} value={specialty.id}>
+                            <option key={specialty.id} value={specialty.id} className={theme === 'dark' ? 'bg-neutral-800' : ''}>
                               {specialty.name}
                             </option>
                           ))}
                         </select>
                       </div>
                       {errors.specialty && (
-                        <p className="mt-1 text-sm text-red-600">{errors.specialty.message}</p>
+                        <p className={`mt-1 text-sm ${
+                          theme === 'dark' ? 'text-red-400' : 'text-red-600'
+                        }`}>{errors.specialty.message}</p>
                       )}
                     </div>
 
                     {/* Doctor */}
                     <div>
-                      <label htmlFor="doctor" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="doctor" className={`block text-sm font-medium ${
+                        theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'
+                      }`}>
                         Doctor *
                       </label>
                       <div className="mt-1 relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <UserIcon className="h-5 w-5 text-gray-400" />
+                          <UserIcon className={`h-5 w-5 ${
+                            theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+                          }`} />
                         </div>
                         <select
                           id="doctor"
-                          className={`block w-full pl-10 pr-3 py-2 border ${errors.doctor ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm`}
+                          className={`block w-full pl-10 pr-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                            errors.doctor 
+                              ? theme === 'dark' ? 'border-red-500 bg-red-900/10' : 'border-red-300' 
+                              : theme === 'dark' ? 'border-neutral-600 bg-neutral-700' : 'border-gray-300'
+                          } ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}
                           {...register('doctor', { 
                             setValueAs: value => value ? Number(value) : null 
                           })}
                           disabled={!selectedSpecialty || isLoadingDoctors || doctorsLoading}
                         >
-                          <option value="">
+                          <option value="" className={theme === 'dark' ? 'bg-neutral-800' : ''}>
                             {doctorsLoading 
                               ? "Cargando doctores..." 
                               : !selectedSpecialty 
@@ -486,27 +539,33 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                                 : "Seleccionar doctor"}
                           </option>
                           {doctorsBySpecialty?.map(doctor => (
-                            <option key={doctor.id} value={doctor.id}>
+                            <option key={doctor.id} value={doctor.id} className={theme === 'dark' ? 'bg-neutral-800' : ''}>
                               {doctor.full_name || `Dr. ${doctor.first_name} ${doctor.last_name}`}
                             </option>
                           ))}
                         </select>
                         {doctorsLoading && (
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <div className="animate-spin h-4 w-4 border-2 border-[#033662] border-t-transparent rounded-full"></div>
+                            <div className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full"></div>
                           </div>
                         )}
                       </div>
                       {errors.doctor && (
-                        <p className="mt-1 text-sm text-red-600">{errors.doctor.message}</p>
+                        <p className={`mt-1 text-sm ${
+                          theme === 'dark' ? 'text-red-400' : 'text-red-600'
+                        }`}>{errors.doctor.message}</p>
                       )}
                       {!selectedSpecialty && !doctorsLoading && (
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className={`mt-1 text-xs ${
+                          theme === 'dark' ? 'text-neutral-500' : 'text-gray-500'
+                        }`}>
                           Primero seleccione una especialidad
                         </p>
                       )}
                       {doctorsBySpecialty?.length === 0 && selectedSpecialty && !doctorsLoading && (
-                        <p className="mt-1 text-xs text-red-500">
+                        <p className={`mt-1 text-xs ${
+                          theme === 'dark' ? 'text-red-400' : 'text-red-500'
+                        }`}>
                           No hay doctores disponibles para esta especialidad
                         </p>
                       )}
@@ -514,27 +573,41 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
 
                     {/* Fecha de la cita */}
                     <div>
-                      <label htmlFor="appointment_date" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="appointment_date" className={`block text-sm font-medium ${
+                        theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'
+                      }`}>
                         Fecha de la cita *
                       </label>
                       <div className="mt-1 relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <CalendarIcon className="h-5 w-5 text-gray-400" />
+                          <CalendarIcon className={`h-5 w-5 ${
+                            theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+                          }`} />
                         </div>
                         <input
                           type="date"
                           id="appointment_date"
-                          className={`block w-full pl-10 pr-3 py-2 border ${errors.appointment_date ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm`}
+                          className={`block w-full pl-10 pr-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                            errors.appointment_date 
+                              ? theme === 'dark' ? 'border-red-500 bg-red-900/10' : 'border-red-300' 
+                              : theme === 'dark' ? 'border-neutral-600 bg-neutral-700' : 'border-gray-300'
+                          } ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}
                           value={selectedDate}
                           onChange={handleDateChange}
                           min={new Date().toISOString().split('T')[0]} // No permitir fechas anteriores a hoy
                         />
                       </div>
                       {errors.appointment_date && (
-                        <p className="mt-1 text-sm text-red-600">{errors.appointment_date.message}</p>
+                        <p className={`mt-1 text-sm ${
+                          theme === 'dark' ? 'text-red-400' : 'text-red-600'
+                        }`}>{errors.appointment_date.message}</p>
                       )}
                       {selectedDate && (
-                        <p className="mt-1 text-xs text-green-600">
+                        <p className={`mt-1 text-xs ${
+                          theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                        }`}>
                           Fecha seleccionada: {formatDateForDisplay(selectedDate)}
                         </p>
                       )}
@@ -542,21 +615,31 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
 
                     {/* Hora de inicio */}
                     <div>
-                      <label htmlFor="start_time" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="start_time" className={`block text-sm font-medium ${
+                        theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'
+                      }`}>
                         Hora de la cita *
                       </label>
                       <div className="mt-1 relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <ClockIcon className="h-5 w-5 text-gray-400" />
+                          <ClockIcon className={`h-5 w-5 ${
+                            theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+                          }`} />
                         </div>
                         <select
                           id="start_time"
-                          className={`block w-full pl-10 pr-3 py-2 border ${errors.start_time ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm`}
+                          className={`block w-full pl-10 pr-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                            errors.start_time 
+                              ? theme === 'dark' ? 'border-red-500 bg-red-900/10' : 'border-red-300' 
+                              : theme === 'dark' ? 'border-neutral-600 bg-neutral-700' : 'border-gray-300'
+                          } ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}
                           value={selectedTime}
                           onChange={handleTimeChange}
                           disabled={!selectedDate || !selectedSpecialty || !selectedDoctor || isLoadingSlots}
                         >
-                          <option value="">
+                          <option value="" className={theme === 'dark' ? 'bg-neutral-800' : ''}>
                             {isLoadingSlots 
                               ? "Cargando horarios disponibles..." 
                               : !selectedDate || !selectedDoctor 
@@ -568,6 +651,7 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                               key={slot} 
                               value={slot}
                               disabled={!isTimeSlotAvailable(slot)}
+                              className={theme === 'dark' ? 'bg-neutral-800' : ''}
                             >
                               {slot}
                             </option>
@@ -575,30 +659,40 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                         </select>
                         {isLoadingSlots && (
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <div className="animate-spin h-4 w-4 border-2 border-[#033662] border-t-transparent rounded-full"></div>
+                            <div className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full"></div>
                           </div>
                         )}
                       </div>
                       {errors.start_time && (
-                        <p className="mt-1 text-sm text-red-600">{errors.start_time.message}</p>
+                        <p className={`mt-1 text-sm ${
+                          theme === 'dark' ? 'text-red-400' : 'text-red-600'
+                        }`}>{errors.start_time.message}</p>
                       )}
                       {!selectedDate && (
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className={`mt-1 text-xs ${
+                          theme === 'dark' ? 'text-neutral-500' : 'text-gray-500'
+                        }`}>
                           Primero seleccione una fecha
                         </p>
                       )}
                       {!selectedDoctor && selectedDate && (
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className={`mt-1 text-xs ${
+                          theme === 'dark' ? 'text-neutral-500' : 'text-gray-500'
+                        }`}>
                           Seleccione un doctor para ver horarios disponibles
                         </p>
                       )}
                       {selectedTime && (
-                        <p className="mt-1 text-xs text-green-600">
+                        <p className={`mt-1 text-xs ${
+                          theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                        }`}>
                           Hora seleccionada: {selectedTime}
                         </p>
                       )}
                       {availableSlots && availableSlots.available_slots && availableSlots.available_slots.length === 0 && (
-                        <p className="mt-1 text-xs text-red-500">
+                        <p className={`mt-1 text-xs ${
+                          theme === 'dark' ? 'text-red-400' : 'text-red-500'
+                        }`}>
                           No hay horarios disponibles para este doctor en la fecha seleccionada
                         </p>
                       )}
@@ -607,47 +701,69 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                     {/* Estado (solo para edición) */}
                     {isEditing && (
                       <div>
-                        <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="status" className={`block text-sm font-medium ${
+                          theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'
+                        }`}>
                           Estado
                         </label>
                         <div className="mt-1">
                           <select
                             id="status"
-                            className={`block w-full px-3 py-2 border ${errors.status ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm`}
+                            className={`block w-full px-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                              errors.status 
+                                ? theme === 'dark' ? 'border-red-500 bg-red-900/10' : 'border-red-300' 
+                                : theme === 'dark' ? 'border-neutral-600 bg-neutral-700' : 'border-gray-300'
+                            } ${
+                              theme === 'dark' ? 'text-white' : 'text-gray-900'
+                            }`}
                             {...register('status')}
                           >
                             {STATUS_OPTIONS.map(option => (
-                              <option key={option.id} value={option.id}>
+                              <option key={option.id} value={option.id} className={theme === 'dark' ? 'bg-neutral-800' : ''}>
                                 {option.name}
                               </option>
                             ))}
                           </select>
                         </div>
                         {errors.status && (
-                          <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
+                          <p className={`mt-1 text-sm ${
+                            theme === 'dark' ? 'text-red-400' : 'text-red-600'
+                          }`}>{errors.status.message}</p>
                         )}
                       </div>
                     )}
 
                     {/* Motivo de la consulta - ocupa 2 columnas */}
                     <div className="md:col-span-2">
-                      <label htmlFor="reason" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="reason" className={`block text-sm font-medium ${
+                        theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'
+                      }`}>
                         Motivo de la consulta *
                       </label>
                       <div className="mt-1 relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <DocumentTextIcon className="h-5 w-5 text-gray-400" />
+                          <DocumentTextIcon className={`h-5 w-5 ${
+                            theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+                          }`} />
                         </div>
                         <textarea
                           id="reason"
                           rows={4}
-                          className={`block w-full pl-10 pr-3 py-2 border ${errors.reason ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm`}
+                          className={`block w-full pl-10 pr-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
+                            errors.reason 
+                              ? theme === 'dark' ? 'border-red-500 bg-red-900/10' : 'border-red-300' 
+                              : theme === 'dark' ? 'border-neutral-600 bg-neutral-700' : 'border-gray-300'
+                          } ${
+                            theme === 'dark' ? 'text-white placeholder-neutral-500' : 'text-gray-900 placeholder-gray-400'
+                          }`}
                           placeholder="Describa el motivo de la consulta"
                           {...register('reason')}
                         />
                       </div>
                       {errors.reason && (
-                        <p className="mt-1 text-sm text-red-600">{errors.reason.message}</p>
+                        <p className={`mt-1 text-sm ${
+                          theme === 'dark' ? 'text-red-400' : 'text-red-600'
+                        }`}>{errors.reason.message}</p>
                       )}
                     </div>
                   </div>
@@ -655,14 +771,18 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                   <div className="mt-6 flex justify-end space-x-3">
                     <button
                       type="button"
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662]"
+                      className={`px-4 py-2 border rounded-md text-sm font-medium transition-colors ${
+                        theme === 'dark' 
+                          ? 'border-neutral-600 text-neutral-300 hover:bg-neutral-700' 
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
                       onClick={onClose}
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-[#033662] border border-transparent rounded-md text-sm font-medium text-white hover:bg-[#022b4f] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662]"
+                      className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 border border-transparent rounded-md text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 transition-colors"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? 'Guardando...' : isEditing ? 'Actualizar' : 'Guardar'}

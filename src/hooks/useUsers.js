@@ -79,10 +79,24 @@ export const useCreateUser = () => {
       console.log('Usuario creado exitosamente:', data);
       // Invalidar la cache para que se recargue la lista
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+      toast.success('Usuario creado exitosamente');
     },
     onError: (error) => {
       console.error('Error al crear usuario:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      // Manejar errores específicos
+      if (error.response?.data) {
+        // El error viene del backend
+        const errorData = error.response.data;
+        if (typeof errorData === 'string') {
+          toast.error(errorData);
+        } else if (errorData.detail) {
+          toast.error(errorData.detail);
+        } else {
+          toast.error('Error al crear usuario');
+        }
+      } else {
+        toast.error('Error de conexión al crear usuario');
+      }
     },
   });
 };
@@ -104,10 +118,24 @@ export const useUpdateUser = () => {
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
       // Actualizar usuario específico en la cache
       queryClient.setQueryData([USERS_QUERY_KEY, variables.id], data);
+      toast.success('Usuario actualizado exitosamente');
     },
     onError: (error) => {
       console.error('Error al actualizar usuario:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      // Manejar errores específicos
+      if (error.response?.data) {
+        // El error viene del backend
+        const errorData = error.response.data;
+        if (typeof errorData === 'string') {
+          toast.error(errorData);
+        } else if (errorData.detail) {
+          toast.error(errorData.detail);
+        } else {
+          toast.error('Error al actualizar usuario');
+        }
+      } else {
+        toast.error('Error de conexión al actualizar usuario');
+      }
     },
   });
 };
@@ -127,10 +155,24 @@ export const useDeleteUser = () => {
       console.log(`Usuario con ID ${id} eliminado exitosamente`);
       // Invalidar la cache para que se recargue la lista
       queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+      toast.success('Usuario eliminado exitosamente');
     },
     onError: (error) => {
       console.error('Error al eliminar usuario:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      // Manejar errores específicos
+      if (error.response?.data) {
+        // El error viene del backend
+        const errorData = error.response.data;
+        if (typeof errorData === 'string') {
+          toast.error(errorData);
+        } else if (errorData.detail) {
+          toast.error(errorData.detail);
+        } else {
+          toast.error('Error al eliminar usuario');
+        }
+      } else {
+        toast.error('Error de conexión al eliminar usuario');
+      }
     },
   });
 };

@@ -1,4 +1,5 @@
 import apiClient from '../api/apiClient';
+import { getPatients } from './patientService';
 
 // Datos de fallback para cuando la API no responda
 const fallbackData = {
@@ -110,8 +111,47 @@ export const getDashboardOverview = async () => {
  */
 export const getDashboardStats = async () => {
   try {
-    const response = await apiClient.get('/dashboard/stats/');
-    return response.data;
+    // Intentar obtener estadísticas de la API
+    try {
+      const response = await apiClient.get('/dashboard/stats/');
+      return response.data;
+    } catch (dashboardError) {
+      console.error('Error al obtener estadísticas del endpoint dashboard:', dashboardError);
+      
+      // Si falla, intentar construir estadísticas a partir de los datos de pacientes
+      console.log('Intentando construir estadísticas a partir de datos de pacientes...');
+      
+      // Obtener pacientes
+      const patientsResponse = await getPatients({ page_size: 100 });
+      
+      let patientsCount = 0;
+      let patientsGrowth = 0;
+      
+      if (patientsResponse) {
+        if (patientsResponse.count) {
+          patientsCount = patientsResponse.count;
+        } else if (patientsResponse.results && Array.isArray(patientsResponse.results)) {
+          patientsCount = patientsResponse.results.length;
+        } else if (Array.isArray(patientsResponse)) {
+          patientsCount = patientsResponse.length;
+        }
+        
+        // Calcular crecimiento (simulado)
+        patientsGrowth = Math.round(Math.random() * 15);
+      }
+      
+      // Construir estadísticas con datos reales de pacientes y el resto simulado
+      return {
+        patients_count: patientsCount,
+        patients_growth: patientsGrowth,
+        appointments_today: Math.round(patientsCount * 0.1), // Simular citas de hoy (10% de pacientes)
+        appointments_growth: Math.round(Math.random() * 10),
+        monthly_revenue: Math.round(patientsCount * 250), // Simular ingresos ($250 por paciente)
+        revenue_growth: Math.round(Math.random() * 15),
+        avg_appointment_time: 25,
+        time_change: -5
+      };
+    }
   } catch (error) {
     console.error('Error al obtener estadísticas:', error);
     // En caso de error, devolver datos estáticos
