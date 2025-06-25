@@ -6,7 +6,11 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardPage from '../pages/DashboardPage';
 import UsersPage from '../pages/users/UsersPage';
 import DoctorListPage from '../pages/doctors/DoctorListPage';
+import DoctorDebugPage from '../pages/doctors/DoctorDebugPage';
+import DoctorApiTestPage from '../pages/doctors/DoctorApiTestPage';
 import PatientListPage from '../pages/patients/PatientListPage';
+import PatientDebugPage from '../pages/patients/PatientDebugPage';
+import PatientApiTestPage from '../pages/patients/PatientApiTestPage';
 import SpecialtyListPage from '../pages/specialties/SpecialtyListPage';
 import AppointmentListPage from '../pages/appointments/AppointmentListPage';
 
@@ -51,7 +55,13 @@ const AppRouter = () => {
       
       {/* Página de depuración de autenticación - solo en desarrollo */}
       {process.env.NODE_ENV === 'development' && (
-        <Route path="/auth-debug" element={<AuthDebugPage />} />
+        <>
+          <Route path="/auth-debug" element={<AuthDebugPage />} />
+          <Route path="/doctors-debug" element={<DoctorDebugPage />} />
+          <Route path="/doctors-api-test" element={<DoctorApiTestPage />} />
+          <Route path="/patients-debug" element={<PatientDebugPage />} />
+          <Route path="/patients-api-test" element={<PatientApiTestPage />} />
+        </>
       )}
       
       <Route path="/" element={<ProtectedRoute />}>

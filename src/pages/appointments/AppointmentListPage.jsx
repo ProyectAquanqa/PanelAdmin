@@ -48,7 +48,7 @@ function AppointmentListPage() {
       switch (status) {
         case 'SCHEDULED':
           return 'bg-blue-900/20 text-blue-400 border border-blue-500/20';
-        case 'CONFIRMED':
+        case 'IN_CONSULTATION':
           return 'bg-green-900/20 text-green-400 border border-green-500/20';
         case 'COMPLETED':
           return 'bg-purple-900/20 text-purple-400 border border-purple-500/20';
@@ -56,8 +56,6 @@ function AppointmentListPage() {
           return 'bg-red-900/20 text-red-400 border border-red-500/20';
         case 'NO_SHOW':
           return 'bg-yellow-900/20 text-yellow-400 border border-yellow-500/20';
-        case 'RESCHEDULED':
-          return 'bg-orange-900/20 text-orange-400 border border-orange-500/20';
         default:
           return 'bg-neutral-900/20 text-neutral-400 border border-neutral-500/20';
       }
@@ -65,7 +63,7 @@ function AppointmentListPage() {
       switch (status) {
         case 'SCHEDULED':
           return 'bg-blue-100 text-blue-800';
-        case 'CONFIRMED':
+        case 'IN_CONSULTATION':
           return 'bg-green-100 text-green-800';
         case 'COMPLETED':
           return 'bg-purple-100 text-purple-800';
@@ -73,8 +71,6 @@ function AppointmentListPage() {
           return 'bg-red-100 text-red-800';
         case 'NO_SHOW':
           return 'bg-yellow-100 text-yellow-800';
-        case 'RESCHEDULED':
-          return 'bg-orange-100 text-orange-800';
         default:
           return 'bg-gray-100 text-gray-800';
       }
@@ -86,16 +82,14 @@ function AppointmentListPage() {
     switch (status) {
       case 'SCHEDULED':
         return 'Programada';
-      case 'CONFIRMED':
-        return 'Confirmada';
+      case 'IN_CONSULTATION':
+        return 'En consulta';
       case 'COMPLETED':
         return 'Completada';
       case 'CANCELLED':
         return 'Cancelada';
       case 'NO_SHOW':
         return 'No se presentó';
-      case 'RESCHEDULED':
-        return 'Reprogramada';
       default:
         return status;
     }
@@ -106,7 +100,7 @@ function AppointmentListPage() {
     switch (status) {
       case 'SCHEDULED':
         return <ClockIcon className="h-5 w-5" />;
-      case 'CONFIRMED':
+      case 'IN_CONSULTATION':
         return <CheckCircleIcon className="h-5 w-5" />;
       case 'COMPLETED':
         return <CheckCircleIcon className="h-5 w-5" />;
@@ -114,29 +108,38 @@ function AppointmentListPage() {
         return <XCircleIcon className="h-5 w-5" />;
       case 'NO_SHOW':
         return <ExclamationTriangleIcon className="h-5 w-5" />;
-      case 'RESCHEDULED':
-        return <ArrowPathIcon className="h-5 w-5" />;
       default:
         return <ClockIcon className="h-5 w-5" />;
     }
   };
 
   // Función para determinar si una cita está en el pasado
-  const isAppointmentPast = (dateString, timeString) => {
-    if (!dateString || !timeString) return false;
+  const isAppointmentPast = (dateString, timeBlock) => {
+    if (!dateString) return false;
     
     try {
-      const [hours, minutes] = timeString.split(':').map(Number);
       const appointmentDate = parseISO(dateString);
-      const appointmentDateTime = new Date(
-        appointmentDate.getFullYear(),
-        appointmentDate.getMonth(),
-        appointmentDate.getDate(),
-        hours,
-        minutes
-      );
+      const now = new Date();
       
-      return isBefore(appointmentDateTime, new Date());
+      // Si la fecha es anterior a hoy, está en el pasado
+      if (isBefore(appointmentDate, startOfToday())) {
+        return true;
+      }
+      
+      // Si es hoy, depende del bloque horario
+      if (isAppointmentToday(dateString)) {
+        const currentHour = now.getHours();
+        
+        // Mañana: 8:00 - 12:00, Tarde: 14:00 - 18:00
+        if (timeBlock === 'MORNING' && currentHour >= 12) {
+          return true;
+        }
+        if (timeBlock === 'AFTERNOON' && currentHour >= 18) {
+          return true;
+        }
+      }
+      
+      return false;
     } catch (error) {
       console.error('Error al verificar si la cita es pasada:', error);
       return false;
@@ -191,6 +194,18 @@ function AppointmentListPage() {
     setStatusFilter('');
     setDateFilter('');
     refetch();
+  };
+
+  // Función para obtener el texto del bloque horario
+  const getTimeBlockText = (timeBlock) => {
+    switch (timeBlock) {
+      case 'MORNING':
+        return 'Mañana (8:00 - 12:00)';
+      case 'AFTERNOON':
+        return 'Tarde (14:00 - 18:00)';
+      default:
+        return timeBlock || 'No especificado';
+    }
   };
 
   return (
@@ -278,11 +293,10 @@ function AppointmentListPage() {
             >
               <option value="">Todos los estados</option>
               <option value="SCHEDULED">Programada</option>
-              <option value="CONFIRMED">Confirmada</option>
+              <option value="IN_CONSULTATION">En consulta</option>
               <option value="COMPLETED">Completada</option>
               <option value="CANCELLED">Cancelada</option>
               <option value="NO_SHOW">No se presentó</option>
-              <option value="RESCHEDULED">Reprogramada</option>
             </select>
           </div>
 
@@ -455,7 +469,7 @@ function AppointmentListPage() {
                   : 'bg-white divide-gray-200'
               }`}>
                 {appointmentsData?.results?.map((appointment, index) => {
-                  const isPast = isAppointmentPast(appointment.appointment_date, appointment.start_time);
+                  const isPast = isAppointmentPast(appointment.appointment_date, appointment.time_block);
                   const isToday = isAppointmentToday(appointment.appointment_date);
                   
                   return (
@@ -500,7 +514,7 @@ function AppointmentListPage() {
                         <div className={`text-sm ${
                           theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
                         }`}>
-                          {appointment.start_time || 'Sin hora'}
+                          {getTimeBlockText(appointment.time_block)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

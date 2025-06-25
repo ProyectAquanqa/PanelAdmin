@@ -2,6 +2,26 @@ import apiClient from '../api/apiClient';
 import { API_ROUTES } from '../config/api';
 
 /**
+ * Normaliza los datos de un paciente para asegurar consistencia
+ * @param {Object} patientData - Datos del paciente a normalizar
+ * @returns {Object} Datos del paciente normalizados
+ */
+const normalizePatientData = (patientData) => {
+  // Si no hay datos, devolver objeto vacío
+  if (!patientData) return {};
+  
+  // Copia para no modificar el original
+  const normalizedPatient = { ...patientData };
+  
+  // Asegurar que gender tiene un valor válido
+  if (!normalizedPatient.gender) {
+    normalizedPatient.gender = 'O';
+  }
+  
+  return normalizedPatient;
+};
+
+/**
  * Obtiene la lista de pacientes
  * @param {Object} params - Parámetros para filtrar la lista
  * @returns {Promise} Promise con la respuesta
@@ -9,36 +29,50 @@ import { API_ROUTES } from '../config/api';
 export const getPatients = async (params = {}) => {
   try {
     console.log('🔍 Solicitando pacientes con parámetros:', params);
+    const response = await apiClient.get(API_ROUTES.PATIENTS.BASE, { params });
     
-    // URLs a probar en orden de prioridad para pacientes
-    const urlsToTry = [
-      '/api/users/patients/',
-      '/api/users/patients',
-      '/api/v1/users/patients/',
-      '/api/v1/users/patients'
-    ];
+    console.log('Respuesta cruda del servidor:', response.data);
     
-    console.log('🎯 URLs que vamos a probar:', urlsToTry);
+    // Normalizar respuesta según el formato recibido
+    let normalizedResponse;
     
-    for (const url of urlsToTry) {
-      try {
-        console.log(`🚀 Probando URL: ${url}`);
-        const response = await apiClient.get(url, { params });
-        console.log(`✅ ÉXITO con URL: ${url}`, response.data);
-        return response.data;
-      } catch (error) {
-        console.log(`❌ Falló URL: ${url} - Status: ${error.response?.status}`);
-        if (error.response?.status !== 404) {
-          // Si no es 404, entonces hay otro problema (500, 403, etc.)
-          throw error;
-        }
-        // Si es 404, continúa con la siguiente URL
-      }
+    if (Array.isArray(response.data)) {
+      // Si es un array directo
+      normalizedResponse = {
+        results: response.data.map(normalizePatientData),
+        count: response.data.length
+      };
+    } else if (response.data && response.data.results && Array.isArray(response.data.results)) {
+      // Si tiene estructura de paginación de Django REST
+      normalizedResponse = {
+        results: response.data.results.map(normalizePatientData),
+        count: response.data.count || response.data.results.length,
+        next: response.data.next,
+        previous: response.data.previous
+      };
+    } else if (response.data && response.data.patients && Array.isArray(response.data.patients)) {
+      // Si tiene una propiedad 'patients'
+      normalizedResponse = {
+        results: response.data.patients.map(normalizePatientData),
+        count: response.data.count || response.data.patients.length
+      };
+    } else if (response.data && typeof response.data === 'object') {
+      // Si es un objeto pero no tiene una estructura reconocida
+      normalizedResponse = {
+        results: [normalizePatientData(response.data)],
+        count: 1
+      };
+    } else {
+      // Formato desconocido, devolver array vacío
+      console.warn('Formato de respuesta desconocido:', response.data);
+      normalizedResponse = {
+        results: [],
+        count: 0
+      };
     }
     
-    // Si llegamos aquí, ninguna URL funcionó
-    throw new Error('Ninguna URL de pacientes está disponible. Verifica que el backend esté correctamente configurado.');
-    
+    console.log('✅ Respuesta normalizada:', normalizedResponse);
+    return normalizedResponse;
   } catch (error) {
     console.error('💥 Error al obtener pacientes:', error.response || error);
     throw error;
@@ -53,14 +87,77 @@ export const getPatients = async (params = {}) => {
 export const getPatientById = async (id) => {
   try {
     console.log(`Solicitando paciente con ID: ${id}`);
-    const url = `${API_ROUTES.PATIENTS}/${id}/`;
-    const response = await apiClient.get(url);
-    console.log(`Respuesta del paciente ${id}:`, response.data);
-    return response.data;
+    const response = await apiClient.get(API_ROUTES.PATIENTS.BY_ID(id));
+    
+    // Normalizar datos del paciente
+    const normalizedPatient = normalizePatientData(response.data);
+    
+    return normalizedPatient;
   } catch (error) {
     console.error(`Error al obtener el paciente con ID ${id}:`, error.response || error);
     throw error;
   }
+};
+
+/**
+ * Prepara los datos del paciente para enviar al servidor
+ * @param {Object} patientData - Datos del paciente a preparar
+ * @returns {Object} Datos del paciente preparados para enviar
+ */
+const preparePatientDataForSubmit = (patientData) => {
+  // Copia para no modificar el original
+  const preparedData = { ...patientData };
+  
+  // Asegurar que gender tiene un valor válido
+  if (!preparedData.gender) {
+    preparedData.gender = 'O';
+  }
+  
+  // Mapeo de valores de género si vienen en formato largo
+  if (preparedData.gender === 'MALE') preparedData.gender = 'M';
+  if (preparedData.gender === 'FEMALE') preparedData.gender = 'F';
+  if (preparedData.gender === 'OTHER') preparedData.gender = 'O';
+  
+  // Validar y corregir el tipo de sangre
+  if (preparedData.blood_type) {
+    // Mapeo de valores de tipo de sangre
+    const bloodTypeMap = {
+      'A_POSITIVE': 'A+',
+      'A_NEGATIVE': 'A-',
+      'B_POSITIVE': 'B+',
+      'B_NEGATIVE': 'B-',
+      'AB_POSITIVE': 'AB+',
+      'AB_NEGATIVE': 'AB-',
+      'O_POSITIVE': 'O+',
+      'O_NEGATIVE': 'O-'
+    };
+    
+    // Verificar si el valor ya es válido
+    const validBloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    
+    if (!validBloodTypes.includes(preparedData.blood_type)) {
+      // Si no es válido, intentar mapearlo
+      if (bloodTypeMap[preparedData.blood_type]) {
+        preparedData.blood_type = bloodTypeMap[preparedData.blood_type];
+      } else {
+        // Si no se puede mapear, eliminarlo para evitar errores
+        console.warn(`Tipo de sangre inválido: ${preparedData.blood_type}. Se eliminará este campo.`);
+        delete preparedData.blood_type;
+      }
+    }
+    
+    console.log(`Tipo de sangre final: ${preparedData.blood_type}`);
+  }
+  
+  // Asegurar formato de fecha correcto para birth_date (YYYY-MM-DD)
+  if (preparedData.birth_date) {
+    const date = new Date(preparedData.birth_date);
+    if (!isNaN(date.getTime())) {
+      preparedData.birth_date = date.toISOString().split('T')[0];
+    }
+  }
+  
+  return preparedData;
 };
 
 /**
@@ -71,40 +168,19 @@ export const getPatientById = async (id) => {
 export const createPatient = async (patientData) => {
   try {
     console.log('Creando paciente con datos:', patientData);
+    console.log('Tipo de sangre antes de preparar:', patientData.blood_type);
     
-    // Asegurar que tenemos los campos obligatorios según el modelo de Django
-    const requiredFields = ['email', 'password', 'first_name', 'last_name'];
-    requiredFields.forEach(field => {
-      if (!patientData[field]) {
-        throw new Error(`El campo ${field} es obligatorio`);
-      }
-    });
+    // Preparar datos para enviar
+    const preparedData = preparePatientDataForSubmit(patientData);
+    console.log('Datos preparados para enviar:', preparedData);
+    console.log('Tipo de sangre después de preparar:', preparedData.blood_type);
     
-    // Asegurar que document_type es un ID (número)
-    if (patientData.document_type && typeof patientData.document_type !== 'number') {
-      // Si no es número, intentamos usar el ID por defecto (1 para DNI)
-      patientData.document_type = 1;
-      console.log('⚠️ Usando document_type por defecto (1)');
-    }
+    const response = await apiClient.post(API_ROUTES.PATIENTS.BASE, preparedData);
     
-    // Asegurar formato de fecha correcto para birth_date (YYYY-MM-DD)
-    if (patientData.birth_date) {
-      const date = new Date(patientData.birth_date);
-      if (!isNaN(date.getTime())) {
-        patientData.birth_date = date.toISOString().split('T')[0];
-      }
-    }
+    // Normalizar datos del paciente creado
+    const normalizedPatient = normalizePatientData(response.data);
     
-    // Asegurar que gender tiene un valor válido
-    if (!patientData.gender) {
-      patientData.gender = 'OTHER';
-    }
-    
-    // Preparar datos para el formato que espera Django
-    const url = API_ROUTES.PATIENTS.endsWith('/') ? API_ROUTES.PATIENTS : API_ROUTES.PATIENTS + '/';
-    const response = await apiClient.post(url, patientData);
-    console.log('Paciente creado:', response.data);
-    return response.data;
+    return normalizedPatient;
   } catch (error) {
     console.error('Error al crear paciente:', error.response || error);
     throw error;
@@ -120,10 +196,17 @@ export const createPatient = async (patientData) => {
 export const updatePatient = async (id, patientData) => {
   try {
     console.log(`Actualizando paciente ${id} con datos:`, patientData);
-    const url = `${API_ROUTES.PATIENTS}/${id}/`;
-    const response = await apiClient.put(url, patientData);
-    console.log(`Paciente ${id} actualizado:`, response.data);
-    return response.data;
+    
+    // Preparar datos para enviar
+    const preparedData = preparePatientDataForSubmit(patientData);
+    console.log('Datos preparados para enviar:', preparedData);
+    
+    const response = await apiClient.put(API_ROUTES.PATIENTS.BY_ID(id), preparedData);
+    
+    // Normalizar datos del paciente actualizado
+    const normalizedPatient = normalizePatientData(response.data);
+    
+    return normalizedPatient;
   } catch (error) {
     console.error(`Error al actualizar el paciente con ID ${id}:`, error.response || error);
     throw error;
@@ -138,9 +221,7 @@ export const updatePatient = async (id, patientData) => {
 export const deletePatient = async (id) => {
   try {
     console.log(`Eliminando paciente con ID: ${id}`);
-    const url = `${API_ROUTES.PATIENTS}/${id}/`;
-    const response = await apiClient.delete(url);
-    console.log(`Paciente ${id} eliminado:`, response.data);
+    const response = await apiClient.delete(API_ROUTES.PATIENTS.BY_ID(id));
     return response.data;
   } catch (error) {
     console.error(`Error al eliminar el paciente con ID ${id}:`, error.response || error);

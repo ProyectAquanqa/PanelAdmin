@@ -7,9 +7,11 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   AcademicCapIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 import { useGetDoctors, useDeleteDoctor } from '../../hooks/useDoctors';
+import { useGetSpecialties } from '../../hooks/useSpecialties';
 import DoctorFormModal from '../../components/doctors/DoctorFormModal';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
@@ -39,14 +41,20 @@ export default function DoctorListPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [isSearching, setIsSearching] = useState(false);
+  const [filterType, setFilterType] = useState('ALL'); // ALL, PRIMARY, SPECIALIST
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  
+  // Obtener especialidades para mostrar nombres en lugar de IDs
+  const { data: specialtiesData } = useGetSpecialties();
+  const specialties = specialtiesData?.results || [];
 
   useEffect(() => {
     setPage(1);
     setIsSearching(true);
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, filterType]);
 
+  // Determinar qué hook usar según el filtro
   const { 
     data, 
     isLoading, 
@@ -54,6 +62,7 @@ export default function DoctorListPage() {
     error 
   } = useGetDoctors({ 
     search: debouncedSearchTerm,
+    doctor_type: filterType !== 'ALL' ? filterType : undefined,
     page,
     page_size: pageSize 
   });
@@ -85,6 +94,59 @@ export default function DoctorListPage() {
         toast.error('Error al eliminar el doctor');
       }
     }
+  };
+
+  // Renderizar las especialidades de un doctor
+  const renderSpecialties = (doctor) => {
+    if (!doctor.specialties || doctor.specialties.length === 0) {
+      return <span className="text-gray-400 text-xs">Sin especialidades</span>;
+    }
+
+    // Determinar las especialidades según el formato de datos
+    const doctorSpecialties = doctor.specialties.map(spec => {
+      // Si es un objeto con specialty anidado
+      if (typeof spec === 'object' && spec.specialty) {
+        return {
+          id: spec.specialty.id,
+          name: spec.specialty.name
+        };
+      }
+      // Si es un objeto con id directo
+      if (typeof spec === 'object' && spec.id) {
+        return {
+          id: spec.id,
+          name: spec.name
+        };
+      }
+      // Si es un número, buscar en la lista de especialidades
+      if (typeof spec === 'number') {
+        const foundSpecialty = specialties.find(s => s.id === spec);
+        return {
+          id: spec,
+          name: foundSpecialty ? foundSpecialty.name : `ID: ${spec}`
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    // Mostrar hasta 2 especialidades y un contador para el resto
+    return (
+      <div className="flex flex-wrap gap-1">
+        {doctorSpecialties.slice(0, 2).map((spec, index) => (
+          <span
+            key={`${doctor.id}-spec-${index}`}
+            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+          >
+            {spec.name}
+          </span>
+        ))}
+        {doctorSpecialties.length > 2 && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            +{doctorSpecialties.length - 2}
+          </span>
+        )}
+      </div>
+    );
   };
 
   const renderStatus = (status) => {
@@ -160,16 +222,15 @@ export default function DoctorListPage() {
   let totalDoctors = 0;
   
   if (data) {
-    if (Array.isArray(data)) {
-      doctors = data;
-      totalDoctors = data.length;
-    } else if (data.results && Array.isArray(data.results)) {
-      doctors = data.results;
-      totalDoctors = data.count || doctors.length;
-    } else if (data.doctors && Array.isArray(data.doctors)) {
-      doctors = data.doctors;
-      totalDoctors = data.count || doctors.length;
-    }
+    // Ahora el servicio siempre devuelve un objeto con results y count
+    doctors = data.results || [];
+    totalDoctors = data.count || doctors.length;
+    
+    console.log('Datos procesados:', { 
+      totalDoctors, 
+      doctorsLength: doctors.length,
+      firstDoctor: doctors.length > 0 ? doctors[0] : null 
+    });
   }
   
   const totalPages = Math.max(1, Math.ceil(totalDoctors / pageSize));
@@ -237,47 +298,62 @@ export default function DoctorListPage() {
             : 'bg-white border-gray-200'
         } shadow-sm border rounded-xl p-6`}
       >
-        <div className="flex-1 max-w-lg">
-          <label htmlFor="search" className="sr-only">Buscar doctores</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className={`h-5 w-5 ${
-                theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'
-              }`} />
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex-1 max-w-lg">
+            <label htmlFor="search" className="sr-only">Buscar doctores</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className={`h-5 w-5 ${
+                  theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'
+                }`} />
+              </div>
+              <input
+                type="text"
+                name="search"
+                id="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                  theme === 'dark' 
+                    ? 'bg-neutral-700 border-neutral-600 text-white placeholder-neutral-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                }`}
+                placeholder="Buscar por nombre, email o CMP..."
+              />
             </div>
-            <input
-              type="text"
-              name="search"
-              id="search"
-              className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
-                theme === 'dark' 
-                  ? 'bg-neutral-700 border-neutral-600 text-white placeholder-neutral-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="Buscar por nombre, especialidad o CMP..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
           </div>
-          <AnimatePresence>
-            {(isLoading || isSearching) && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className={`mt-2 text-sm ${
-                  theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
-                } flex items-center`}
-              >
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Buscando...
-              </motion.div>
-            )}
-          </AnimatePresence>
+          
+          {/* Filtro por tipo de doctor */}
+          <div className="flex-shrink-0">
+            <label htmlFor="doctor-type" className="sr-only">Tipo de doctor</label>
+            <select
+              id="doctor-type"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className={`block w-full py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                theme === 'dark' 
+                  ? 'bg-neutral-700 border-neutral-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
+            >
+              <option value="ALL">Todos los doctores</option>
+              <option value="PRIMARY">Médicos principales</option>
+              <option value="SPECIALIST">Especialistas</option>
+            </select>
+          </div>
         </div>
+        
+        {isSearching && (
+          <div className={`mt-4 text-sm ${
+            theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+          } flex items-center`}>
+            <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Buscando doctores...
+          </div>
+        )}
       </motion.div>
 
       {/* Tabla */}
@@ -307,6 +383,9 @@ export default function DoctorListPage() {
                 <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${
                   theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
                 }`}>CMP</th>
+                <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${
+                  theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+                }`}>Tipo</th>
                 <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${
                   theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
                 }`}>Estado</th>
@@ -382,57 +461,22 @@ export default function DoctorListPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {doctor.specialties && doctor.specialties.length > 0 ? (
-                          doctor.specialties.slice(0, 2).map((specialty, idx) => (
-                            <span
-                              key={idx}
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                theme === 'dark'
-                                  ? 'bg-primary-900/20 text-primary-400 border border-primary-500/20'
-                                  : 'bg-primary-100 text-primary-800 border border-primary-200'
-                              }`}
-                            >
-                              <AcademicCapIcon className="h-3 w-3 mr-1" />
-                              {specialty.specialty?.name || specialty.name}
-                            </span>
-                          ))
-                        ) : (
-                          <span className={`text-sm italic ${
-                            theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
-                          }`}>
-                            Sin especialidades
-                          </span>
-                        )}
-                        {doctor.specialties && doctor.specialties.length > 2 && (
-                          <span className={`text-xs ${
-                            theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
-                          }`}>
-                            +{doctor.specialties.length - 2} más
-                          </span>
-                        )}
-                      </div>
+                      {renderSpecialties(doctor)}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className={`text-sm flex items-center ${
-                          theme === 'dark' ? 'text-white' : 'text-gray-900'
-                        }`}>
-                          <EnvelopeIcon className={`h-4 w-4 mr-2 ${
-                            theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'
-                          }`} />
-                          {doctor.user?.email || doctor.email}
+                      <div className="flex flex-col">
+                        <div className="flex items-center">
+                          <EnvelopeIcon className="h-4 w-4 text-gray-400 mr-1.5" />
+                          <span className={`${theme === 'dark' ? 'text-neutral-300' : 'text-gray-600'} text-sm`}>
+                            {doctor.email || doctor.user?.email || '-'}
+                          </span>
                         </div>
-                        {doctor.phone && (
-                          <div className={`text-sm flex items-center ${
-                            theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
-                          }`}>
-                            <PhoneIcon className={`h-4 w-4 mr-2 ${
-                              theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
-                            }`} />
-                            {doctor.phone}
-                          </div>
-                        )}
+                        <div className="flex items-center mt-1">
+                          <PhoneIcon className="h-4 w-4 text-gray-400 mr-1.5" />
+                          <span className={`${theme === 'dark' ? 'text-neutral-300' : 'text-gray-600'} text-sm`}>
+                            {doctor.phone || '-'}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -446,6 +490,25 @@ export default function DoctorListPage() {
                           theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
                         }`}>
                           Consultorio: {doctor.consultation_room}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        doctor.doctor_type === 'PRIMARY' 
+                          ? theme === 'dark' 
+                            ? 'bg-green-900/20 text-green-400 border border-green-500/20' 
+                            : 'bg-green-100 text-green-800'
+                          : theme === 'dark' 
+                            ? 'bg-blue-900/20 text-blue-400 border border-blue-500/20' 
+                            : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {doctor.doctor_type === 'PRIMARY' ? 'Médico Principal' : 'Especialista'}
+                      </span>
+                      {doctor.can_refer && (
+                        <div className="mt-1 flex items-center">
+                          <UserGroupIcon className="h-3.5 w-3.5 text-gray-400 mr-1" />
+                          <span className="text-xs text-gray-500">Puede derivar</span>
                         </div>
                       )}
                     </td>

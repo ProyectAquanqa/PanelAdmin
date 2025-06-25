@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-// Configuración corregida - NO incluir /api en baseURL cuando usamos proxy
+// Configuración para usar el proxy de Vite que apunta a Django en el puerto 8000
 const API_BASE_URL = '';  // Vacío para usar el proxy de Vite
 
-console.log('API Base URL configurado:', API_BASE_URL || 'Usando proxy de Vite');
+console.log('API Base URL configurado:', API_BASE_URL || 'Usando proxy de Vite (Django Admin API en puerto 8000)');
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -20,8 +20,7 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     if (token) {
-      // Probar diferentes formatos de token de autorización
-      // Django REST normalmente espera: Bearer <token> o Token <token>
+      // Django REST con Simple JWT espera: Bearer <token>
       config.headers.Authorization = `Bearer ${token}`;
     }
     
@@ -67,41 +66,17 @@ apiClient.interceptors.response.use(
           return Promise.reject(error);
         }
         
-        // URLs a probar para refresh token
-        const urlsToTry = [
-          '/api/auth/refresh-token/',
-          '/api/auth/token/refresh/',
-          '/api/authentication/refresh-token/'
-        ];
+        // Usar la ruta específica de Django para refresh token
+        const refreshUrl = '/api/auth/refresh-token/';
+        console.log(`🔄 Intentando refrescar token con: ${refreshUrl}`);
         
-        let newAccessToken = null;
+        // Realizar solicitud para refrescar el token sin usar el interceptor (para evitar loop)
+        const response = await axios.post(refreshUrl, {
+          refresh: refreshToken
+        });
         
-        for (const url of urlsToTry) {
-          try {
-            // Realizar solicitud para refrescar el token sin usar el interceptor (para evitar loop)
-            const response = await axios.post(url, {
-              refresh: refreshToken
-            });
-            
-            // Determinar dónde está el nuevo token
-            if (response.data.access) {
-              newAccessToken = response.data.access;
-            } else if (response.data.token) {
-              newAccessToken = response.data.token;
-            } else if (response.data.accessToken) {
-              newAccessToken = response.data.accessToken;
-            }
-            
-            if (newAccessToken) {
-              break;
-            }
-          } catch (refreshError) {
-            if (refreshError.response?.status !== 404) {
-              throw refreshError;
-            }
-            // Si es 404, continuar con la siguiente URL
-          }
-        }
+        // Obtener el nuevo token de acceso
+        const newAccessToken = response.data.access;
         
         if (!newAccessToken) {
           throw new Error('No se pudo obtener un nuevo token de acceso');
@@ -110,7 +85,7 @@ apiClient.interceptors.response.use(
         // Guardar el nuevo token
         localStorage.setItem('authToken', newAccessToken);
         
-        // Actualizar el header de la petición original con diferentes formatos
+        // Actualizar el header de la petición original
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         
         return axios(originalRequest);

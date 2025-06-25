@@ -10,35 +10,13 @@ export const login = async (credentials) => {
   try {
     console.log('🔑 Intentando iniciar sesión con:', credentials.email);
     
-    // URLs a probar en orden de prioridad para login
-    const urlsToTry = [
-      '/api/auth/login/',
-      '/api/auth/token/',
-      '/api/authentication/login/',
-      '/api/users/login/'
-    ];
+    // Usar la ruta específica de Django para login
+    const loginUrl = API_ROUTES.AUTH.LOGIN;
+    console.log(`🚀 Usando URL de login de Django: ${loginUrl}`);
     
-    console.log('🎯 URLs de login que vamos a probar:', urlsToTry);
-    
-    for (const url of urlsToTry) {
-      try {
-        console.log(`🚀 Probando URL de login: ${url}`);
-        const response = await apiClient.post(url, credentials);
-        console.log(`✅ ÉXITO con URL: ${url}`, response.data);
-        return response.data;
-      } catch (error) {
-        console.log(`❌ Falló URL: ${url} - Status: ${error.response?.status}`);
-        if (error.response?.status !== 404) {
-          // Si no es 404, entonces hay otro problema (500, 403, etc.)
-          throw error;
-        }
-        // Si es 404, continúa con la siguiente URL
-      }
-    }
-    
-    // Si llegamos aquí, ninguna URL funcionó
-    throw new Error('No se pudo encontrar el endpoint de login. Verifica que el backend esté correctamente configurado.');
-    
+    const response = await apiClient.post(loginUrl, credentials);
+    console.log(`✅ Login exitoso:`, response.data);
+    return response.data;
   } catch (error) {
     console.error('Error al iniciar sesión:', error.response || error);
     throw error;
@@ -51,26 +29,12 @@ export const login = async (credentials) => {
  */
 export const logout = async () => {
   try {
-    // URLs a probar para logout
-    const urlsToTry = [
-      '/api/auth/logout/',
-      '/api/authentication/logout/',
-      '/api/users/logout/'
-    ];
+    // Usar la ruta específica de Django para logout
+    const logoutUrl = API_ROUTES.AUTH.LOGOUT;
+    console.log(`🚀 Usando URL de logout de Django: ${logoutUrl}`);
     
-    for (const url of urlsToTry) {
-      try {
-        const response = await apiClient.post(url);
-        return response.data;
-      } catch (error) {
-        if (error.response?.status !== 404) {
-          throw error;
-        }
-      }
-    }
-    
-    // Si no hay endpoint de logout, simplemente retornamos
-    return { success: true };
+    const response = await apiClient.post(logoutUrl);
+    return response.data;
   } catch (error) {
     console.error('Error al cerrar sesión:', error);
     // Incluso si hay un error, debemos limpiar el estado local
@@ -85,27 +49,14 @@ export const logout = async () => {
  */
 export const refreshToken = async (refreshToken) => {
   try {
-    // URLs a probar para refresh token
-    const urlsToTry = [
-      '/api/auth/refresh-token/',
-      '/api/auth/token/refresh/',
-      '/api/authentication/refresh-token/'
-    ];
+    // Usar la ruta específica de Django para refresh token
+    const refreshUrl = API_ROUTES.AUTH.REFRESH;
+    console.log(`🚀 Usando URL de refresh token de Django: ${refreshUrl}`);
     
-    for (const url of urlsToTry) {
-      try {
-        const response = await apiClient.post(url, {
-          refresh: refreshToken
-        });
-        return response.data;
-      } catch (error) {
-        if (error.response?.status !== 404) {
-          throw error;
-        }
-      }
-    }
-    
-    throw new Error('No se pudo encontrar el endpoint de refresh token');
+    const response = await apiClient.post(refreshUrl, {
+      refresh: refreshToken
+    });
+    return response.data;
   } catch (error) {
     console.error('Error al actualizar el token:', error);
     throw error;
@@ -118,29 +69,13 @@ export const refreshToken = async (refreshToken) => {
  */
 export const getProfile = async () => {
   try {
-    // URLs a probar para obtener el perfil
-    const urlsToTry = [
-      '/api/auth/profile/',
-      '/api/auth/me/',
-      '/api/users/me/',
-      '/api/authentication/profile/'
-    ];
+    // Usar la ruta específica de Django para perfil
+    const profileUrl = API_ROUTES.AUTH.PROFILE;
+    console.log(`🚀 Usando URL de perfil de Django: ${profileUrl}`);
     
-    for (const url of urlsToTry) {
-      try {
-        console.log(`🚀 Probando URL de perfil: ${url}`);
-        const response = await apiClient.get(url);
-        console.log(`✅ ÉXITO con URL de perfil: ${url}`, response.data);
-        return response.data;
-      } catch (error) {
-        console.log(`❌ Falló URL de perfil: ${url} - Status: ${error.response?.status}`);
-        if (error.response?.status !== 404) {
-          throw error;
-        }
-      }
-    }
-    
-    throw new Error('No se pudo encontrar el endpoint de perfil');
+    const response = await apiClient.get(profileUrl);
+    console.log(`✅ Perfil obtenido:`, response.data);
+    return response.data;
   } catch (error) {
     console.error('Error al obtener el perfil:', error);
     throw error;

@@ -9,36 +9,9 @@ import { API_ROUTES } from '../config/api';
 export const getAppointments = async (params = {}) => {
   try {
     console.log('🔍 Solicitando citas con parámetros:', params);
-    
-    // URLs a probar en orden de prioridad para citas
-    const urlsToTry = [
-      '/api/appointments/api/appointments/',
-      '/api/appointments/api/appointments',
-      '/api/appointments/api/',
-      '/api/appointments/appointments/'
-    ];
-    
-    console.log('🎯 URLs que vamos a probar:', urlsToTry);
-    
-    for (const url of urlsToTry) {
-      try {
-        console.log(`🚀 Probando URL: ${url}`);
-        const response = await apiClient.get(url, { params });
-        console.log(`✅ ÉXITO con URL: ${url}`, response.data);
-        return response.data;
-      } catch (error) {
-        console.log(`❌ Falló URL: ${url} - Status: ${error.response?.status}`);
-        if (error.response?.status !== 404) {
-          // Si no es 404, entonces hay otro problema (500, 403, etc.)
-          throw error;
-        }
-        // Si es 404, continúa con la siguiente URL
-      }
-    }
-    
-    // Si llegamos aquí, ninguna URL funcionó
-    throw new Error('Ninguna URL de citas está disponible. Verifica que el backend esté correctamente configurado.');
-    
+    const response = await apiClient.get(API_ROUTES.APPOINTMENTS, { params });
+    console.log('✅ Citas obtenidas:', response.data);
+    return response.data;
   } catch (error) {
     console.error('💥 Error al obtener citas:', error.response || error);
     throw error;
@@ -51,7 +24,7 @@ export const getAppointments = async (params = {}) => {
  */
 export const getTodayAppointments = async () => {
   try {
-    const url = `${API_ROUTES.APPOINTMENTS}/today/`;
+    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.TODAY;
     const response = await apiClient.get(url);
     console.log('Citas de hoy:', response.data);
     return response.data;
@@ -67,7 +40,7 @@ export const getTodayAppointments = async () => {
  */
 export const getUpcomingAppointments = async () => {
   try {
-    const url = `${API_ROUTES.APPOINTMENTS}/upcoming/`;
+    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.UPCOMING;
     const response = await apiClient.get(url);
     console.log('Citas próximas:', response.data);
     return response.data;
@@ -85,7 +58,7 @@ export const getUpcomingAppointments = async () => {
 export const getAppointmentById = async (id) => {
   try {
     console.log(`Solicitando cita con ID: ${id}`);
-    const url = `${API_ROUTES.APPOINTMENTS}/${id}/`;
+    const url = `${API_ROUTES.APPOINTMENTS}${id}/`;
     const response = await apiClient.get(url);
     console.log(`Respuesta de la cita ${id}:`, response.data);
     return response.data;
@@ -110,53 +83,43 @@ export const getAvailableSlots = async (params) => {
       throw new Error('Se requiere doctor_id y date para buscar horarios disponibles');
     }
     
-    // URLs a probar en orden de prioridad para obtener horarios disponibles
-    const urlsToTry = [
-      '/api/appointments/api/available-slots/',
-      '/api/appointments/available-slots/',
-      '/api/appointments/api/availability/'
-    ];
+    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.AVAILABLE_TIME_BLOCKS;
     
-    console.log('🎯 URLs que vamos a probar para horarios disponibles:', urlsToTry);
-    
-    let lastError = null;
-    
-    for (const url of urlsToTry) {
-      try {
-        console.log(`🚀 Probando URL para horarios disponibles: ${url}`);
-        
-        // Intentar primero con POST
-        try {
-          const response = await apiClient.post(url, params);
-          console.log(`✅ Horarios disponibles obtenidos con POST a ${url}:`, response.data);
-          return response.data;
-        } catch (postError) {
-          console.log(`❌ Falló POST a ${url}, intentando con GET`);
-          
-          // Si falla POST, intentar con GET y parámetros de consulta
-          const response = await apiClient.get(url, { params });
-          console.log(`✅ Horarios disponibles obtenidos con GET a ${url}:`, response.data);
-          return response.data;
-        }
-      } catch (error) {
-        lastError = error;
-        console.log(`❌ Falló URL: ${url} - Status: ${error.response?.status}`);
-        console.log('Error detallado:', error.response?.data || error.message);
-        
-        if (error.response?.status !== 404) {
-          // Si no es 404, entonces hay otro problema (500, 403, etc.)
-          throw error;
-        }
-        // Si es 404, continúa con la siguiente URL
-      }
+    try {
+      // Intentar con GET y parámetros de consulta
+      const response = await apiClient.get(url, { params });
+      console.log(`✅ Horarios disponibles obtenidos:`, response.data);
+      
+      // Adaptar la respuesta al formato esperado por el componente
+      const result = {
+        doctor_id: params.doctor_id,
+        date: params.date,
+        available_blocks: response.data?.time_blocks || response.data?.available_blocks || [],
+        busy_blocks: response.data?.busy_blocks || []
+      };
+      
+      return result;
+    } catch (error) {
+      console.log(`❌ Error al obtener horarios disponibles:`, error.response?.status);
+      
+      // En caso de error, devolver un objeto con valores por defecto
+      return {
+        doctor_id: params.doctor_id,
+        date: params.date,
+        available_blocks: ['MORNING', 'AFTERNOON'],
+        busy_blocks: []
+      };
     }
-    
-    // Si llegamos aquí, ninguna URL funcionó
-    throw lastError || new Error('No se pudieron obtener los horarios disponibles. Verifica la configuración del backend.');
     
   } catch (error) {
     console.error('💥 Error al obtener horarios disponibles:', error.response?.data || error);
-    throw error;
+    // En caso de error, devolver un objeto con valores por defecto
+    return {
+      doctor_id: params.doctor_id,
+      date: params.date,
+      available_blocks: ['MORNING', 'AFTERNOON'],
+      busy_blocks: []
+    };
   }
 };
 
@@ -169,59 +132,42 @@ export const getDoctorsBySpecialty = async (specialtyId) => {
   try {
     console.log(`Solicitando doctores para especialidad ID: ${specialtyId}`);
     
-    // URLs a probar en orden de prioridad para obtener doctores por especialidad
-    const urlsToTry = [
-      '/api/appointments/api/doctors-by-specialty/',
-      '/api/doctors/api/by-specialty/',
-      '/api/appointments/doctors-by-specialty/'
-    ];
+    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.DOCTORS_BY_SPECIALTY;
     
-    console.log('🎯 URLs que vamos a probar para doctores por especialidad:', urlsToTry);
-    
-    for (const url of urlsToTry) {
-      try {
-        console.log(`🚀 Probando URL: ${url}`);
-        const response = await apiClient.get(url, { 
-          params: { specialty_id: specialtyId } 
-        });
-        
-        console.log(`✅ ÉXITO con URL: ${url}`, response.data);
-        
-        // Si la respuesta tiene un formato específico con doctors, devolver solo los doctores
-        if (response.data && response.data.doctors) {
-          console.log('Doctores encontrados:', response.data.doctors.length);
-          return response.data.doctors;
-        }
-        
-        // Si la respuesta es un array directo, devolverlo
-        if (Array.isArray(response.data)) {
-          console.log('Doctores encontrados (array):', response.data.length);
-          return response.data;
-        }
-        
-        // Si la respuesta tiene results, devolver results
-        if (response.data && response.data.results) {
-          console.log('Doctores encontrados (results):', response.data.results.length);
-          return response.data.results;
-        }
-        
-        // Por defecto, devolver la respuesta completa
-        return response.data;
-      } catch (error) {
-        console.log(`❌ Falló URL: ${url} - Status: ${error.response?.status}`);
-        if (error.response?.status !== 404) {
-          // Si no es 404, entonces hay otro problema (500, 403, etc.)
-          throw error;
-        }
-        // Si es 404, continúa con la siguiente URL
+    try {
+      const response = await apiClient.get(url, { 
+        params: { specialty_id: specialtyId } 
+      });
+      
+      console.log(`✅ Doctores obtenidos:`, response.data);
+      
+      // Si la respuesta tiene un formato específico con doctors, devolver solo los doctores
+      if (response.data && response.data.doctors) {
+        console.log('Doctores encontrados:', response.data.doctors.length);
+        return response.data.doctors;
       }
+      
+      // Si la respuesta es un array directo, devolverlo
+      if (Array.isArray(response.data)) {
+        console.log('Doctores encontrados (array):', response.data.length);
+        return response.data;
+      }
+      
+      // Si la respuesta tiene results, devolver results
+      if (response.data && response.data.results) {
+        console.log('Doctores encontrados (results):', response.data.results.length);
+        return response.data.results;
+      }
+      
+      // Por defecto, devolver la respuesta completa
+      return response.data;
+    } catch (error) {
+      console.log(`❌ Error al obtener doctores:`, error.response?.status);
+      return [];
     }
-    
-    // Si llegamos aquí, ninguna URL funcionó
-    throw new Error('No se pudo obtener la lista de doctores por especialidad. Verifica la configuración del backend.');
   } catch (error) {
     console.error('Error al obtener doctores por especialidad:', error.response || error);
-    throw error;
+    return [];
   }
 };
 
@@ -245,66 +191,25 @@ export const createAppointment = async (appointmentData) => {
     }
     
     // Asegurar que los IDs sean números
-    appointmentData.patient = Number(appointmentData.patient);
-    appointmentData.doctor = Number(appointmentData.doctor);
-    appointmentData.specialty = Number(appointmentData.specialty);
+    const data = {
+      ...appointmentData,
+      patient: Number(appointmentData.patient),
+      doctor: Number(appointmentData.doctor),
+      specialty: Number(appointmentData.specialty),
+    };
     
-    // Asegurar el formato correcto de la fecha y hora
-    if (appointmentData.appointment_date && typeof appointmentData.appointment_date === 'string') {
-      // Si la fecha está en formato DD/MM/YYYY, convertir a YYYY-MM-DD
-      if (appointmentData.appointment_date.includes('/')) {
-        const parts = appointmentData.appointment_date.split('/');
-        if (parts.length === 3) {
-          appointmentData.appointment_date = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-      }
-    }
-    
-    // URLs a probar en orden de prioridad para crear citas
-    const urlsToTry = [
-      '/api/appointments/api/appointments/',
-      '/api/appointments/api/appointments',
-      '/api/appointments/appointments/',
-      '/api/appointments/api/'
-    ];
-    
-    console.log('🎯 URLs que vamos a probar para crear cita:', urlsToTry);
-    
-    let lastError = null;
-    
-    for (const url of urlsToTry) {
-      try {
-        console.log(`🚀 Probando URL para crear cita: ${url}`);
-        console.log('📦 Datos a enviar:', JSON.stringify(appointmentData, null, 2));
-        
-        const response = await apiClient.post(url, appointmentData);
-        console.log(`✅ Cita creada exitosamente con URL: ${url}`, response.data);
-        return response.data;
-      } catch (error) {
-        lastError = error;
-        console.log(`❌ Falló URL: ${url} - Status: ${error.response?.status}`);
-        console.log('Error detallado:', error.response?.data || error.message);
-        
-        if (error.response?.status !== 404) {
-          // Si no es 404, entonces hay otro problema (500, 403, etc.)
-          throw error;
-        }
-        // Si es 404, continúa con la siguiente URL
-      }
-    }
-    
-    // Si llegamos aquí, ninguna URL funcionó
-    throw lastError || new Error('No se pudo crear la cita. Verifica que el backend esté correctamente configurado.');
-    
+    const response = await apiClient.post(API_ROUTES.APPOINTMENTS, data);
+    console.log(`✅ Cita creada exitosamente:`, response.data);
+    return response.data;
   } catch (error) {
-    console.error('💥 Error al crear cita:', error.response?.data || error);
+    console.error('Error al crear cita:', error.response?.data || error);
     throw error;
   }
 };
 
 /**
  * Actualiza una cita existente
- * @param {number} id - ID de la cita
+ * @param {number} id - ID de la cita a actualizar
  * @param {Object} appointmentData - Datos actualizados de la cita
  * @returns {Promise} Promise con la respuesta
  */
@@ -312,42 +217,39 @@ export const updateAppointment = async (id, appointmentData) => {
   try {
     console.log(`Actualizando cita ${id} con datos:`, appointmentData);
     
-    // Asegurar el formato correcto de la fecha y hora
-    if (appointmentData.appointment_date && typeof appointmentData.appointment_date === 'string') {
-      // Si la fecha está en formato DD/MM/YYYY, convertir a YYYY-MM-DD
-      if (appointmentData.appointment_date.includes('/')) {
-        const parts = appointmentData.appointment_date.split('/');
-        if (parts.length === 3) {
-          appointmentData.appointment_date = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-      }
-    }
+    // Asegurar que los IDs sean números
+    const data = {
+      ...appointmentData,
+      patient: Number(appointmentData.patient),
+      doctor: Number(appointmentData.doctor),
+      specialty: Number(appointmentData.specialty),
+    };
     
-    const url = `${API_ROUTES.APPOINTMENTS}/${id}/`;
-    const response = await apiClient.put(url, appointmentData);
-    console.log(`Cita ${id} actualizada:`, response.data);
+    const url = `${API_ROUTES.APPOINTMENTS}${id}/`;
+    const response = await apiClient.put(url, data);
+    console.log(`Cita ${id} actualizada exitosamente:`, response.data);
     return response.data;
   } catch (error) {
-    console.error(`Error al actualizar la cita con ID ${id}:`, error.response || error);
+    console.error(`Error al actualizar cita ${id}:`, error.response || error);
     throw error;
   }
 };
 
 /**
  * Cancela una cita
- * @param {number} id - ID de la cita
- * @param {Object} cancelData - Datos para la cancelación (razón, etc.)
+ * @param {number} id - ID de la cita a cancelar
+ * @param {Object} cancelData - Datos para la cancelación
  * @returns {Promise} Promise con la respuesta
  */
 export const cancelAppointment = async (id, cancelData = {}) => {
   try {
-    console.log(`Cancelando cita con ID: ${id}`);
-    const url = `/api/appointments/api/${id}/cancel/`;
+    console.log(`Cancelando cita ${id} con datos:`, cancelData);
+    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.CANCEL(id);
     const response = await apiClient.post(url, cancelData);
-    console.log(`Cita ${id} cancelada:`, response.data);
+    console.log(`Cita ${id} cancelada exitosamente:`, response.data);
     return response.data;
   } catch (error) {
-    console.error(`Error al cancelar la cita con ID ${id}:`, error.response || error);
+    console.error(`Error al cancelar cita ${id}:`, error.response || error);
     throw error;
   }
 };
@@ -391,12 +293,12 @@ export const rescheduleAppointment = async (id, rescheduleData) => {
 export const completeAppointment = async (id) => {
   try {
     console.log(`Marcando cita ${id} como completada`);
-    const url = `/api/appointments/api/${id}/complete/`;
+    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.COMPLETE(id);
     const response = await apiClient.post(url);
-    console.log(`Cita ${id} completada:`, response.data);
+    console.log(`Cita ${id} marcada como completada:`, response.data);
     return response.data;
   } catch (error) {
-    console.error(`Error al marcar como completada la cita con ID ${id}:`, error.response || error);
+    console.error(`Error al marcar cita ${id} como completada:`, error.response || error);
     throw error;
   }
 };
@@ -409,12 +311,12 @@ export const completeAppointment = async (id) => {
 export const markNoShow = async (id) => {
   try {
     console.log(`Marcando cita ${id} como "no se presentó"`);
-    const url = `/api/appointments/api/${id}/no-show/`;
+    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.NO_SHOW(id);
     const response = await apiClient.post(url);
     console.log(`Cita ${id} marcada como "no se presentó":`, response.data);
     return response.data;
   } catch (error) {
-    console.error(`Error al marcar como "no se presentó" la cita con ID ${id}:`, error.response || error);
+    console.error(`Error al marcar cita ${id} como "no se presentó":`, error.response || error);
     throw error;
   }
 }; 

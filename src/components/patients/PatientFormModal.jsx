@@ -24,8 +24,7 @@ const patientSchema = z.object({
   email: z.string().email('Email inválido').toLowerCase(),
   password: z.string().min(8, 'Mínimo 8 caracteres').optional(),
   document_number: z.string().min(5, 'Mínimo 5 caracteres').max(20, 'Máximo 20 caracteres'),
-  document_type: z.number().optional().default(1),
-  gender: z.string().default('OTHER'),
+  gender: z.string().default('O'),
   phone: z.string().min(9, 'Teléfono inválido').optional().or(z.literal('')),
   address: z.string().max(200, 'Máximo 200 caracteres').optional().or(z.literal('')),
   second_last_name: z.string().max(50, 'Máximo 50 caracteres').optional().or(z.literal('')),
@@ -35,21 +34,21 @@ const patientSchema = z.object({
 
 // Lista de tipos de sangre
 const BLOOD_TYPES = [
-  { id: 'A_POSITIVE', name: 'A+' },
-  { id: 'A_NEGATIVE', name: 'A-' },
-  { id: 'B_POSITIVE', name: 'B+' },
-  { id: 'B_NEGATIVE', name: 'B-' },
-  { id: 'AB_POSITIVE', name: 'AB+' },
-  { id: 'AB_NEGATIVE', name: 'AB-' },
-  { id: 'O_POSITIVE', name: 'O+' },
-  { id: 'O_NEGATIVE', name: 'O-' },
+  { id: 'A+', name: 'A+' },
+  { id: 'A-', name: 'A-' },
+  { id: 'B+', name: 'B+' },
+  { id: 'B-', name: 'B-' },
+  { id: 'AB+', name: 'AB+' },
+  { id: 'AB-', name: 'AB-' },
+  { id: 'O+', name: 'O+' },
+  { id: 'O-', name: 'O-' },
 ];
 
 // Lista de géneros
 const GENDER_OPTIONS = [
-  { id: 'MALE', name: 'Masculino' },
-  { id: 'FEMALE', name: 'Femenino' },
-  { id: 'OTHER', name: 'Otro' },
+  { id: 'M', name: 'Masculino' },
+  { id: 'F', name: 'Femenino' },
+  { id: 'O', name: 'Otro' },
 ];
 
 function PatientFormModal({ isOpen, onClose, patient = null }) {
@@ -120,8 +119,7 @@ function PatientFormModal({ isOpen, onClose, patient = null }) {
       email: '',
       password: '',
       document_number: '',
-      document_type: 1,
-      gender: 'OTHER',
+      gender: 'O',
       phone: '',
       address: '',
       second_last_name: '',
@@ -150,8 +148,7 @@ function PatientFormModal({ isOpen, onClose, patient = null }) {
       setValue('last_name', patient.last_name || '');
       setValue('email', patient.user?.email || patient.email || '');
       setValue('document_number', patient.document_number || '');
-      setValue('document_type', patient.document_type?.id || 1);
-      setValue('gender', patient.gender || 'OTHER');
+      setValue('gender', patient.gender || 'O');
       setValue('phone', patient.phone || '');
       setValue('address', patient.address || '');
       setValue('second_last_name', patient.second_last_name || '');
@@ -186,15 +183,12 @@ function PatientFormModal({ isOpen, onClose, patient = null }) {
         ...data,
       };
 
+      console.log('Datos del formulario:', data);
+      console.log('Tipo de sangre seleccionado:', data.blood_type);
+
       // Asegurar campos requeridos por el backend
       if (!patientData.gender) {
-        patientData.gender = 'OTHER';
-      }
-
-      if (!patientData.document_type || patientData.document_type === '') {
-        patientData.document_type = 1;
-      } else if (typeof patientData.document_type === 'string') {
-        patientData.document_type = parseInt(patientData.document_type) || 1;
+        patientData.gender = 'O';
       }
 
       if (!patientData.document_number) {
@@ -218,6 +212,7 @@ function PatientFormModal({ isOpen, onClose, patient = null }) {
       if (!patientData.blood_type || patientData.blood_type.trim() === '') delete patientData.blood_type;
 
       console.log('📤 Datos del paciente ANTES de enviar:', patientData);
+      console.log('Tipo de sangre a enviar:', patientData.blood_type);
       
       if (isEditing) {
         // Para edición, no enviar password si está vacío
@@ -496,9 +491,6 @@ function PatientFormModal({ isOpen, onClose, patient = null }) {
                       )}
                     </div>
 
-                    {/* Campo oculto para document_type */}
-                    <input type="hidden" {...register('document_type')} value="1" />
-
                     <div>
                       <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">
                         Fecha de Nacimiento
@@ -555,6 +547,9 @@ function PatientFormModal({ isOpen, onClose, patient = null }) {
                           id="blood_type"
                           className={`block w-full pl-10 pr-3 py-2 border ${errors.blood_type ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-[#033662] focus:border-[#033662] sm:text-sm`}
                           {...register('blood_type')}
+                          onChange={(e) => {
+                            console.log('Tipo de sangre seleccionado:', e.target.value);
+                          }}
                         >
                           <option value="">Seleccionar tipo de sangre</option>
                           {BLOOD_TYPES.map(type => (

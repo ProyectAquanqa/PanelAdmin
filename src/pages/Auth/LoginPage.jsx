@@ -58,6 +58,7 @@ export default function LoginPage() {
           data: err.response.data
         };
         
+        // Manejo específico de errores de Django
         if (err.response.data?.error) {
           errorMessage = err.response.data.error;
         } else if (err.response.data?.detail) {
@@ -67,11 +68,13 @@ export default function LoginPage() {
         } else if (err.response.status === 401) {
           errorMessage = "Credenciales inválidas. Verifique su email y contraseña.";
         } else if (err.response.status === 404) {
-          errorMessage = "Servicio de autenticación no disponible. Verifique la URL de la API.";
+          errorMessage = "Servicio de autenticación no disponible. Verifique que el servidor Django esté ejecutándose en el puerto 8000.";
+        } else if (err.response.status === 500) {
+          errorMessage = "Error interno del servidor. Por favor, contacte al administrador.";
         }
       } else if (err.request) {
         // La solicitud se realizó pero no se recibió respuesta
-        errorMessage = "No se pudo conectar con el servidor. Verifique su conexión a internet.";
+        errorMessage = "No se pudo conectar con el servidor Django. Verifique que el servidor esté ejecutándose en el puerto 8000.";
         diagnosticData = {
           message: "No se recibió respuesta del servidor",
           url: err.config?.url
@@ -128,7 +131,7 @@ export default function LoginPage() {
             </div>
             <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>Hospital Admin</h2>
             <p className={`mt-2 text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-              Ingrese sus credenciales para acceder
+              Panel de Administración Django
             </p>
           </div>
           
@@ -225,7 +228,7 @@ export default function LoginPage() {
         </motion.div>
         
         <p className={`mt-8 text-xs ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-          API URL: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}
+          Django Admin API: http://localhost:8000/api
         </p>
       </div>
     </div>

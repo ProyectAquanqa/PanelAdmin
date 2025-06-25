@@ -148,20 +148,15 @@ export default function PatientListPage() {
   let totalPatients = 0;
   
   if (data) {
-    if (Array.isArray(data)) {
-      patients = data;
-      totalPatients = data.length;
-    } else if (data.results && Array.isArray(data.results)) {
-      patients = data.results;
-      totalPatients = data.count || patients.length;
-    } else if (data.patients && Array.isArray(data.patients)) {
-      patients = data.patients;
-      totalPatients = data.count || patients.length;
-    } else {
-      console.error('Estructura de datos inesperada:', data);
-      patients = [];
-      totalPatients = 0;
-    }
+    // Ahora el servicio siempre devuelve un objeto con results y count
+    patients = data.results || [];
+    totalPatients = data.count || patients.length;
+    
+    console.log('Datos procesados:', { 
+      totalPatients, 
+      patientsLength: patients.length,
+      firstPatient: patients.length > 0 ? patients[0] : null 
+    });
   }
   
   const totalPages = Math.max(1, Math.ceil(totalPatients / pageSize));

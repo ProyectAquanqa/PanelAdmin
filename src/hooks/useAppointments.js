@@ -97,11 +97,18 @@ export const useGetAvailableSlots = (doctorId, date) => {
     retry: 1,
     refetchOnWindowFocus: false,
     onSuccess: (data) => {
-      console.log(`Horarios disponibles para doctor ${doctorId} en fecha ${date}:`, data);
+      console.log(`Bloques horarios disponibles para doctor ${doctorId} en fecha ${date}:`, data);
     },
     onError: (error) => {
-      console.error('Error al obtener horarios disponibles:', error);
-      toast.error('Error al cargar los horarios disponibles');
+      console.error('Error al obtener bloques horarios disponibles:', error);
+      toast.error('Error al cargar los bloques horarios disponibles');
+      // En caso de error, devolver un objeto con valores por defecto
+      return {
+        doctor_id: doctorId,
+        date: date,
+        available_blocks: ['MORNING', 'AFTERNOON'],
+        busy_blocks: []
+      };
     }
   });
 };

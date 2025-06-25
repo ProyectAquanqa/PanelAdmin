@@ -1,35 +1,62 @@
 /**
  * Configuración de rutas de la API
- * ✅ CORREGIDO: Usar URLs exactas que coincidan con Django
+ * ✅ CORREGIDO: Rutas específicas para la API de Django (Admin)
  */
 
 export const API_ROUTES = {
-  // Autenticación
+  // Autenticación - Coincide con las URLs definidas en Django
   AUTH: {
-    LOGIN: `/api/auth/login`,
-    REFRESH: `/api/auth/refresh-token`,
-    PROFILE: `/api/auth/profile`,
+    LOGIN: `/api/auth/login/`,
+    LOGOUT: `/api/auth/logout/`,
+    REFRESH: `/api/auth/refresh-token/`,
+    PROFILE: `/api/auth/profile/`,
   },
   
   // Doctores
-  DOCTORS: `/api/doctors/doctors`,
+  DOCTORS: {
+    BASE: `/api/doctors/doctors/`,
+    BY_ID: (id) => `/api/doctors/doctors/${id}/`,
+    BY_TYPE: (type) => `/api/doctors/doctors/by_type/?doctor_type=${type}`,
+    CAN_REFER: `/api/doctors/doctors/can_refer_doctors/`,
+    AVAILABILITY: `/api/doctors/availability/`,
+    SPECIALTIES: `/api/doctors/specialties/`,
+  },
   
   // Usuarios
-  USERS: `/api/users/users`,
+  USERS: `/api/users/users/`,
   
   // Pacientes
-  PATIENTS: `/api/users/patients`,
+  PATIENTS: {
+    BASE: `/api/users/patients/`,
+    BY_ID: (id) => `/api/users/patients/${id}/`,
+    SEARCH: (query) => `/api/users/patients/search/?q=${query}`,
+  },
   
-  // Especialidades - URL sin barra final
-  SPECIALTIES: `/api/catalogs/specialties`,
+  // Especialidades
+  SPECIALTIES: `/api/catalogs/specialties/`,
   
   // Catálogos
   CATALOGS: {
-    DOCUMENT_TYPES: `/api/catalogs/document-types`,
-    SPECIALTIES: `/api/catalogs/specialties`,
-    PAYMENT_METHODS: `/api/catalogs/payment-methods`,
+    DOCUMENT_TYPES: `/api/catalogs/document-types/`,
+    SPECIALTIES: `/api/catalogs/specialties/`,
+    PAYMENT_METHODS: `/api/catalogs/payment-methods/`,
   },
   
-  // Citas - Corregido para coincidir con la estructura de Django
-  APPOINTMENTS: `/api/appointments/api/appointments`,
+  // Citas
+  APPOINTMENTS: `/api/appointments/appointments/`,
+  
+  // Endpoints específicos para citas
+  APPOINTMENT_ENDPOINTS: {
+    DOCTORS_BY_SPECIALTY: `/api/appointments/doctors-by-specialty/`,
+    AVAILABLE_TIME_BLOCKS: `/api/appointments/available-time-blocks/`,
+    TODAY: `/api/appointments/today/`,
+    UPCOMING: `/api/appointments/upcoming/`,
+    STATS: `/api/appointments/stats/`,
+    CANCEL: (id) => `/api/appointments/appointments/${id}/cancel/`,
+    COMPLETE: (id) => `/api/appointments/appointments/${id}/mark-completed/`,
+    NO_SHOW: (id) => `/api/appointments/appointments/${id}/mark-no-show/`,
+  },
+  
+  // Dashboard
+  DASHBOARD: `/api/v1/dashboard/`,
 };

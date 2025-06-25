@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
             return;
           }
           
-          // Token válido, obtener perfil de usuario
+          // Token válido, obtener perfil de usuario desde Django
           try {
             const profileData = await authService.getProfile();
             setUser(profileData);
@@ -33,9 +33,10 @@ export const AuthProvider = ({ children }) => {
           } catch (profileError) {
             // Si falla obtener el perfil, usar datos del token
             setUser({ 
+              id: decoded.user_id,
               email: decoded.email || decoded.sub, 
+              role: decoded.role || 'admin',
               name: decoded.name || decoded.username || decoded.email,
-              roles: decoded.roles || []
             });
             setIsAuthenticated(true);
           }
@@ -55,70 +56,18 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       const response = await authService.login(credentials);
       
-      console.log('Respuesta de login:', response);
+      console.log('Respuesta de login de Django:', response);
       
-      // Determinar dónde están los tokens en la respuesta (diferentes backends pueden tener diferentes estructuras)
-      let accessToken = null;
-      let refreshToken = null;
-      let userData = null;
+      // Extraer los tokens de la respuesta de Django
+      const accessToken = response.token;
+      const refreshToken = response.refresh;
       
-      // Caso 1: Formato estándar JWT con access y refresh
-      if (response.access && response.refresh) {
-        accessToken = response.access;
-        refreshToken = response.refresh;
-      }
-      // Caso 2: Formato con token y refresh
-      else if (response.token && response.refresh) {
-        accessToken = response.token;
-        refreshToken = response.refresh;
-      }
-      // Caso 3: Formato con accessToken y refreshToken
-      else if (response.accessToken && response.refreshToken) {
-        accessToken = response.accessToken;
-        refreshToken = response.refreshToken;
-      }
-      // Caso 4: Formato con token y refreshToken
-      else if (response.token && response.refreshToken) {
-        accessToken = response.token;
-        refreshToken = response.refreshToken;
-      }
-      // Caso 5: Formato con solo token
-      else if (response.token) {
-        accessToken = response.token;
-        // Puede que no haya refresh token
-      }
-      // Caso 6: Formato con solo access
-      else if (response.access) {
-        accessToken = response.access;
-        // Puede que no haya refresh token
-      }
-      
-      // Verificar que tenemos al menos un token de acceso
       if (!accessToken) {
         throw new Error('No se pudo obtener el token de acceso de la respuesta');
       }
       
-      // Buscar datos de usuario
-      if (response.user) {
-        userData = response.user;
-      } else if (response.userData) {
-        userData = response.userData;
-      } else if (response.profile) {
-        userData = response.profile;
-      } else {
-        // Intentar decodificar el token para obtener datos básicos
-        try {
-          const decoded = jwtDecode(accessToken);
-          userData = {
-            email: decoded.email || decoded.sub,
-            name: decoded.name || decoded.username || decoded.email,
-            roles: decoded.roles || []
-          };
-        } catch (decodeError) {
-          console.warn('No se pudo decodificar el token para obtener datos de usuario', decodeError);
-          userData = { email: credentials.email };
-        }
-      }
+      // Extraer datos de usuario de la respuesta de Django
+      const userData = response.user;
       
       // Guardar tokens
       localStorage.setItem('authToken', accessToken);
@@ -141,7 +90,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Intentar hacer logout en el servidor, pero continuar incluso si falla
+      // Intentar hacer logout en el servidor Django
       await authService.logout();
     } catch (error) {
       console.warn("Error al cerrar sesión en el servidor:", error);
@@ -164,16 +113,8 @@ export const AuthProvider = ({ children }) => {
       
       const response = await authService.refreshToken(refreshToken);
       
-      // Determinar dónde está el nuevo token de acceso
-      let newAccessToken = null;
-      
-      if (response.access) {
-        newAccessToken = response.access;
-      } else if (response.token) {
-        newAccessToken = response.token;
-      } else if (response.accessToken) {
-        newAccessToken = response.accessToken;
-      }
+      // Obtener el nuevo token de acceso de la respuesta de Django
+      const newAccessToken = response.access;
       
       if (!newAccessToken) {
         throw new Error('No se pudo obtener el nuevo token de acceso');
