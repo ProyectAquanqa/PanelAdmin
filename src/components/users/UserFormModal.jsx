@@ -9,7 +9,9 @@ import {
   EyeIcon,
   EyeSlashIcon,
   ShieldCheckIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  CheckCircleIcon,
+  XCircleIcon
 } from '@heroicons/react/24/outline';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,6 +30,7 @@ const createUserSchema = (isEditing = false) => z.object({
     : z.string().min(8, 'Mínimo 8 caracteres'), // Al crear: obligatoria
   phone: z.string().min(9, 'Teléfono inválido').optional().or(z.literal('')),
   role: z.string().min(1, 'Seleccione un rol'),
+  is_active: z.boolean().optional(),
 });
 
 // Lista de roles con información detallada
@@ -74,7 +77,7 @@ function UserFormModal({ isOpen, onClose, user = null }) {
     watch,
     clearErrors
   } = useForm({
-    resolver: zodResolver(createUserSchema(isEditing)), // Esquema dinámico
+    resolver: zodResolver(createUserSchema(isEditing)),
     defaultValues: {
       first_name: '',
       last_name: '',
@@ -82,6 +85,7 @@ function UserFormModal({ isOpen, onClose, user = null }) {
       password: '',
       phone: '',
       role: '',
+      is_active: true,
     }
   });
 
@@ -93,7 +97,7 @@ function UserFormModal({ isOpen, onClose, user = null }) {
       setValue('email', user.email || '');
       setValue('phone', user.phone || '');
       setValue('role', user.role || '');
-      // NO cargar la contraseña al editar - dejar vacía
+      setValue('is_active', user.is_active ?? true);
       setValue('password', '');
     } else {
       reset({
@@ -103,6 +107,7 @@ function UserFormModal({ isOpen, onClose, user = null }) {
         password: '',
         phone: '',
         role: '',
+        is_active: true,
       });
     }
   }, [user, isEditing, setValue, reset]);
@@ -245,173 +250,170 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                         <UserIcon className="h-5 w-5 text-gray-500 mr-2" />
                         Información Personal
                       </h3>
+
+                      {/* Estado Activo/Inactivo - Solo visible en edición */}
+                      {isEditing && (
+                        <div className="mb-6 flex items-center space-x-3 bg-gray-50 p-4 rounded-lg">
+                          <div className="flex-1">
+                            <label className="flex items-center cursor-pointer">
+                              <div className="relative">
+                                <input
+                                  type="checkbox"
+                                  {...register('is_active')}
+                                  className="sr-only"
+                                />
+                                <div className={`block w-14 h-8 rounded-full transition-colors duration-200 ease-in-out ${
+                                  watch('is_active') ? 'bg-green-500' : 'bg-gray-400'
+                                }`}>
+                                  <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-200 ease-in-out ${
+                                    watch('is_active') ? 'transform translate-x-6' : ''
+                                  }`} />
+                                </div>
+                              </div>
+                              <div className="ml-3">
+                                <span className="text-sm font-medium text-gray-900">Estado de la cuenta</span>
+                                <p className="text-sm text-gray-500">
+                                  {watch('is_active') ? 'Cuenta activa' : 'Cuenta inactiva'}
+                                </p>
+                              </div>
+                            </label>
+                          </div>
+                          <div className={`flex items-center justify-center h-8 w-8 rounded-full ${
+                            watch('is_active') ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {watch('is_active') ? (
+                              <CheckCircleIcon className="h-5 w-5" />
+                            ) : (
+                              <XCircleIcon className="h-5 w-5" />
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Nombre */}
                         <div>
-                          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-700">
                             Nombre *
                           </label>
-                          <input
-                            type="text"
-                            id="first_name"
-                            className={`block w-full pl-3 pr-3 py-2.5 border rounded-lg transition-colors ${
-                              errors.first_name 
-                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                                : 'border-gray-300 focus:ring-[#033662] focus:border-[#033662]'
-                            }`}
-                            placeholder="Ingresa el nombre"
-                            {...register('first_name')}
-                          />
-                          {errors.first_name && (
-                            <p className="mt-1 text-sm text-red-600">{errors.first_name.message}</p>
-                          )}
+                          <div className="mt-1">
+                            <input
+                              type="text"
+                              {...register('first_name')}
+                              className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ${
+                                errors.first_name ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'
+                              } placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
+                              placeholder="Ingresa el nombre"
+                            />
+                            {errors.first_name && (
+                              <p className="mt-2 text-sm text-red-600">{errors.first_name.message}</p>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Apellidos */}
+                        {/* Apellido */}
                         <div>
-                          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
-                            Apellidos *
+                          <label className="block text-sm font-medium text-gray-700">
+                            Apellido *
                           </label>
-                          <input
-                            type="text"
-                            id="last_name"
-                            className={`block w-full pl-3 pr-3 py-2.5 border rounded-lg transition-colors ${
-                              errors.last_name 
-                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                                : 'border-gray-300 focus:ring-[#033662] focus:border-[#033662]'
-                            }`}
-                            placeholder="Ingresa los apellidos"
-                            {...register('last_name')}
-                          />
-                          {errors.last_name && (
-                            <p className="mt-1 text-sm text-red-600">{errors.last_name.message}</p>
-                          )}
+                          <div className="mt-1">
+                            <input
+                              type="text"
+                              {...register('last_name')}
+                              className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ${
+                                errors.last_name ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'
+                              } placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
+                              placeholder="Ingresa el apellido"
+                            />
+                            {errors.last_name && (
+                              <p className="mt-2 text-sm text-red-600">{errors.last_name.message}</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                    {/* Información de Contacto */}
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                        <EnvelopeIcon className="h-5 w-5 text-gray-500 mr-2" />
-                        Información de Contacto
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Email */}
                         <div>
-                          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-700">
                             Email *
                           </label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <div className="mt-1 relative rounded-md shadow-sm">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                               <EnvelopeIcon className="h-5 w-5 text-gray-400" />
                             </div>
                             <input
                               type="email"
-                              id="email"
-                              className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg transition-colors ${
-                                errors.email 
-                                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                                  : 'border-gray-300 focus:ring-[#033662] focus:border-[#033662]'
-                              }`}
-                              placeholder="usuario@ejemplo.com"
                               {...register('email')}
+                              className={`block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ${
+                                errors.email ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'
+                              } placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
+                              placeholder="usuario@ejemplo.com"
                             />
                           </div>
                           {errors.email && (
-                            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                            <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
                           )}
                         </div>
 
                         {/* Teléfono */}
                         <div>
-                          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-700">
                             Teléfono
                           </label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <div className="mt-1 relative rounded-md shadow-sm">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                               <PhoneIcon className="h-5 w-5 text-gray-400" />
                             </div>
                             <input
                               type="tel"
-                              id="phone"
-                              className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg transition-colors ${
-                                errors.phone 
-                                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                                  : 'border-gray-300 focus:ring-[#033662] focus:border-[#033662]'
-                              }`}
-                              placeholder="+51 999 999 999"
                               {...register('phone')}
+                              className={`block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ${
+                                errors.phone ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'
+                              } placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
+                              placeholder="999999999"
                             />
                           </div>
                           {errors.phone && (
-                            <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+                            <p className="mt-2 text-sm text-red-600">{errors.phone.message}</p>
                           )}
                         </div>
                       </div>
+                    </div>
 
-                      {/* Contraseña */}
-                      <div className="mt-4">
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                          {isEditing ? (
-                            <span className="flex items-center">
-                              🔄 Cambiar Contraseña 
-                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                Opcional
-                              </span>
-                            </span>
+                    {/* Contraseña */}
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <IdentificationIcon className="h-5 w-5 text-gray-500 mr-2" />
+                        {isEditing ? 'Cambiar Contraseña' : 'Contraseña'}
+                      </h3>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          {...register('password')}
+                          className={`block w-full rounded-md border-0 py-1.5 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ${
+                            errors.password ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'
+                          } placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
+                          placeholder={isEditing ? 'Dejar vacío para mantener la actual' : 'Mínimo 8 caracteres'}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3"
+                        >
+                          {showPassword ? (
+                            <EyeSlashIcon className="h-5 w-5 text-gray-400" />
                           ) : (
-                            <span className="flex items-center">
-                              Contraseña 
-                              <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                                Requerida
-                              </span>
-                            </span>
+                            <EyeIcon className="h-5 w-5 text-gray-400" />
                           )}
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <IdentificationIcon className="h-5 w-5 text-gray-400" />
-                          </div>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            id="password"
-                            className={`block w-full pl-10 pr-10 py-2.5 border rounded-lg transition-colors ${
-                              errors.password 
-                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                                : 'border-gray-300 focus:ring-[#033662] focus:border-[#033662]'
-                            }`}
-                            placeholder={isEditing ? "Dejar vacío para mantener contraseña actual" : "Contraseña segura"}
-                            {...register('password')}
-                          />
-                          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
-                            >
-                              {showPassword ? (
-                                <EyeSlashIcon className="h-5 w-5" />
-                              ) : (
-                                <EyeIcon className="h-5 w-5" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                        {errors.password && (
-                          <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                        )}
-                        {!isEditing && (
-                          <p className="mt-1 text-xs text-gray-500">
-                            Mínimo 8 caracteres. Se recomienda incluir números y símbolos.
-                          </p>
-                        )}
-                        {isEditing && (
-                          <p className="mt-1 text-xs text-blue-600">
-                            💡 Dejar en blanco para mantener la contraseña actual
-                          </p>
-                        )}
+                        </button>
                       </div>
+                      {errors.password && (
+                        <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
+                      )}
+                      {isEditing && (
+                        <p className="mt-2 text-sm text-gray-500">
+                          Solo llena este campo si deseas cambiar la contraseña actual
+                        </p>
+                      )}
                     </div>
 
                     {/* Rol del Usuario */}
@@ -420,44 +422,43 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                         <ShieldCheckIcon className="h-5 w-5 text-gray-500 mr-2" />
                         Rol del Usuario
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {ROLES.map((role) => {
-                          const IconComponent = role.icon;
+                          const Icon = role.icon;
                           const isSelected = selectedRole === role.id;
                           
                           return (
-                            <div
+                            <label
                               key={role.id}
-                              className={`
-                                relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 hover:shadow-md
-                                ${isSelected 
-                                  ? role.selectedColor + ' shadow-md' 
-                                  : 'border-gray-200 hover:border-gray-300 bg-white'}
-                              `}
-                              onClick={() => {
-                                setValue('role', role.id, { shouldValidate: true });
-                                clearErrors('role');
-                              }}
+                              className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none transition-colors ${
+                                isSelected 
+                                  ? role.selectedColor
+                                  : 'border-gray-200 bg-white hover:bg-gray-50'
+                              }`}
                             >
-                              <div className="flex flex-col items-center text-center space-y-2">
-                                <div className={`rounded-full p-3 ${isSelected ? role.color : 'bg-gray-100'}`}>
-                                  <IconComponent className={`h-6 w-6 ${isSelected ? '' : 'text-gray-600'}`} />
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold text-gray-900">{role.name}</h4>
-                                  <p className="text-xs text-gray-500 mt-1">{role.description}</p>
-                                </div>
-                                {isSelected && (
-                                  <div className="absolute top-2 right-2">
-                                    <div className="rounded-full bg-green-500 p-1">
-                                      <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                      </svg>
-                                    </div>
+                              <input
+                                type="radio"
+                                {...register('role')}
+                                value={role.id}
+                                className="sr-only"
+                              />
+                              <div className="flex flex-col">
+                                <div className="flex items-center justify-between">
+                                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${role.color}`}>
+                                    <Icon className="h-6 w-6" />
                                   </div>
-                                )}
+                                  {isSelected && (
+                                    <div className="shrink-0">
+                                      <CheckCircleIcon className="h-6 w-6 text-blue-600" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="mt-4">
+                                  <div className="text-sm font-medium text-gray-900">{role.name}</div>
+                                  <div className="mt-1 text-sm text-gray-500">{role.description}</div>
+                                </div>
                               </div>
-                            </div>
+                            </label>
                           );
                         })}
                       </div>
@@ -467,31 +468,27 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                     </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className="mt-8 flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  {/* Footer con botones */}
+                  <div className="mt-6 flex items-center justify-end gap-x-6">
                     <button
                       type="button"
                       onClick={onClose}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662] transition-colors"
+                      className="text-sm font-semibold leading-6 text-gray-900"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#033662] to-[#044b88] rounded-lg hover:from-[#022a52] hover:to-[#033d73] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#033662] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+                      className="flex items-center rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSubmitting ? (
-                        <>
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span>Guardando...</span>
-                        </>
-                      ) : (
-                        <span>{isEditing ? 'Actualizar Usuario' : 'Crear Usuario'}</span>
+                      {isSubmitting && (
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
                       )}
+                      {isEditing ? 'Guardar Cambios' : 'Crear Usuario'}
                     </button>
                   </div>
                 </form>

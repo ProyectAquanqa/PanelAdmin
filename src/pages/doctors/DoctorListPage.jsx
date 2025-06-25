@@ -42,6 +42,7 @@ export default function DoctorListPage() {
   const pageSize = 10;
   const [isSearching, setIsSearching] = useState(false);
   const [filterType, setFilterType] = useState('ALL'); // ALL, PRIMARY, SPECIALIST
+  const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, ACTIVE, INACTIVE
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   
@@ -63,6 +64,7 @@ export default function DoctorListPage() {
   } = useGetDoctors({ 
     search: debouncedSearchTerm,
     doctor_type: filterType !== 'ALL' ? filterType : undefined,
+    is_active: statusFilter === 'ACTIVE' ? true : statusFilter === 'INACTIVE' ? false : undefined,
     page,
     page_size: pageSize 
   });
@@ -323,22 +325,36 @@ export default function DoctorListPage() {
             </div>
           </div>
           
-          {/* Filtro por tipo de doctor */}
-          <div className="flex-shrink-0">
-            <label htmlFor="doctor-type" className="sr-only">Tipo de doctor</label>
+          {/* Filtros */}
+          <div className="flex flex-wrap gap-4 mb-4">
+            {/* Filtro por tipo */}
             <select
-              id="doctor-type"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className={`block w-full py-2.5 px-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                theme === 'dark' 
-                  ? 'bg-neutral-700 border-neutral-600 text-white' 
+              className={`rounded-lg border ${
+                theme === 'dark'
+                  ? 'bg-neutral-800 border-neutral-700 text-white'
                   : 'bg-white border-gray-300 text-gray-900'
-              }`}
+              } px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
             >
-              <option value="ALL">Todos los doctores</option>
-              <option value="PRIMARY">Médicos principales</option>
+              <option value="ALL">Todos los tipos</option>
+              <option value="PRIMARY">Médicos generales</option>
               <option value="SPECIALIST">Especialistas</option>
+            </select>
+
+            {/* Filtro por estado */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={`rounded-lg border ${
+                theme === 'dark'
+                  ? 'bg-neutral-800 border-neutral-700 text-white'
+                  : 'bg-white border-gray-300 text-gray-900'
+              } px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
+            >
+              <option value="ALL">Todos los estados</option>
+              <option value="ACTIVE">Activos</option>
+              <option value="INACTIVE">Inactivos</option>
             </select>
           </div>
         </div>

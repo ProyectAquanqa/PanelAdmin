@@ -257,6 +257,7 @@ const prepareDoctorDataForSubmit = (doctorData) => {
   // Asegurar que los campos booleanos sean realmente booleanos
   preparedData.is_external = Boolean(preparedData.is_external);
   preparedData.can_refer = Boolean(preparedData.can_refer);
+  preparedData.is_active = doctorData.is_active !== undefined ? Boolean(doctorData.is_active) : true;
   
   // Asegurar que doctor_type sea uno de los valores permitidos
   if (!['PRIMARY', 'SPECIALIST'].includes(preparedData.doctor_type)) {

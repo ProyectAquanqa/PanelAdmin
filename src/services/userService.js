@@ -327,6 +327,7 @@ export const updateUser = async (id, userData) => {
       last_name: String(userData.last_name || '').trim(),
       email: String(userData.email || '').toLowerCase().trim(),
       role: String(userData.role || ''),
+      is_active: userData.is_active !== undefined ? userData.is_active : true,
     };
 
     // Agregar contraseña solo si existe (para edición)

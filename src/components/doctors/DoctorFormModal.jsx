@@ -33,6 +33,7 @@ const doctorSchema = z.object({
   doctor_type: z.enum(['PRIMARY', 'SPECIALIST']).default('SPECIALIST'),
   is_external: z.boolean().default(false),
   can_refer: z.boolean().default(false),
+  is_active: z.boolean().default(true),
   specialties: z.array(z.number()).min(1, 'Seleccione al menos una especialidad'),
 });
 
@@ -72,6 +73,7 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
       doctor_type: 'SPECIALIST',
       is_external: false,
       can_refer: false,
+      is_active: true,
       specialties: [],
     }
   });
@@ -98,6 +100,7 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
         doctor_type: doctor.doctor_type || 'SPECIALIST',
         is_external: Boolean(doctor.is_external),
         can_refer: Boolean(doctor.can_refer),
+        is_active: doctor.is_active !== undefined ? Boolean(doctor.is_active) : true,
         specialties: [],
         id: doctor.id // Importante: incluir el ID
       };
@@ -147,6 +150,7 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
         doctor_type: 'SPECIALIST',
         is_external: false,
         can_refer: false,
+        is_active: true,
         specialties: [],
       });
     }
@@ -530,16 +534,50 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
                           </div>
                           
                           <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="can_refer"
-                              {...register('can_refer')}
-                              className="h-4 w-4 text-[#033662] border-gray-300 rounded"
+                            <Controller
+                              name="can_refer"
+                              control={control}
+                              render={({ field }) => (
+                                <input
+                                  type="checkbox"
+                                  {...field}
+                                  checked={field.value}
+                                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                                />
+                              )}
                             />
-                            <label htmlFor="can_refer" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="can_refer" className="ml-2 block text-sm text-gray-900">
                               Puede derivar pacientes
                             </label>
                           </div>
+
+                          {/* Switch de activación/desactivación */}
+                          {isEditing && (
+                            <div className="flex items-center">
+                              <Controller
+                                name="is_active"
+                                control={control}
+                                render={({ field }) => (
+                                  <div className="flex items-center">
+                                    <input
+                                      type="checkbox"
+                                      {...field}
+                                      checked={field.value}
+                                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                                    />
+                                    <label className="ml-2 flex items-center text-sm text-gray-900">
+                                      {field.value ? (
+                                        <CheckCircleIcon className="mr-1 h-5 w-5 text-green-500" />
+                                      ) : (
+                                        <XMarkIcon className="mr-1 h-5 w-5 text-red-500" />
+                                      )}
+                                      {field.value ? 'Doctor Activo' : 'Doctor Inactivo'}
+                                    </label>
+                                  </div>
+                                )}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
