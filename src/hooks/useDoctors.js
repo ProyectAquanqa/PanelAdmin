@@ -69,19 +69,41 @@ export const useUpdateDoctor = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }) => {
-      console.log(`Actualizando doctor ${id} con datos:`, data);
-      return updateDoctor(id, data);
+    mutationFn: async ({ id, data }) => {
+      console.log(`🔄 Hook useUpdateDoctor: Actualizando doctor ${id} con datos:`, data);
+      
+      if (!id) {
+        throw new Error('ID de doctor no proporcionado');
+      }
+      
+      // Asegurarse de que el ID es un número
+      const doctorId = parseInt(id, 10);
+      if (isNaN(doctorId)) {
+        throw new Error(`ID de doctor inválido: ${id}`);
+      }
+      
+      // Llamada directa al servicio
+      try {
+        console.log(`🔄 Llamando al servicio updateDoctor con ID: ${doctorId}`);
+        const result = await updateDoctor(doctorId, data);
+        console.log('✅ Resultado del servicio updateDoctor:', result);
+        return result;
+      } catch (error) {
+        console.error(`❌ Error en servicio updateDoctor:`, error);
+        throw error;
+      }
     },
     onSuccess: (data, variables) => {
-      console.log('Doctor actualizado exitosamente:', data);
+      console.log('✅ Doctor actualizado exitosamente:', data);
       // Invalidar la cache para que se recargue la lista
       queryClient.invalidateQueries({ queryKey: [DOCTORS_QUERY_KEY] });
       // Actualizar doctor específico en la cache
-      queryClient.setQueryData([DOCTORS_QUERY_KEY, variables.id], data);
+      if (variables.id) {
+        queryClient.setQueryData([DOCTORS_QUERY_KEY, variables.id], data);
+      }
     },
     onError: (error) => {
-      console.error('Error al actualizar doctor:', error);
+      console.error('❌ Error al actualizar doctor:', error);
       // No mostrar toast aquí, se maneja en el componente
     },
   });

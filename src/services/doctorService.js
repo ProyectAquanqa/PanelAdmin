@@ -232,6 +232,8 @@ export const getDoctorById = async (id) => {
  * @returns {Object} Datos del doctor preparados para enviar
  */
 const prepareDoctorDataForSubmit = (doctorData) => {
+  console.log('🔄 Preparando datos del doctor para enviar:', doctorData);
+  
   // Copia para no modificar el original
   const preparedData = { ...doctorData };
   
@@ -248,8 +250,32 @@ const prepareDoctorDataForSubmit = (doctorData) => {
       }
       return null;
     }).filter(Boolean);
+    
+    console.log('✅ Especialidades procesadas:', preparedData.specialties);
   }
   
+  // Asegurar que los campos booleanos sean realmente booleanos
+  preparedData.is_external = Boolean(preparedData.is_external);
+  preparedData.can_refer = Boolean(preparedData.can_refer);
+  
+  // Asegurar que doctor_type sea uno de los valores permitidos
+  if (!['PRIMARY', 'SPECIALIST'].includes(preparedData.doctor_type)) {
+    preparedData.doctor_type = 'SPECIALIST';
+  }
+  
+  // Limpiar campos vacíos
+  Object.keys(preparedData).forEach(key => {
+    if (preparedData[key] === '' || preparedData[key] === null || preparedData[key] === undefined) {
+      delete preparedData[key];
+    }
+  });
+  
+  // Si hay password y está vacío, eliminarlo
+  if (preparedData.password && preparedData.password.trim() === '') {
+    delete preparedData.password;
+  }
+  
+  console.log('📤 Datos preparados para enviar:', preparedData);
   return preparedData;
 };
 
@@ -286,21 +312,96 @@ export const createDoctor = async (doctorData) => {
  */
 export const updateDoctor = async (id, doctorData) => {
   try {
-    console.log(`Actualizando doctor ${id} con datos:`, doctorData);
+    console.log(`🔄 Actualizando doctor ${id} con datos:`, doctorData);
+    
+    if (!id) {
+      console.error('❌ Error: No se proporcionó ID para actualizar doctor');
+      throw new Error('ID de doctor no proporcionado');
+    }
+    
+    // Asegurarse de que el ID es un número
+    const doctorId = parseInt(id, 10);
+    if (isNaN(doctorId)) {
+      throw new Error(`ID de doctor inválido: ${id}`);
+    }
     
     // Preparar datos para enviar
     const preparedData = prepareDoctorDataForSubmit(doctorData);
-    console.log('Datos preparados para enviar:', preparedData);
+    console.log('📤 Datos preparados para actualización:', preparedData);
     
-    const response = await apiClient.put(API_ROUTES.DOCTORS.BY_ID(id), preparedData);
+    // Validaciones adicionales
+    if (!preparedData.first_name || !preparedData.last_name) {
+      throw new Error('El nombre y apellido son requeridos');
+    }
+    
+    if (!preparedData.email) {
+      throw new Error('El email es requerido');
+    }
+    
+    if (!preparedData.cmp_number) {
+      throw new Error('El número de CMP es requerido');
+    }
+    
+    if (!preparedData.specialties || !Array.isArray(preparedData.specialties) || preparedData.specialties.length === 0) {
+      throw new Error('Debe seleccionar al menos una especialidad');
+    }
+    
+    // Construir URL completa
+    const url = API_ROUTES.DOCTORS.BY_ID(doctorId);
+    console.log(`📤 Enviando datos actualizados a URL: ${url}`);
+    
+    // Configurar la solicitud
+    const config = {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    // Usar axios directamente para evitar problemas con el cliente API
+    const response = await apiClient.put(url, preparedData, config);
+    
+    console.log('📥 Respuesta del servidor:', response.data);
     
     // Normalizar datos del doctor actualizado
     const normalizedDoctor = normalizeDoctorData(response.data);
+    console.log('✅ Doctor actualizado y normalizado:', normalizedDoctor);
     
     return normalizedDoctor;
+    
   } catch (error) {
-    console.error(`Error al actualizar el doctor con ID ${id}:`, error.response || error);
-    throw error;
+    console.error(`💥 Error al actualizar el doctor con ID ${id}:`, error.response || error);
+    
+    // Mejorar el mensaje de error
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      console.log('📋 Detalles del error:', errorData);
+      
+      // Manejar errores específicos
+      if (errorData.email) {
+        throw new Error(`Error de email: ${errorData.email[0]}`);
+      }
+      
+      if (errorData.cmp_number) {
+        throw new Error(`Error de CMP: ${errorData.cmp_number[0]}`);
+      }
+      
+      if (errorData.specialties) {
+        throw new Error(`Error de especialidades: ${errorData.specialties[0]}`);
+      }
+      
+      if (errorData.detail) {
+        throw new Error(`Error al actualizar doctor: ${errorData.detail}`);
+      }
+      
+      // Si hay otros errores, crear un mensaje más descriptivo
+      const errorMessages = Object.entries(errorData)
+        .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors[0] : errors}`)
+        .join(', ');
+      
+      throw new Error(`Error al actualizar doctor: ${errorMessages}`);
+    }
+    
+    throw new Error(`Error al actualizar doctor: ${error.message || 'Error desconocido'}`);
   }
 };
 

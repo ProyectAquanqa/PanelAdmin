@@ -65,11 +65,100 @@ export const useCreatePatient = () => {
       // Asegurar que gender tiene un valor válido
       if (!data.gender) {
         data.gender = 'OTHER';
+      } else {
+        // Validar que gender sea uno de los valores permitidos
+        const validGenders = ['MALE', 'FEMALE', 'OTHER'];
+        if (!validGenders.includes(data.gender)) {
+          console.warn('⚠️ Género inválido:', data.gender);
+          // Intentar convertir formato corto a largo
+          const shortToLong = {
+            'M': 'MALE',
+            'F': 'FEMALE',
+            'O': 'OTHER'
+          };
+          if (shortToLong[data.gender]) {
+            data.gender = shortToLong[data.gender];
+            console.log('✅ Género convertido a:', data.gender);
+          } else {
+            data.gender = 'OTHER';
+            console.warn('⚠️ Género inválido, usando OTHER por defecto');
+          }
+        }
       }
       
       // Asegurar que document_number tiene un valor
       if (!data.document_number) {
         data.document_number = '00000000';
+      }
+      
+      // Asegurar que document_number tiene un valor
+      if (!data.document_number) {
+        data.document_number = '00000000';
+      }
+      
+      // Validar blood_type
+      if (data.blood_type) {
+        const validBloodTypes = [
+          'A_POSITIVE', 'A_NEGATIVE', 
+          'B_POSITIVE', 'B_NEGATIVE', 
+          'AB_POSITIVE', 'AB_NEGATIVE', 
+          'O_POSITIVE', 'O_NEGATIVE'
+        ];
+        if (!validBloodTypes.includes(data.blood_type)) {
+          console.warn('⚠️ Tipo de sangre inválido:', data.blood_type);
+          // Intentar convertir formato corto a largo
+          const shortToLong = {
+            'A+': 'A_POSITIVE',
+            'A-': 'A_NEGATIVE',
+            'B+': 'B_POSITIVE',
+            'B-': 'B_NEGATIVE',
+            'AB+': 'AB_POSITIVE',
+            'AB-': 'AB_NEGATIVE',
+            'O+': 'O_POSITIVE',
+            'O-': 'O_NEGATIVE',
+          };
+          if (shortToLong[data.blood_type]) {
+            data.blood_type = shortToLong[data.blood_type];
+            console.log('✅ Tipo de sangre convertido a:', data.blood_type);
+          } else {
+            delete data.blood_type;
+            console.warn('⚠️ Tipo de sangre inválido eliminado en hook');
+          }
+        }
+      }
+      
+      // Validar formato de teléfono
+      if (data.phone) {
+        if (!/^\+?1?\d{9,15}$/.test(data.phone)) {
+          console.warn('⚠️ Formato de teléfono inválido');
+          
+          // Intentar limpiar el número
+          const digitsOnly = data.phone.replace(/\D/g, '');
+          if (digitsOnly.length >= 9 && digitsOnly.length <= 15) {
+            data.phone = digitsOnly;
+            console.log('✅ Teléfono corregido:', data.phone);
+          } else {
+            delete data.phone;
+            console.warn('⚠️ Teléfono eliminado por formato inválido');
+          }
+        }
+      }
+      
+      // Validar formato de teléfono de emergencia
+      if (data.emergency_contact_phone) {
+        if (!/^\+?1?\d{9,15}$/.test(data.emergency_contact_phone)) {
+          console.warn('⚠️ Formato de teléfono de emergencia inválido');
+          
+          // Intentar limpiar el número
+          const digitsOnly = data.emergency_contact_phone.replace(/\D/g, '');
+          if (digitsOnly.length >= 9 && digitsOnly.length <= 15) {
+            data.emergency_contact_phone = digitsOnly;
+            console.log('✅ Teléfono de emergencia corregido:', data.emergency_contact_phone);
+          } else {
+            delete data.emergency_contact_phone;
+            console.warn('⚠️ Teléfono de emergencia eliminado por formato inválido');
+          }
+        }
       }
       
       return createPatient(data);
@@ -81,6 +170,24 @@ export const useCreatePatient = () => {
     },
     onError: (error) => {
       console.error('Error al crear paciente:', error);
+      
+      // Manejar específicamente errores de blood_type
+      if (error.response?.data?.blood_type || 
+          (error.response?.data?.detail && 
+           typeof error.response.data.detail === 'string' && 
+           error.response.data.detail.includes('blood_type'))) {
+        console.error('Error específico de tipo de sangre detectado');
+      }
+      
+      // Manejar específicamente errores de teléfono
+      if (error.response?.data?.phone || 
+          error.response?.data?.emergency_contact_phone ||
+          (error.response?.data?.detail && 
+           typeof error.response.data.detail === 'string' && 
+           error.response.data.detail.includes('phone'))) {
+        console.error('Error específico de teléfono detectado');
+      }
+      
       // No mostrar toast aquí, se maneja en el componente
     },
   });
@@ -93,30 +200,41 @@ export const useUpdatePatient = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }) => {
-      console.log(`Actualizando paciente ${id} con datos:`, data);
+    mutationFn: async ({ id, data }) => {
+      console.log(`🔄 Hook useUpdatePatient: Actualizando paciente ${id} con datos:`, data);
       
-      // Asegurar que document_type es un número
-      if (typeof data.document_type === 'string') {
-        data.document_type = parseInt(data.document_type) || 1;
+      if (!id) {
+        throw new Error('ID de paciente no proporcionado');
       }
       
-      // Asegurar que gender tiene un valor válido
-      if (!data.gender) {
-        data.gender = 'OTHER';
+      // Asegurarse de que el ID es un número
+      const patientId = parseInt(id, 10);
+      if (isNaN(patientId)) {
+        throw new Error(`ID de paciente inválido: ${id}`);
       }
       
-      return updatePatient(id, data);
+      // Llamada directa al servicio
+      try {
+        console.log(`🔄 Llamando al servicio updatePatient con ID: ${patientId}`);
+        const result = await updatePatient(patientId, data);
+        console.log('✅ Resultado del servicio updatePatient:', result);
+        return result;
+      } catch (error) {
+        console.error(`❌ Error en servicio updatePatient:`, error);
+        throw error;
+      }
     },
     onSuccess: (data, variables) => {
-      console.log('Paciente actualizado exitosamente:', data);
+      console.log('✅ Paciente actualizado exitosamente:', data);
       // Invalidar la cache para que se recargue la lista
       queryClient.invalidateQueries({ queryKey: [PATIENTS_QUERY_KEY] });
       // Actualizar paciente específico en la cache
-      queryClient.setQueryData([PATIENTS_QUERY_KEY, variables.id], data);
+      if (variables.id) {
+        queryClient.setQueryData([PATIENTS_QUERY_KEY, variables.id], data);
+      }
     },
     onError: (error) => {
-      console.error('Error al actualizar paciente:', error);
+      console.error('❌ Error al actualizar paciente:', error);
       // No mostrar toast aquí, se maneja en el componente
     },
   });

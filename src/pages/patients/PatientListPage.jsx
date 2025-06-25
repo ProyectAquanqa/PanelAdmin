@@ -75,7 +75,30 @@ export default function PatientListPage() {
 
   // Función para abrir modal de edición
   const handleEdit = (patient) => {
-    setCurrentPatient(patient);
+    console.log('🔄 Abriendo modal de edición para paciente:', patient);
+    
+    if (!patient || !patient.id) {
+      console.error('❌ Error: Intentando editar un paciente sin ID');
+      toast.error('Error: No se puede editar este paciente');
+      return;
+    }
+    
+    // Asegurarse de que el ID es un número
+    const patientId = parseInt(patient.id, 10);
+    if (isNaN(patientId)) {
+      console.error(`❌ Error: ID de paciente inválido: ${patient.id}`);
+      toast.error('Error: ID de paciente inválido');
+      return;
+    }
+    
+    // Crear una copia del paciente para evitar problemas de referencia
+    const patientToEdit = {
+      ...patient,
+      id: patientId
+    };
+    
+    console.log('✅ Datos del paciente a editar:', patientToEdit);
+    setCurrentPatient(patientToEdit);
     setIsModalOpen(true);
   };
 
@@ -95,6 +118,23 @@ export default function PatientListPage() {
         toast.error('Error al eliminar el paciente');
       }
     }
+  };
+
+  // Función para calcular la edad a partir de la fecha de nacimiento
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return null;
+    
+    const today = new Date();
+    const birth = new Date(birthDate);
+    
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
   };
 
   // Renderizar mensaje de error o carga
@@ -160,6 +200,172 @@ export default function PatientListPage() {
   }
   
   const totalPages = Math.max(1, Math.ceil(totalPatients / pageSize));
+
+  // Función auxiliar para formatear el género
+  const formatGender = (gender) => {
+    if (!gender) return 'No especificado';
+    
+    // Mapeo de valores de género
+    const genderMap = {
+      'MALE': 'Masculino',
+      'FEMALE': 'Femenino',
+      'OTHER': 'Otro',
+      'M': 'Masculino',
+      'F': 'Femenino',
+      'O': 'Otro'
+    };
+    
+    return genderMap[gender] || 'No especificado';
+  };
+
+  // Función auxiliar para formatear el tipo de sangre
+  const formatBloodType = (bloodType) => {
+    if (!bloodType) return 'No especificado';
+    
+    // Mapeo de formatos largos a cortos
+    const bloodTypeMap = {
+      'A_POSITIVE': 'A+',
+      'A_NEGATIVE': 'A-',
+      'B_POSITIVE': 'B+',
+      'B_NEGATIVE': 'B-',
+      'AB_POSITIVE': 'AB+',
+      'AB_NEGATIVE': 'AB-',
+      'O_POSITIVE': 'O+',
+      'O_NEGATIVE': 'O-',
+    };
+    
+    // Si es formato largo, convertir a formato corto
+    if (bloodType in bloodTypeMap) {
+      return bloodTypeMap[bloodType];
+    }
+    
+    // Si ya está en formato corto, devolverlo directamente
+    const validShortFormats = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    if (validShortFormats.includes(bloodType)) {
+      return bloodType;
+    }
+    
+    // Si no es un formato reconocido
+    return 'No válido';
+  };
+
+  // Renderizar fila de paciente
+  const renderPatientRow = (patient) => {
+    return (
+      <motion.tr 
+        key={patient.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className={`${
+          theme === 'dark' ? 'hover:bg-neutral-800' : 'hover:bg-gray-50'
+        } transition-colors`}
+      >
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <div className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${
+              theme === 'dark' ? 'bg-neutral-800' : 'bg-gray-100'
+            }`}>
+              <UserIcon className={`h-6 w-6 ${
+                theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
+              }`} />
+            </div>
+            <div className="ml-4">
+              <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {patient.full_name || `${patient.first_name} ${patient.last_name}`}
+              </div>
+              <div className={`text-sm ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>
+                {formatGender(patient.gender)}
+              </div>
+
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <IdentificationIcon className={`h-5 w-5 mr-2 ${
+              theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+            }`} />
+            <span className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'}>
+              {patient.document_number}
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <EnvelopeIcon className={`h-5 w-5 mr-2 ${
+              theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+            }`} />
+            <span className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'}>
+              {patient.user_email || patient.user?.email || 'No disponible'}
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <PhoneIcon className={`h-5 w-5 mr-2 ${
+              theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+            }`} />
+            <span className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'}>
+              {patient.phone || 'No disponible'}
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <CalendarIcon className={`h-5 w-5 mr-2 ${
+              theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'
+            }`} />
+            <div>
+              <div className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'}>
+                {patient.birth_date ? new Date(patient.birth_date).toLocaleDateString() : 'No disponible'}
+              </div>
+              {patient.birth_date && (
+                <div className={`text-sm ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>
+                  {calculateAge(patient.birth_date)} años
+                </div>
+              )}
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+            !patient.blood_type ? 
+              theme === 'dark' ? 'bg-neutral-700 text-neutral-300' : 'bg-gray-200 text-gray-800' :
+            formatBloodType(patient.blood_type).includes('+') ? 
+              'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
+              'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+          }`}>
+            {formatBloodType(patient.blood_type)}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => handleEdit(patient)}
+              className={`p-2 rounded-lg transition-colors ${
+                theme === 'dark' 
+                  ? 'hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200' 
+                  : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <PencilIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => handleDelete(patient.id)}
+              className={`p-2 rounded-lg transition-colors ${
+                theme === 'dark' 
+                  ? 'hover:bg-red-900/20 text-red-400 hover:text-red-300' 
+                  : 'hover:bg-red-50 text-red-500 hover:text-red-700'
+              }`}
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </td>
+      </motion.tr>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -267,16 +473,17 @@ export default function PatientListPage() {
               <tr>
                 <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Paciente</th>
                 <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Documento</th>
-                <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Contacto</th>
-                <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Edad</th>
-                <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Estado</th>
+                <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Email</th>
+                <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Teléfono</th>
+                <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Fecha Nacimiento</th>
+                <th scope="col" className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Tipo Sangre</th>
                 <th scope="col" className={`px-6 py-4 text-right text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>Acciones</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${theme === 'dark' ? 'bg-neutral-800 divide-neutral-700' : 'bg-white divide-gray-200'}`}>
               {patients.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center">
+                  <td colSpan="7" className="px-6 py-12 text-center">
                     <motion.div 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -298,99 +505,7 @@ export default function PatientListPage() {
                   </td>
                 </tr>
               ) : (
-                patients.map((patient) => {
-                  // Calcular edad si hay fecha de nacimiento
-                  let age = '';
-                  if (patient.birth_date) {
-                    const birthDate = new Date(patient.birth_date);
-                    const today = new Date();
-                    age = today.getFullYear() - birthDate.getFullYear();
-                    const m = today.getMonth() - birthDate.getMonth();
-                    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                      age--;
-                    }
-                  }
-
-                  return (
-                    <motion.tr 
-                      key={patient.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`transition-colors ${theme === 'dark' ? 'hover:bg-neutral-700' : 'hover:bg-gray-50'}`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <img
-                              className="h-10 w-10 rounded-full"
-                              src={`https://ui-avatars.com/api/?name=${patient.first_name}+${patient.last_name}&background=0D8ABC&color=fff`}
-                              alt={`${patient.first_name} ${patient.last_name}`}
-                            />
-                          </div>
-                          <div className="ml-4">
-                            <div className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{patient.first_name} {patient.last_name} {patient.second_last_name || ''}</div>
-                            {patient.blood_type && (
-                              <div className="text-sm text-gray-500">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${theme === 'dark' ? 'bg-red-900/20 text-red-400 border border-red-500/20' : 'bg-red-100 text-red-800'}`}>Tipo {patient.blood_type}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <IdentificationIcon className={`h-5 w-5 ${theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'} mr-2`} />
-                          <span className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{patient.document_number || 'No registrado'}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`text-sm flex flex-col ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}> 
-                          <div className="flex items-center mb-1">
-                            <EnvelopeIcon className={`h-4 w-4 ${theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'} mr-1`} />
-                            <span className="truncate max-w-[150px]">{patient.email || patient.user?.email || 'No registrado'}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <PhoneIcon className={`h-4 w-4 ${theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'} mr-1`} />
-                            <span>{patient.phone || 'No registrado'}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <CalendarIcon className={`h-5 w-5 ${theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'} mr-2`} />
-                          <span className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{age ? `${age} años` : 'No registrado'}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${theme === 'dark' ? 'bg-green-900/20 text-green-400 border border-green-500/20' : 'bg-green-100 text-green-800'}`}>Activo</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handleEdit(patient)}
-                            className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'text-primary-400 hover:text-primary-300 hover:bg-primary-900/20' : 'text-primary-600 hover:text-primary-700 hover:bg-primary-50'}`}
-                            title="Editar paciente"
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                            <span className="sr-only">Editar</span>
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handleDelete(patient.id)}
-                            className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'text-red-400 hover:text-red-300 hover:bg-red-900/20' : 'text-red-600 hover:text-red-700 hover:bg-red-50'}`}
-                            title="Eliminar paciente"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                            <span className="sr-only">Eliminar</span>
-                          </motion.button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })
+                patients.map((patient) => renderPatientRow(patient))
               )}
             </tbody>
           </table>

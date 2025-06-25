@@ -42,6 +42,12 @@ apiClient.interceptors.request.use(
       headers: config.headers
     });
     
+    // Para solicitudes PUT y PATCH, asegurarse de que el Content-Type sea application/json
+    if (config.method === 'put' || config.method === 'patch') {
+      config.headers['Content-Type'] = 'application/json';
+      console.log('🔧 Configurando Content-Type para solicitud PUT/PATCH:', config.headers['Content-Type']);
+    }
+    
     return config;
   },
   (error) => {

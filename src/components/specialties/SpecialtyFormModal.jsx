@@ -34,6 +34,10 @@ const specialtySchema = z.object({
     .min(0, 'El descuento no puede ser negativo')
     .max(100, 'El descuento no puede exceder 100%')
     .refine(val => !isNaN(val), 'Debe ser un número válido'),
+  average_duration: z.number()
+    .min(1, 'La duración debe ser al menos 1 minuto')
+    .max(480, 'La duración no puede exceder 8 horas (480 minutos)')
+    .refine(val => !isNaN(val), 'Debe ser un número válido'),
 });
 
 function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
@@ -58,6 +62,7 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
       description: '',
       consultation_price: 0,
       discount_percentage: 0,
+      average_duration: 30, // Valor por defecto de 30 minutos
     },
     mode: 'onChange' // Validación en tiempo real
   });
@@ -85,6 +90,7 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
           setValue('description', specialty.description || '');
           setValue('consultation_price', parseFloat(specialty.consultation_price) || 0);
           setValue('discount_percentage', parseFloat(specialty.discount_percentage) || 0);
+          setValue('average_duration', parseFloat(specialty.average_duration) || 30);
           clearErrors();
           setIsDirty(false);
         }, 100);
@@ -95,6 +101,7 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
           description: '',
           consultation_price: 0,
           discount_percentage: 0,
+          average_duration: 30,
         });
         setIsDirty(false);
       }
@@ -122,6 +129,7 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
         description: data.description.trim(),
         consultation_price: parseFloat(data.consultation_price),
         discount_percentage: parseFloat(data.discount_percentage) || 0,
+        average_duration: parseFloat(data.average_duration) || 30,
       };
       
       console.log('📤 Datos a enviar:', specialtyData);
@@ -447,6 +455,36 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
                       )}
                       <div className="mt-1 text-xs text-gray-500">
                         {watch('description')?.length || 0}/500 caracteres
+                      </div>
+                    </div>
+
+                    {/* Campo de duración promedio */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Duración promedio (minutos) *
+                      </label>
+                      <div className="relative mt-1 rounded-md shadow-sm">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            {...register('average_duration')}
+                            className={`block w-full rounded-md border-0 py-2 pl-3 pr-10 ring-1 ring-inset 
+                              ${errors.average_duration ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'} 
+                              focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
+                            placeholder="30"
+                            min="1"
+                            max="480"
+                          />
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <TagIcon className={`h-5 w-5 ${errors.average_duration ? 'text-red-500' : 'text-gray-400'}`} />
+                          </div>
+                        </div>
+                        {errors.average_duration && (
+                          <p className="mt-2 text-sm text-red-600">{errors.average_duration.message}</p>
+                        )}
+                        <p className="mt-1 text-xs text-gray-500">
+                          Tiempo promedio de duración de la consulta
+                        </p>
                       </div>
                     </div>
                   </div>

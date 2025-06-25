@@ -82,20 +82,25 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
   // Cargar datos del doctor para edición
   useEffect(() => {
     if (isEditing && doctor) {
-      console.log('Cargando datos del doctor para edición:', doctor);
+      console.log('🔄 Cargando datos del doctor para edición:', doctor);
+      console.log('🔑 ID del doctor:', doctor.id);
       
       // Datos básicos
-      setValue('first_name', doctor.first_name || '');
-      setValue('last_name', doctor.last_name || '');
-      setValue('email', doctor.user?.email || doctor.email || '');
-      setValue('cmp_number', doctor.cmp_number || '');
-      setValue('phone', doctor.phone || '');
-      setValue('contact_phone', doctor.contact_phone || '');
-      setValue('consultation_room', doctor.consultation_room || '');
-      setValue('second_last_name', doctor.second_last_name || '');
-      setValue('doctor_type', doctor.doctor_type || 'SPECIALIST');
-      setValue('is_external', doctor.is_external || false);
-      setValue('can_refer', doctor.can_refer || false);
+      const formData = {
+        first_name: doctor.first_name || '',
+        last_name: doctor.last_name || '',
+        email: doctor.user?.email || doctor.email || '',
+        cmp_number: doctor.cmp_number || '',
+        phone: doctor.phone || '',
+        contact_phone: doctor.contact_phone || '',
+        consultation_room: doctor.consultation_room || '',
+        second_last_name: doctor.second_last_name || '',
+        doctor_type: doctor.doctor_type || 'SPECIALIST',
+        is_external: Boolean(doctor.is_external),
+        can_refer: Boolean(doctor.can_refer),
+        specialties: [],
+        id: doctor.id // Importante: incluir el ID
+      };
       
       // Procesar especialidades
       if (doctor.specialties) {
@@ -120,31 +125,56 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
           }).filter(Boolean);
         }
         
-        console.log('Especialidades procesadas:', specialtyIds);
-        setValue('specialties', specialtyIds);
+        console.log('✅ Especialidades procesadas:', specialtyIds);
+        formData.specialties = specialtyIds;
       }
+      
+      // Resetear el formulario con los datos procesados
+      reset(formData);
+      console.log('✅ Formulario inicializado con datos:', formData);
     } else {
-      reset();
+      console.log('🔄 Inicializando formulario para nuevo doctor');
+      reset({
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        cmp_number: '',
+        phone: '',
+        contact_phone: '',
+        consultation_room: '',
+        second_last_name: '',
+        doctor_type: 'SPECIALIST',
+        is_external: false,
+        can_refer: false,
+        specialties: [],
+      });
     }
-  }, [doctor, isEditing, setValue, reset]);
+  }, [doctor, isEditing, reset]);
 
   // Manejar selección de especialidades
   const handleSpecialtyToggle = (specialtyId) => {
-    const currentSpecialties = [...selectedSpecialties];
+    const currentSpecialties = watch('specialties') || [];
+    console.log('🔄 Especialidades actuales:', currentSpecialties);
+    console.log('🎯 Especialidad a toggle:', specialtyId);
     
+    let newSpecialties;
     if (currentSpecialties.includes(specialtyId)) {
       // Quitar especialidad
-      setValue('specialties', currentSpecialties.filter(id => id !== specialtyId));
+      newSpecialties = currentSpecialties.filter(id => id !== specialtyId);
     } else {
       // Agregar especialidad
-      setValue('specialties', [...currentSpecialties, specialtyId]);
+      newSpecialties = [...currentSpecialties, specialtyId];
     }
+    
+    console.log('✅ Nuevas especialidades:', newSpecialties);
+    setValue('specialties', newSpecialties, { shouldValidate: true });
   };
 
   const onSubmit = async (data) => {
     try {
       setIsSubmitting(true);
-      console.log('Datos del formulario:', data);
+      console.log('📝 Datos del formulario:', data);
       
       // Verificar que haya al menos una especialidad
       if (!data.specialties || data.specialties.length === 0) {
@@ -160,19 +190,26 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
       if (!cleanData.consultation_room || cleanData.consultation_room.trim() === '') delete cleanData.consultation_room;
       if (!cleanData.second_last_name || cleanData.second_last_name.trim() === '') delete cleanData.second_last_name;
 
-      console.log('Datos procesados para enviar:', cleanData);
+      console.log('🔄 Datos procesados para enviar:', cleanData);
       
       if (isEditing) {
+        if (!doctor?.id) {
+          throw new Error('ID de doctor no disponible para actualización');
+        }
+        
         // Para edición, no enviar password si está vacío
         if (!cleanData.password || cleanData.password.trim() === '') {
           delete cleanData.password;
         }
         
-        await updateDoctor.mutateAsync({ 
+        console.log(`🔄 Enviando actualización para doctor ID: ${doctor.id}`);
+        const updatedDoctor = await updateDoctor.mutateAsync({ 
           id: doctor.id, 
           data: cleanData 
         });
-        toast.success('Doctor actualizado exitosamente');
+        
+        console.log('✅ Doctor actualizado:', updatedDoctor);
+        toast.success('Doctor actualizado correctamente');
       } else {
         // Para creación, verificar que tenga password
         if (!cleanData.password || cleanData.password.length < 8) {
@@ -180,19 +217,20 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
           toast.info('Se ha generado una contraseña temporal');
         }
         
-        await createDoctor.mutateAsync(cleanData);
-        toast.success('Doctor creado exitosamente');
+        const newDoctor = await createDoctor.mutateAsync(cleanData);
+        console.log('✅ Doctor creado:', newDoctor);
+        toast.success('Doctor creado correctamente');
       }
       
       onClose();
       reset();
     } catch (error) {
-      console.error('Error al procesar el formulario:', error);
+      console.error('❌ Error al procesar el formulario:', error);
       
       // Manejar errores específicos del backend
       if (error.response?.data) {
         const errorData = error.response.data;
-        console.log('Datos del error:', errorData);
+        console.log('📋 Datos del error:', errorData);
         
         if (errorData.email) {
           toast.error(`Email: ${Array.isArray(errorData.email) ? errorData.email[0] : errorData.email}`);
@@ -210,7 +248,7 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
           toast.error(`Errores: ${allErrors}`);
         }
       } else {
-        toast.error('Error de conexión. Verifica que el servidor esté funcionando.');
+        toast.error(error.message || 'Error de conexión. Verifica que el servidor esté funcionando.');
       }
     } finally {
       setIsSubmitting(false);

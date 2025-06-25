@@ -167,6 +167,7 @@ export const createSpecialty = async (specialtyData) => {
       description: String(specialtyData.description).trim(),
       consultation_price: Number(specialtyData.consultation_price),
       discount_percentage: Number(specialtyData.discount_percentage) || 0,
+      average_duration: Number(specialtyData.average_duration) || 30,
     };
     
     console.log('📋 Datos validados:', validatedData);
@@ -192,6 +193,7 @@ export const createSpecialty = async (specialtyData) => {
       if (errorData.description) fieldErrors.push(`Descripción: ${Array.isArray(errorData.description) ? errorData.description[0] : errorData.description}`);
       if (errorData.consultation_price) fieldErrors.push(`Precio: ${Array.isArray(errorData.consultation_price) ? errorData.consultation_price[0] : errorData.consultation_price}`);
       if (errorData.discount_percentage) fieldErrors.push(`Descuento: ${Array.isArray(errorData.discount_percentage) ? errorData.discount_percentage[0] : errorData.discount_percentage}`);
+      if (errorData.average_duration) fieldErrors.push(`Duración: ${Array.isArray(errorData.average_duration) ? errorData.average_duration[0] : errorData.average_duration}`);
       
       if (fieldErrors.length > 0) {
         error.message = fieldErrors.join(', ');
@@ -218,6 +220,7 @@ export const updateSpecialty = async (id, specialtyData) => {
       description: String(specialtyData.description).trim(),
       consultation_price: Number(specialtyData.consultation_price),
       discount_percentage: Number(specialtyData.discount_percentage) || 0,
+      average_duration: Number(specialtyData.average_duration) || 30,
     };
     
     console.log('📋 Datos validados:', validatedData);
@@ -243,6 +246,7 @@ export const updateSpecialty = async (id, specialtyData) => {
       if (errorData.description) fieldErrors.push(`Descripción: ${Array.isArray(errorData.description) ? errorData.description[0] : errorData.description}`);
       if (errorData.consultation_price) fieldErrors.push(`Precio: ${Array.isArray(errorData.consultation_price) ? errorData.consultation_price[0] : errorData.consultation_price}`);
       if (errorData.discount_percentage) fieldErrors.push(`Descuento: ${Array.isArray(errorData.discount_percentage) ? errorData.discount_percentage[0] : errorData.discount_percentage}`);
+      if (errorData.average_duration) fieldErrors.push(`Duración: ${Array.isArray(errorData.average_duration) ? errorData.average_duration[0] : errorData.average_duration}`);
       
       if (fieldErrors.length > 0) {
         error.message = fieldErrors.join(', ');
