@@ -338,8 +338,8 @@ export const createPatient = async (patientData) => {
           preparedData.blood_type = shortToLong[preparedData.blood_type];
           console.log(`✅ Tipo de sangre convertido a: ${preparedData.blood_type}`);
         } else {
-          console.warn(`Tipo de sangre no válido: ${preparedData.blood_type}. Se eliminará del envío.`);
-          delete preparedData.blood_type;
+        console.warn(`Tipo de sangre no válido: ${preparedData.blood_type}. Se eliminará del envío.`);
+        delete preparedData.blood_type;
         }
       }
     }

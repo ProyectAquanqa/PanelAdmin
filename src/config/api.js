@@ -59,4 +59,16 @@ export const API_ROUTES = {
   
   // Dashboard
   DASHBOARD: `/api/v1/dashboard/`,
+
+  // Chatbot
+  CHATBOT: {
+    KNOWLEDGE_BASE: `/api/chatbot/api/knowledge-base/`,
+    CHAT: `/api/chatbot/api/chat/`,
+    FEEDBACK: (id) => `/api/chatbot/api/feedback/${id}/`,
+    ANALYTICS: `/api/chatbot/api/analytics/`,
+    HISTORY: `/api/chatbot/api/history/`,
+    SEARCH: `/api/chatbot/api/knowledge/search/`,
+    CATEGORIES: `/api/chatbot/api/knowledge/categories/`,
+    ACTIVE: `/api/chatbot/api/knowledge/active/`,
+  },
 };
