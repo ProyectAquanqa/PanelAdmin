@@ -474,7 +474,7 @@ function AppointmentListPage() {
                   
                   return (
                     <motion.tr 
-                      key={appointment.id}
+                      key={appointment.id || index}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
@@ -488,26 +488,26 @@ function AppointmentListPage() {
                         <div className={`text-sm font-medium ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
                         }`}>
-                          {appointment.patient_name || 'Paciente no especificado'}
+                          {appointment.patient_name || `Paciente #${appointment.patient}`}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className={`text-sm ${
                           theme === 'dark' ? 'text-neutral-300' : 'text-gray-900'
                         }`}>
-                          {appointment.doctor_name || 'Doctor no especificado'}
+                          {appointment.doctor_name || `Doctor #${appointment.doctor}`}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className={`text-sm ${
                           theme === 'dark' ? 'text-neutral-300' : 'text-gray-900'
                         }`}>
-                          {appointment.specialty_name || 'Especialidad no especificada'}
+                          {appointment.specialty_name || `Especialidad #${appointment.specialty}`}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className={`text-sm ${
-                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          theme === 'dark' ? 'text-neutral-300' : 'text-gray-900'
                         }`}>
                           {formatDate(appointment.appointment_date)}
                         </div>
@@ -519,24 +519,41 @@ function AppointmentListPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                          {getStatusIcon(appointment.status)}
-                          <span className="ml-1">{getStatusText(appointment.status)}</span>
+                          <span className="mr-1.5">
+                            {getStatusIcon(appointment.status)}
+                          </span>
+                          {getStatusText(appointment.status)}
                         </span>
+                        
+                        {isPast && appointment.status === 'SCHEDULED' && (
+                          <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            theme === 'dark' ? 'bg-yellow-900/20 text-yellow-400' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                            Pasada
+                          </span>
+                        )}
+                        
+                        {isToday && (
+                          <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            theme === 'dark' ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            Hoy
+                          </span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleOpenModal(appointment)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            theme === 'dark' 
-                              ? 'text-primary-400 hover:text-primary-300 hover:bg-primary-900/20' 
-                              : 'text-primary-600 hover:text-primary-700 hover:bg-primary-50'
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenModal(appointment);
+                          }}
+                          className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-900'
                           }`}
-                          title="Editar cita"
                         >
                           Editar
-                        </motion.button>
+                        </button>
                       </td>
                     </motion.tr>
                   );

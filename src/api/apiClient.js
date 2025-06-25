@@ -12,7 +12,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 10000, // 10 segundos de timeout para las peticiones
+  timeout: 60000, // 60 segundos de timeout para las peticiones (para esperar APIs más lentas)
 });
 
 // Request interceptor
@@ -24,14 +24,23 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Asegurarse de que la URL comience con /api si no es así
+    // Asegurarse de que la URL comience con /api si no es así y no es una URL completa
     if (!config.url.startsWith('/api') && !config.url.startsWith('http')) {
       config.url = `/api${config.url.startsWith('/') ? '' : '/'}${config.url}`;
     }
     
+    // Para compatibilidad con Django, asegúrese de que URLs terminan con "/"
+    if (!config.url.endsWith('/') && !config.url.includes('?')) {
+      config.url = `${config.url}/`;
+    }
+    
     // Imprimir la URL completa para depuración
     const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url;
-    console.log(`🚀 Request: ${config.method.toUpperCase()} ${fullUrl}`, config.params || {});
+    console.log(`🚀 Request: ${config.method.toUpperCase()} ${fullUrl}`, {
+      params: config.params || {},
+      data: config.data || {},
+      headers: config.headers
+    });
     
     return config;
   },
@@ -45,11 +54,29 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     // Log para depuración de respuestas exitosas
-    console.log(`✅ Response from ${response.config.url}:`, response.status);
+    console.log(`✅ Response from ${response.config.url}:`, {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data
+    });
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
+    
+    // Mostrar información detallada del error
+    if (error.response) {
+      console.error(`❌ Error ${error.response.status} from ${originalRequest.url}:`, {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error(`❌ No response received from ${originalRequest.url}:`, error.request);
+    } else {
+      console.error(`❌ Error setting up request to ${originalRequest?.url}:`, error.message);
+    }
     
     // Si el error es 401 (Unauthorized) y no hemos intentado ya refreshear el token
     if (error.response?.status === 401 && !originalRequest._retry && localStorage.getItem('refreshToken')) {
@@ -107,11 +134,22 @@ apiClient.interceptors.response.use(
       }
     }
     
+    // Intento de recuperación para endpoints específicos (como doctores por especialidad)
+    if (error.response?.status === 404) {
+      const url = originalRequest.url.toLowerCase();
+      
+      // Si es una búsqueda de doctores por especialidad o bloques horarios, intentar URLs alternativas
+      if (url.includes('doctor') && url.includes('specialty')) {
+        console.log('⚠️ Ruta de doctores por especialidad no encontrada, podría requerir ajustes en la URL');
+      } else if (url.includes('time') && url.includes('block')) {
+        console.log('⚠️ Ruta de bloques horarios no encontrada, podría requerir ajustes en la URL');
+      }
+    }
+    
     // Manejo de errores comunes
     if (error.response) {
       // La solicitud fue hecha y el servidor respondió con un código de estado fuera del rango 2xx
       const status = error.response.status;
-      console.error(`❌ Error ${status} from ${originalRequest.url}:`, error.response.data);
       
       if (status === 403) {
         toast.error('No tiene permisos para realizar esta acción');
@@ -120,10 +158,47 @@ apiClient.interceptors.response.use(
         console.warn('Recurso no encontrado:', originalRequest.url);
       } else if (status === 500) {
         toast.error('Error del servidor. Por favor, inténtelo más tarde');
+      } else if (status === 400) {
+        // Errores de validación
+        const data = error.response.data;
+        if (data) {
+          if (typeof data === 'string') {
+            toast.error(data);
+          } else if (data.detail) {
+            toast.error(data.detail);
+          } else if (data.error) {
+            toast.error(data.error);
+          } else if (data.message) {
+            toast.error(data.message);
+          } else if (typeof data === 'object') {
+            // Si es un objeto con múltiples errores
+            let errorMessage = '';
+            
+            // Iterar a través de todos los errores y concatenarlos
+            for (const key in data) {
+              if (Object.hasOwnProperty.call(data, key)) {
+                const errorValue = data[key];
+                if (Array.isArray(errorValue)) {
+                  errorMessage += `${key}: ${errorValue[0]}\n`;
+                } else if (typeof errorValue === 'string') {
+                  errorMessage += `${key}: ${errorValue}\n`;
+                }
+              }
+            }
+            
+            // Si no se encontró ningún mensaje, usar un mensaje genérico
+            if (!errorMessage) {
+              errorMessage = 'Error de validación en los datos enviados';
+            }
+            
+            toast.error(errorMessage.trim());
+          }
+        } else {
+          toast.error('Error de validación en los datos enviados');
+        }
       }
     } else if (error.request) {
       // La solicitud fue hecha pero no se recibió respuesta
-      console.error('No se recibió respuesta del servidor:', error.request);
       if (!navigator.onLine) {
         toast.error('Sin conexión a Internet. Verifique su conexión e inténtelo de nuevo.');
       } else {

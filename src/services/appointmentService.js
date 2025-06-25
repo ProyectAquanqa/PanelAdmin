@@ -9,9 +9,42 @@ import { API_ROUTES } from '../config/api';
 export const getAppointments = async (params = {}) => {
   try {
     console.log('🔍 Solicitando citas con parámetros:', params);
-    const response = await apiClient.get(API_ROUTES.APPOINTMENTS, { params });
-    console.log('✅ Citas obtenidas:', response.data);
-    return response.data;
+    
+    // Intentar primero con la ruta principal
+    try {
+      const response = await apiClient.get(API_ROUTES.APPOINTMENTS, { params });
+      console.log('✅ Citas obtenidas (ruta principal):', response.data);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status !== 404) {
+        throw error;
+      }
+      
+      // Si falla con 404, intentar con rutas alternativas
+      console.log('⚠️ Ruta principal no disponible, intentando alternativas');
+      
+      const alternativeUrls = [
+        '/api/appointments/api/appointments/',
+        '/api/appointments/api/',
+        '/api/appointments/'
+      ];
+      
+      for (const url of alternativeUrls) {
+        try {
+          const response = await apiClient.get(url, { params });
+          console.log(`✅ Citas obtenidas (ruta alternativa ${url}):`, response.data);
+          return response.data;
+        } catch (altError) {
+          if (altError.response?.status !== 404) {
+            throw altError;
+          }
+          // Continuar con la siguiente URL si es 404
+        }
+      }
+      
+      // Si llegamos aquí, ninguna URL funcionó
+      throw new Error('No se pudo obtener la lista de citas. Todas las rutas fallaron.');
+    }
   } catch (error) {
     console.error('💥 Error al obtener citas:', error.response || error);
     throw error;
@@ -83,11 +116,9 @@ export const getAvailableSlots = async (params) => {
       throw new Error('Se requiere doctor_id y date para buscar horarios disponibles');
     }
     
-    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.AVAILABLE_TIME_BLOCKS;
-    
+    // Intentar primero con la ruta principal
     try {
-      // Intentar con GET y parámetros de consulta
-      const response = await apiClient.get(url, { params });
+      const response = await apiClient.get(API_ROUTES.APPOINTMENT_ENDPOINTS.AVAILABLE_TIME_BLOCKS, { params });
       console.log(`✅ Horarios disponibles obtenidos:`, response.data);
       
       // Adaptar la respuesta al formato esperado por el componente
@@ -100,9 +131,43 @@ export const getAvailableSlots = async (params) => {
       
       return result;
     } catch (error) {
-      console.log(`❌ Error al obtener horarios disponibles:`, error.response?.status);
+      if (error.response?.status !== 404) {
+        throw error;
+      }
       
-      // En caso de error, devolver un objeto con valores por defecto
+      // Si falla con 404, intentar con rutas alternativas
+      console.log('⚠️ Ruta principal no disponible, intentando alternativas');
+      
+      const alternativeUrls = [
+        '/api/appointments/api/available-time-blocks/',
+        '/api/appointments/api/available-slots/',
+        '/api/appointments/available-slots/'
+      ];
+      
+      for (const url of alternativeUrls) {
+        try {
+          const response = await apiClient.get(url, { params });
+          console.log(`✅ Horarios disponibles obtenidos (ruta alternativa ${url}):`, response.data);
+          
+          // Adaptar la respuesta al formato esperado por el componente
+          const result = {
+            doctor_id: params.doctor_id,
+            date: params.date,
+            available_blocks: response.data?.time_blocks || response.data?.available_blocks || [],
+            busy_blocks: response.data?.busy_blocks || []
+          };
+          
+          return result;
+        } catch (altError) {
+          if (altError.response?.status !== 404) {
+            throw altError;
+          }
+          // Continuar con la siguiente URL si es 404
+        }
+      }
+      
+      // Si llegamos aquí, ninguna URL funcionó, devolver valores por defecto
+      console.log('⚠️ Todas las rutas fallaron, devolviendo valores por defecto');
       return {
         doctor_id: params.doctor_id,
         date: params.date,
@@ -110,7 +175,6 @@ export const getAvailableSlots = async (params) => {
         busy_blocks: []
       };
     }
-    
   } catch (error) {
     console.error('💥 Error al obtener horarios disponibles:', error.response?.data || error);
     // En caso de error, devolver un objeto con valores por defecto
@@ -132,37 +196,76 @@ export const getDoctorsBySpecialty = async (specialtyId) => {
   try {
     console.log(`Solicitando doctores para especialidad ID: ${specialtyId}`);
     
-    const url = API_ROUTES.APPOINTMENT_ENDPOINTS.DOCTORS_BY_SPECIALTY;
-    
+    // Intentar primero con la ruta principal
     try {
-      const response = await apiClient.get(url, { 
-        params: { specialty_id: specialtyId } 
+      const response = await apiClient.get(API_ROUTES.APPOINTMENT_ENDPOINTS.DOCTORS_BY_SPECIALTY, {
+        params: { specialty_id: specialtyId }
       });
       
-      console.log(`✅ Doctores obtenidos:`, response.data);
+      console.log(`✅ Doctores obtenidos (ruta principal):`, response.data);
       
-      // Si la respuesta tiene un formato específico con doctors, devolver solo los doctores
+      // Procesar la respuesta según el formato
+      let doctorsList = [];
+      
       if (response.data && response.data.doctors) {
-        console.log('Doctores encontrados:', response.data.doctors.length);
-        return response.data.doctors;
+        doctorsList = response.data.doctors;
+      } else if (Array.isArray(response.data)) {
+        doctorsList = response.data;
+      } else if (response.data && response.data.results) {
+        doctorsList = response.data.results;
+      } else {
+        doctorsList = []; // Por defecto, lista vacía
       }
       
-      // Si la respuesta es un array directo, devolverlo
-      if (Array.isArray(response.data)) {
-        console.log('Doctores encontrados (array):', response.data.length);
-        return response.data;
-      }
-      
-      // Si la respuesta tiene results, devolver results
-      if (response.data && response.data.results) {
-        console.log('Doctores encontrados (results):', response.data.results.length);
-        return response.data.results;
-      }
-      
-      // Por defecto, devolver la respuesta completa
-      return response.data;
+      console.log(`Doctores procesados: ${doctorsList.length}`);
+      return doctorsList;
     } catch (error) {
-      console.log(`❌ Error al obtener doctores:`, error.response?.status);
+      if (error.response?.status !== 404) {
+        throw error;
+      }
+      
+      // Si falla con 404, intentar con rutas alternativas
+      console.log('⚠️ Ruta principal no disponible, intentando alternativas');
+      
+      const alternativeUrls = [
+        '/api/appointments/api/doctors-by-specialty/',
+        '/api/doctors/api/by-specialty/',
+        '/api/doctors/by-specialty/'
+      ];
+      
+      for (const url of alternativeUrls) {
+        try {
+          const response = await apiClient.get(url, {
+            params: { specialty_id: specialtyId }
+          });
+          
+          console.log(`✅ Doctores obtenidos (ruta alternativa ${url}):`, response.data);
+          
+          // Procesar la respuesta según el formato
+          let doctorsList = [];
+          
+          if (response.data && response.data.doctors) {
+            doctorsList = response.data.doctors;
+          } else if (Array.isArray(response.data)) {
+            doctorsList = response.data;
+          } else if (response.data && response.data.results) {
+            doctorsList = response.data.results;
+          } else {
+            doctorsList = []; // Por defecto, lista vacía
+          }
+          
+          console.log(`Doctores procesados: ${doctorsList.length}`);
+          return doctorsList;
+        } catch (altError) {
+          if (altError.response?.status !== 404) {
+            throw altError;
+          }
+          // Continuar con la siguiente URL si es 404
+        }
+      }
+      
+      // Si llegamos aquí, ninguna URL funcionó
+      console.log('⚠️ Todas las rutas fallaron, devolviendo lista vacía');
       return [];
     }
   } catch (error) {
@@ -198,9 +301,51 @@ export const createAppointment = async (appointmentData) => {
       specialty: Number(appointmentData.specialty),
     };
     
-    const response = await apiClient.post(API_ROUTES.APPOINTMENTS, data);
-    console.log(`✅ Cita creada exitosamente:`, response.data);
-    return response.data;
+    console.log('Datos procesados para enviar:', data);
+    
+    // Intentar primero con la ruta principal
+    try {
+      const response = await apiClient.post(API_ROUTES.APPOINTMENTS, data);
+      console.log(`✅ Cita creada exitosamente (ruta principal):`, response.data);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status !== 404) {
+        // Si hay errores de validación, mostrarlos detalladamente
+        if (error.response?.data) {
+          console.error('Errores de validación:', error.response.data);
+        }
+        throw error;
+      }
+      
+      // Si falla con 404, intentar con rutas alternativas
+      console.log('⚠️ Ruta principal no disponible, intentando alternativas');
+      
+      const alternativeUrls = [
+        '/api/appointments/api/appointments/',
+        '/api/appointments/appointments/',
+        '/api/appointments/api/'
+      ];
+      
+      for (const url of alternativeUrls) {
+        try {
+          const response = await apiClient.post(url, data);
+          console.log(`✅ Cita creada exitosamente (ruta alternativa ${url}):`, response.data);
+          return response.data;
+        } catch (altError) {
+          if (altError.response?.status !== 404) {
+            // Si hay errores de validación, mostrarlos detalladamente
+            if (altError.response?.data) {
+              console.error('Errores de validación:', altError.response.data);
+            }
+            throw altError;
+          }
+          // Continuar con la siguiente URL si es 404
+        }
+      }
+      
+      // Si llegamos aquí, ninguna URL funcionó
+      throw new Error('No se pudo crear la cita. Todas las rutas fallaron.');
+    }
   } catch (error) {
     console.error('Error al crear cita:', error.response?.data || error);
     throw error;
