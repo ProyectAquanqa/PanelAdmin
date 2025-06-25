@@ -121,8 +121,8 @@ export const useCreatePatient = () => {
             data.blood_type = shortToLong[data.blood_type];
             console.log('✅ Tipo de sangre convertido a:', data.blood_type);
           } else {
-            delete data.blood_type;
-            console.warn('⚠️ Tipo de sangre inválido eliminado en hook');
+          delete data.blood_type;
+          console.warn('⚠️ Tipo de sangre inválido eliminado en hook');
           }
         }
       }
@@ -230,7 +230,7 @@ export const useUpdatePatient = () => {
       queryClient.invalidateQueries({ queryKey: [PATIENTS_QUERY_KEY] });
       // Actualizar paciente específico en la cache
       if (variables.id) {
-        queryClient.setQueryData([PATIENTS_QUERY_KEY, variables.id], data);
+      queryClient.setQueryData([PATIENTS_QUERY_KEY, variables.id], data);
       }
     },
     onError: (error) => {

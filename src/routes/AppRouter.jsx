@@ -14,6 +14,7 @@ import PatientApiTestPage from '../pages/patients/PatientApiTestPage';
 import SpecialtyListPage from '../pages/specialties/SpecialtyListPage';
 import AppointmentListPage from '../pages/appointments/AppointmentListPage';
 import ChatbotListPage from '../pages/chatbot/ChatbotListPage';
+import SettingsPage from '../pages/settings/SettingsPage';
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -74,6 +75,7 @@ const AppRouter = () => {
         <Route path="appointments" element={<AppointmentListPage />} />
         <Route path="specialties" element={<SpecialtyListPage />} />
         <Route path="chatbot" element={<ChatbotListPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

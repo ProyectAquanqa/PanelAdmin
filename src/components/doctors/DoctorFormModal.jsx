@@ -538,8 +538,8 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
                               name="can_refer"
                               control={control}
                               render={({ field }) => (
-                                <input
-                                  type="checkbox"
+                            <input
+                              type="checkbox"
                                   {...field}
                                   checked={field.value}
                                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"

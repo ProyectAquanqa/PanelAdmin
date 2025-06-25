@@ -71,4 +71,14 @@ export const API_ROUTES = {
     CATEGORIES: `/api/chatbot/api/knowledge/categories/`,
     ACTIVE: `/api/chatbot/api/knowledge/active/`,
   },
+  
+  // Configuraciones del Hospital
+  SETTINGS: {
+    BASE: `/api/settings/hospital-settings/`,
+    BY_ID: (id) => `/api/settings/hospital-settings/${id}/`,
+    PUBLIC: `/api/settings/hospital-settings/public_settings/`,
+    BY_CATEGORY: `/api/settings/hospital-settings/by_category/`,
+    BULK_UPDATE: `/api/settings/hospital-settings/bulk_update/`,
+    INITIALIZE: `/api/settings/hospital-settings/initialize_defaults/`,
+  },
 };

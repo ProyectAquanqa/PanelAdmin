@@ -297,17 +297,17 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                             Nombre *
                           </label>
                           <div className="mt-1">
-                            <input
-                              type="text"
+                          <input
+                            type="text"
                               {...register('first_name')}
                               className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ${
                                 errors.first_name ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'
                               } placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
-                              placeholder="Ingresa el nombre"
-                            />
-                            {errors.first_name && (
+                            placeholder="Ingresa el nombre"
+                          />
+                          {errors.first_name && (
                               <p className="mt-2 text-sm text-red-600">{errors.first_name.message}</p>
-                            )}
+                          )}
                           </div>
                         </div>
 
@@ -317,19 +317,19 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                             Apellido *
                           </label>
                           <div className="mt-1">
-                            <input
-                              type="text"
-                              {...register('last_name')}
+                          <input
+                            type="text"
+                            {...register('last_name')}
                               className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ${
                                 errors.last_name ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'
                               } placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
                               placeholder="Ingresa el apellido"
-                            />
-                            {errors.last_name && (
+                          />
+                          {errors.last_name && (
                               <p className="mt-2 text-sm text-red-600">{errors.last_name.message}</p>
-                            )}
-                          </div>
-                        </div>
+                          )}
+                      </div>
+                    </div>
 
                         {/* Email */}
                         <div>
@@ -376,44 +376,44 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                             <p className="mt-2 text-sm text-red-600">{errors.phone.message}</p>
                           )}
                         </div>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Contraseña */}
+                      {/* Contraseña */}
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                         <IdentificationIcon className="h-5 w-5 text-gray-500 mr-2" />
                         {isEditing ? 'Cambiar Contraseña' : 'Contraseña'}
                       </h3>
-                      <div className="relative">
-                        <input
+                        <div className="relative">
+                          <input
                           type={showPassword ? 'text' : 'password'}
-                          {...register('password')}
+                            {...register('password')}
                           className={`block w-full rounded-md border-0 py-1.5 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ${
                             errors.password ? 'ring-red-500 focus:ring-red-500' : 'ring-gray-300 focus:ring-blue-500'
                           } placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6`}
                           placeholder={isEditing ? 'Dejar vacío para mantener la actual' : 'Mínimo 8 caracteres'}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
+                          />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
                           className="absolute inset-y-0 right-0 flex items-center pr-3"
-                        >
-                          {showPassword ? (
+                            >
+                              {showPassword ? (
                             <EyeSlashIcon className="h-5 w-5 text-gray-400" />
-                          ) : (
+                              ) : (
                             <EyeIcon className="h-5 w-5 text-gray-400" />
-                          )}
-                        </button>
-                      </div>
-                      {errors.password && (
+                              )}
+                            </button>
+                        </div>
+                        {errors.password && (
                         <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
-                      )}
-                      {isEditing && (
+                        )}
+                        {isEditing && (
                         <p className="mt-2 text-sm text-gray-500">
                           Solo llena este campo si deseas cambiar la contraseña actual
-                        </p>
-                      )}
+                          </p>
+                        )}
                     </div>
 
                     {/* Rol del Usuario */}
@@ -484,9 +484,9 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                     >
                       {isSubmitting && (
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
                       )}
                       {isEditing ? 'Guardar Cambios' : 'Crear Usuario'}
                     </button>

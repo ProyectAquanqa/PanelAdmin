@@ -332,7 +332,7 @@ export default function DoctorListPage() {
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className={`rounded-lg border ${
-                theme === 'dark'
+                theme === 'dark' 
                   ? 'bg-neutral-800 border-neutral-700 text-white'
                   : 'bg-white border-gray-300 text-gray-900'
               } px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
