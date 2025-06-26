@@ -50,7 +50,13 @@ export const useCreatePatient = () => {
       console.log('Datos enviados para crear paciente:', data);
       
       // Asegurar que tenemos los campos obligatorios
-      const requiredFields = ['email', 'password', 'first_name', 'last_name'];
+      const requiredFields = ['first_name', 'last_name'];
+      
+      // Si no es paciente presencial, requerir email y password
+      if (!data.is_presential) {
+        requiredFields.push('email', 'password');
+      }
+      
       requiredFields.forEach(field => {
         if (!data[field]) {
           throw new Error(`El campo ${field} es obligatorio`);
@@ -207,16 +213,79 @@ export const useUpdatePatient = () => {
         throw new Error('ID de paciente no proporcionado');
       }
       
-      // Asegurarse de que el ID es un número
-      const patientId = parseInt(id, 10);
-      if (isNaN(patientId)) {
-        throw new Error(`ID de paciente inválido: ${id}`);
+      // Validar campos requeridos
+      const requiredFields = ['first_name', 'last_name', 'document_number', 'birth_date', 'gender', 'phone'];
+      const missingFields = requiredFields.filter(field => !data[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Campos requeridos faltantes: ${missingFields.join(', ')}`);
       }
       
-      // Llamada directa al servicio
+      // Validar email y password solo si no es presencial
+      if (!data.is_presential && !data.email) {
+        throw new Error('El email es requerido para pacientes no presenciales');
+      }
+      
+      // Asegurar que document_type es un número
+      if (typeof data.document_type === 'string') {
+        data.document_type = parseInt(data.document_type) || 1;
+      }
+      
+      // Validar género
+      const validGenders = ['MALE', 'FEMALE', 'OTHER'];
+      if (!validGenders.includes(data.gender)) {
+        const shortToLong = { 'M': 'MALE', 'F': 'FEMALE', 'O': 'OTHER' };
+        data.gender = shortToLong[data.gender] || 'OTHER';
+      }
+      
+      // Validar tipo de sangre si está presente
+      if (data.blood_type) {
+        const validBloodTypes = [
+          'A_POSITIVE', 'A_NEGATIVE', 
+          'B_POSITIVE', 'B_NEGATIVE', 
+          'AB_POSITIVE', 'AB_NEGATIVE', 
+          'O_POSITIVE', 'O_NEGATIVE'
+        ];
+        if (!validBloodTypes.includes(data.blood_type)) {
+          const shortToLong = {
+            'A+': 'A_POSITIVE', 'A-': 'A_NEGATIVE',
+            'B+': 'B_POSITIVE', 'B-': 'B_NEGATIVE',
+            'AB+': 'AB_POSITIVE', 'AB-': 'AB_NEGATIVE',
+            'O+': 'O_POSITIVE', 'O-': 'O_NEGATIVE',
+          };
+          data.blood_type = shortToLong[data.blood_type] || undefined;
+        }
+      }
+      
+      // Validar teléfonos
+      const validatePhone = (phone) => {
+        if (!phone) return phone;
+        const digitsOnly = phone.replace(/\D/g, '');
+        return digitsOnly.length >= 9 && digitsOnly.length <= 15 ? digitsOnly : undefined;
+      };
+      
+      data.phone = validatePhone(data.phone);
+      if (data.emergency_contact_phone) {
+        data.emergency_contact_phone = validatePhone(data.emergency_contact_phone);
+      }
+      
+      // Limpiar campos vacíos o nulos
+      const cleanData = { ...data };
+      Object.keys(cleanData).forEach(key => {
+        if (cleanData[key] === '' || cleanData[key] === null || cleanData[key] === undefined) {
+          delete cleanData[key];
+        }
+      });
+      
+      // Si es presencial, asegurar que no se envían credenciales
+      if (cleanData.is_presential) {
+        delete cleanData.email;
+        delete cleanData.password;
+      }
+      
       try {
-        console.log(`🔄 Llamando al servicio updatePatient con ID: ${patientId}`);
-        const result = await updatePatient(patientId, data);
+        console.log(`🔄 Llamando al servicio updatePatient con ID: ${id} y datos:`, cleanData);
+        const result = await updatePatient(id, cleanData);
         console.log('✅ Resultado del servicio updatePatient:', result);
         return result;
       } catch (error) {
@@ -230,12 +299,12 @@ export const useUpdatePatient = () => {
       queryClient.invalidateQueries({ queryKey: [PATIENTS_QUERY_KEY] });
       // Actualizar paciente específico en la cache
       if (variables.id) {
-      queryClient.setQueryData([PATIENTS_QUERY_KEY, variables.id], data);
+        queryClient.setQueryData([PATIENTS_QUERY_KEY, variables.id], data);
       }
     },
     onError: (error) => {
       console.error('❌ Error al actualizar paciente:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      throw error; // Propagar el error para manejarlo en el componente
     },
   });
 };

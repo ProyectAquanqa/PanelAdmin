@@ -35,34 +35,79 @@ const PatientFormModal = ({ isOpen, onClose, patient = null }) => {
       setIsSubmitting(true);
       console.log(`🔄 PatientFormModal: ${isEditing ? 'Actualizando' : 'Creando'} paciente con datos:`, formData);
       
+      // Validar datos básicos
+      if (!formData.first_name || !formData.last_name) {
+        throw new Error('Los nombres y apellidos son obligatorios');
+      }
+      
       if (isEditing) {
         if (!patient?.id) {
           throw new Error('ID de paciente no disponible para actualización');
         }
         
-        console.log(`🔄 Enviando actualización para paciente ID: ${patient.id}`);
+        // Preparar datos para actualización
+        const updateData = {
+          ...formData,
+          id: patient.id,
+          // Mantener el estado presencial original si no se modifica
+          is_presential: formData.is_presential ?? patient.is_presential
+        };
+        
+        // Si es presencial, asegurar que no se envían credenciales
+        if (updateData.is_presential) {
+          delete updateData.email;
+          delete updateData.password;
+        }
+        
+        // Limpiar campos vacíos o nulos
+        Object.keys(updateData).forEach(key => {
+          if (updateData[key] === '' || updateData[key] === null || updateData[key] === undefined) {
+            delete updateData[key];
+          }
+        });
+        
+        console.log(`🔄 Enviando actualización para paciente ID: ${patient.id}`, updateData);
         const updatedPatient = await updatePatientMutation.mutateAsync({
           id: patient.id,
-          data: formData
+          data: updateData
         });
         
         console.log('✅ Paciente actualizado:', updatedPatient);
         toast.success('Paciente actualizado correctamente');
+        onClose(); // Cerrar el modal después de éxito
       } else {
         const newPatient = await createPatientMutation.mutateAsync(formData);
         console.log('✅ Paciente creado:', newPatient);
         toast.success('Paciente creado correctamente');
+        onClose(); // Cerrar el modal después de éxito
       }
       
-      onClose(); // Cerrar el modal después de éxito
     } catch (error) {
       console.error(`❌ Error al ${isEditing ? 'actualizar' : 'crear'} paciente:`, error);
       
       // Mejorar el mensaje de error
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.email?.[0] || 
-                          error.message || 
-                          'Ha ocurrido un error inesperado';
+      let errorMessage = error.response?.data?.detail || 
+                        error.response?.data?.email?.[0] || 
+                        error.message || 
+                        'Ha ocurrido un error inesperado';
+      
+      // Manejar errores específicos
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        if (typeof errorData === 'object') {
+          // Buscar el primer error en cualquier campo
+          for (const field in errorData) {
+            const fieldError = errorData[field];
+            if (Array.isArray(fieldError) && fieldError.length > 0) {
+              errorMessage = `${field}: ${fieldError[0]}`;
+              break;
+            } else if (typeof fieldError === 'string') {
+              errorMessage = `${field}: ${fieldError}`;
+              break;
+            }
+          }
+        }
+      }
       
       toast.error(`Error: ${errorMessage}`);
     } finally {

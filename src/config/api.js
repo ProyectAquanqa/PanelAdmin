@@ -30,6 +30,7 @@ export const API_ROUTES = {
     BASE: `/api/users/patients/`,
     BY_ID: (id) => `/api/users/patients/${id}/`,
     SEARCH: (query) => `/api/users/patients/search/?q=${query}`,
+    RECEPTION: `/api/users/patients/reception/`,
   },
   
   // Especialidades

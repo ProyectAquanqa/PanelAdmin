@@ -15,19 +15,24 @@ const patientSchema = z.object({
   first_name: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
   last_name: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
   second_last_name: z.string().max(100, 'Máximo 100 caracteres').optional().or(z.literal('')),
-  email: z.string().email('Email inválido').toLowerCase(),
-  password: z.string().min(8, 'Mínimo 8 caracteres').optional(),
-  document_number: z.string().min(8, 'Mínimo 8 caracteres').max(20, 'Máximo 20 caracteres'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  password: z.string().min(8, 'Mínimo 8 caracteres').optional().or(z.literal('')),
+  document_number: z.string()
+    .min(8, 'Mínimo 8 dígitos')
+    .max(20, 'Máximo 20 dígitos')
+    .refine(val => /^\d+$/.test(val), {
+      message: 'Solo se permiten números'
+    }),
   birth_date: z.string().refine((date) => !isNaN(new Date(date).getTime()), {
     message: 'Fecha de nacimiento inválida'
   }),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).default('OTHER'),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
   phone: z
     .string()
     .min(9, 'Mínimo 9 dígitos')
     .max(15, 'Máximo 15 dígitos')
-    .refine((val) => /^\+?1?\d{9,15}$/.test(val), {
-      message: 'Formato de teléfono inválido'
+    .refine(val => /^\d+$/.test(val), {
+      message: 'Solo se permiten números'
     }),
   address: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
   emergency_contact_name: z.string().max(200, 'Máximo 200 caracteres').optional().or(z.literal('')),
@@ -35,12 +40,42 @@ const patientSchema = z.object({
     .string()
     .min(9, 'Mínimo 9 dígitos')
     .max(15, 'Máximo 15 dígitos')
-    .refine((val) => /^\+?1?\d{9,15}$/.test(val), {
-      message: 'Formato de teléfono inválido'
+    .refine(val => /^\d+$/.test(val), {
+      message: 'Solo se permiten números'
     })
     .optional()
     .or(z.literal('')),
   blood_type: z.enum(['A_POSITIVE', 'A_NEGATIVE', 'B_POSITIVE', 'B_NEGATIVE', 'AB_POSITIVE', 'AB_NEGATIVE', 'O_POSITIVE', 'O_NEGATIVE']).optional().or(z.literal('')),
+  is_presential: z.boolean().default(false),
+  id: z.number().optional(),
+}).superRefine((data, ctx) => {
+  // Si no es presencial y no tiene ID (nuevo paciente), validar email y password
+  if (!data.is_presential && !data.id) {
+    if (!data.email) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'El email es requerido para pacientes no presenciales',
+        path: ['email']
+      });
+    }
+    if (!data.password) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'La contraseña es requerida para pacientes no presenciales',
+        path: ['password']
+      });
+    }
+  }
+  // Si no es presencial y tiene ID (edición), solo validar email
+  else if (!data.is_presential && data.id) {
+    if (!data.email) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'El email es requerido para pacientes no presenciales',
+        path: ['email']
+      });
+    }
+  }
 });
 
 const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoading }, ref) {
@@ -54,7 +89,8 @@ const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoadi
     formState: { errors },
     reset,
     setValue,
-    control
+    control,
+    watch,
   } = useForm({
     resolver: zodResolver(patientSchema),
     defaultValues: {
@@ -71,8 +107,20 @@ const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoadi
       emergency_contact_name: '',
       emergency_contact_phone: '',
       blood_type: '',
+      is_presential: false,
     }
   });
+
+  // Observa el valor del checkbox de paciente presencial
+  const isPresential = watch('is_presential');
+
+  // Efecto para limpiar email y password cuando se marca como presencial
+  useEffect(() => {
+    if (isPresential) {
+      setValue('email', '');
+      setValue('password', '');
+    }
+  }, [isPresential, setValue]);
 
   // Cargar datos del paciente para edición
   useEffect(() => {
@@ -82,6 +130,10 @@ const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoadi
       
       // Obtener el email del paciente
       const email = patient.user?.email || patient.email || '';
+      
+      // Determinar si es paciente presencial
+      const isPresential = patient.is_presential || !email;
+      console.log('👤 Estado presencial:', isPresential);
       
       // Mapeo de tipos de sangre
       const bloodTypeMap = {
@@ -156,6 +208,7 @@ const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoadi
         emergency_contact_name: patient.emergency_contact_name || '',
         emergency_contact_phone: patient.emergency_contact_phone || '',
         blood_type: bloodType,
+        is_presential: isPresential,
         // Pasar el ID para asegurar que se actualice el paciente correcto
         id: patient.id
       });
@@ -177,6 +230,7 @@ const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoadi
         emergency_contact_name: '',
         emergency_contact_phone: '',
         blood_type: '',
+        is_presential: false,
       });
     }
   }, [patient, isEditing, setValue, reset]);
@@ -216,21 +270,34 @@ const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoadi
       data.id = patient.id;
     }
     
-    // Validar campos críticos
-    console.log('🔍 Valores de campos críticos:');
-    console.log('- gender:', data.gender, typeof data.gender);
-    console.log('- blood_type:', data.blood_type, typeof data.blood_type);
+    // Asegurar que is_presential es un booleano
+    data.is_presential = Boolean(data.is_presential);
     
-    // Si no hay tipo de sangre, asegurarse de que sea una cadena vacía
-    if (!data.blood_type) {
-      data.blood_type = '';
+    // Si es presencial, eliminar email y password
+    if (data.is_presential) {
+      delete data.email;
+      delete data.password;
     }
     
-    // Validar que gender tiene un valor permitido
-    const validGenders = ['MALE', 'FEMALE', 'OTHER'];
-    if (!validGenders.includes(data.gender)) {
-      console.warn('⚠️ Valor de género no válido:', data.gender);
-      data.gender = 'OTHER';
+    // Limpiar campos vacíos
+    Object.keys(data).forEach(key => {
+      if (data[key] === '' || data[key] === null || data[key] === undefined) {
+        delete data[key];
+      }
+    });
+    
+    // Asegurar que los campos requeridos están presentes
+    const requiredFields = ['first_name', 'last_name', 'document_number', 'birth_date', 'gender', 'phone'];
+    const missingFields = requiredFields.filter(field => !data[field]);
+    
+    if (missingFields.length > 0) {
+      console.error('❌ Campos requeridos faltantes:', missingFields);
+      throw new Error(`Campos requeridos faltantes: ${missingFields.join(', ')}`);
+    }
+    
+    // Validar email para pacientes no presenciales
+    if (!data.is_presential && !data.email && !isEditing) {
+      throw new Error('El email es requerido para pacientes no presenciales');
     }
     
     console.log('📤 Enviando datos finales:', data);
@@ -271,18 +338,34 @@ const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoadi
         }`}>
           Datos de la cuenta
         </h3>
+        
+        {/* Checkbox para paciente presencial */}
+        <div className="mb-4">
+          <label className={`flex items-center ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <input
+              type="checkbox"
+              {...register('is_presential')}
+              className="mr-2 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span className="text-sm">Paciente presencial (sin cuenta web)</span>
+          </label>
+          <p className={`mt-1 text-xs ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}>
+            Al marcar esta opción, el paciente no tendrá acceso a la plataforma web
+          </p>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             label="Email"
             error={errors.email?.message}
-            required
+            required={!isPresential}
           >
             <input
               {...register('email')}
               type="email"
-              className={inputClassName}
+              className={`${inputClassName} ${isPresential ? 'opacity-50' : ''}`}
               placeholder="ejemplo@hospital.com"
-              disabled={isEditing}
+              disabled={isPresential}
             />
           </FormField>
           
@@ -290,13 +373,14 @@ const PatientForm = forwardRef(function PatientForm({ patient, onSubmit, isLoadi
             <FormField
               label="Contraseña"
               error={errors.password?.message}
-              required={!isEditing}
+              required={!isPresential && !isEditing}
             >
               <input
                 {...register('password')}
                 type="password"
-                className={inputClassName}
+                className={`${inputClassName} ${isPresential ? 'opacity-50' : ''}`}
                 placeholder="Mínimo 8 caracteres"
+                disabled={isPresential}
               />
             </FormField>
           )}
