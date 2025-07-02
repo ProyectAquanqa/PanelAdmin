@@ -4,8 +4,8 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
-import { useCreateAppointment, useUpdateAppointment } from '../../hooks/useAppointments';
-import { useAppointmentForm } from '../../hooks/useAppointmentForm';
+import { useCreateAppointment, useUpdateAppointment } from '../../hooks/appointment/useAppointmentMutations';
+import { useAppointmentForm } from '../../hooks/appointment';
 import AppointmentFormFields from './AppointmentFormFields';
 
 function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
@@ -13,21 +13,27 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
   const darkMode = theme === 'dark';
   
   const {
-    form,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    control,
+    watch,
+    register,
+    handleInputChange,
+    formData,
+    setFormData,
     doctors,
     loadingDoctors,
     availableTimeBlocks,
     loadingTimeBlocks,
-    availabilityInfo, // ✅ NUEVO: Info de disponibilidad
-    refreshAvailability, // ✅ NUEVO: Función para refrescar
-    isEditing,
+    availabilityInfo,
     selectedSpecialty,
     selectedDoctor,
     selectedDate,
+    patients,
+    loadingPatients,
   } = useAppointmentForm(appointment);
 
-  const { handleSubmit, formState: { errors }, reset, control, watch } = form;
-  
   const createAppointment = useCreateAppointment();
   const updateAppointment = useUpdateAppointment();
 
@@ -49,19 +55,12 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
 
       console.log('📤 Enviando datos de cita:', appointmentData);
 
-      if (isEditing) {
+      if (appointment) {
         await updateAppointment.mutateAsync({ id: appointment.id, data: appointmentData });
         toast.success('✅ Cita actualizada exitosamente');
       } else {
         await createAppointment.mutateAsync(appointmentData);
         toast.success('✅ Cita creada exitosamente');
-        
-        // ✅ NUEVO: Refrescar disponibilidad después de crear cita
-        if (refreshAvailability) {
-          setTimeout(() => {
-            refreshAvailability();
-          }, 1000);
-        }
       }
       
       onClose();
@@ -127,7 +126,7 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                   <Dialog.Title className={`text-lg font-medium ${
                     darkMode ? 'text-white' : 'text-gray-900'
                   }`}>
-                    {isEditing ? 'Editar Cita' : 'Nueva Cita'}
+                    {appointment ? 'Editar Cita' : 'Nueva Cita'}
                   </Dialog.Title>
                   <button 
                     onClick={onClose} 
@@ -159,19 +158,27 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                 {/* Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <AppointmentFormFields
-                    control={control}
-                    errors={errors}
-                    darkMode={darkMode}
-                    isEditing={isEditing}
-                    doctors={doctors}
-                    loadingDoctors={loadingDoctors}
-                    availableTimeBlocks={availableTimeBlocks}
-                    loadingTimeBlocks={loadingTimeBlocks}
-                    availabilityInfo={availabilityInfo} // ✅ NUEVO: Pasar info de disponibilidad
-                    selectedSpecialty={selectedSpecialty}
-                    selectedDoctor={selectedDoctor}
-                    selectedDate={selectedDate}
-                    watch={watch} // ✅ NUEVO: Pasar función watch
+                    {...{
+                      formData,
+                      handleInputChange,
+                      errors,
+                      setFormData,
+                      watch,
+                      register,
+                      control,
+                      darkMode,
+                      isEditing: !!appointment,
+                      doctors,
+                      loadingDoctors,
+                      availableTimeBlocks,
+                      loadingTimeBlocks,
+                      availabilityInfo,
+                      selectedSpecialty,
+                      selectedDoctor,
+                      selectedDate,
+                      patients,
+                      loadingPatients,
+                    }}
                   />
 
                   {/* Actions */}
@@ -201,7 +208,7 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                           Procesando...
                         </span>
                       ) : (
-                        isEditing ? 'Actualizar Cita' : 'Crear Cita'
+                        'Crear Cita'
                       )}
                     </button>
                   </div>

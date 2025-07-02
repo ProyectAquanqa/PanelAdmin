@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUsers, getUserById, createUser, updateUser, deleteUser } from '../services/userService';
+import { getUsers, getUserById, createUser, updateUser, deleteUser, activateUser, deactivateUser } from '../services/user';
 import { toast } from 'react-hot-toast';
 
 // Clave para la cache de usuarios
@@ -8,41 +8,16 @@ const USERS_QUERY_KEY = 'users';
 /**
  * Hook para obtener la lista de usuarios
  */
-export const useGetUsers = (params = {}) => {
+export const useGetUsers = () => {
   return useQuery({
-    queryKey: [USERS_QUERY_KEY, params],
-    queryFn: () => getUsers(params),
+    queryKey: [USERS_QUERY_KEY],
+    queryFn: () => getUsers(), // Sin parámetros
     staleTime: 1000 * 60 * 5, // 5 minutos
-    retry: 2, // Intentar 2 veces más si falla
-    refetchOnWindowFocus: false, // No recargar al cambiar de pestaña
-    select: (data) => {
-      // Asegurar que siempre devolvemos el formato esperado (como especialidades)
-      if (data && data.results) {
-        return data;
-      }
-      // Si es un array directo, normalizarlo
-      if (Array.isArray(data)) {
-        return {
-          results: data,
-          count: data.length,
-          next: null,
-          previous: null
-        };
-      }
-      // Formato por defecto
-      return {
-        results: [],
-        count: 0,
-        next: null,
-        previous: null
-      };
-    },
+    retry: 2,
+    refetchOnWindowFocus: false,
     onError: (error) => {
       console.error('Error al obtener usuarios:', error);
-      // Solo mostrar toast si es un error no relacionado con conectividad inicial
-      if (error.response && error.response.status !== 404) {
-        toast.error('Error al cargar la lista de usuarios');
-      }
+      toast.error('Error al cargar la lista de usuarios');
     }
   });
 };
@@ -173,6 +148,33 @@ export const useDeleteUser = () => {
       } else {
         toast.error('Error de conexión al eliminar usuario');
       }
+    },
+  });
+};
+
+/**
+ * Hook para activar/desactivar un usuario
+ */
+export const useToggleUserActive = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, isActive }) => {
+      console.log(`${isActive ? 'Activando' : 'Desactivando'} usuario con ID: ${id}`);
+      // Asumiendo que el servicio `toggleUserActive` existe y hace la llamada correcta
+      // a /api/users/users/{id}/toggle_active/
+      // Si no existe, tendríamos que crearlo en el servicio.
+      // Por ahora, usamos las funciones existentes como placeholder.
+      return isActive ? activateUser(id) : deactivateUser(id);
+    },
+    onSuccess: (_, { id, isActive }) => {
+      console.log(`Usuario con ID ${id} ${isActive ? 'activado' : 'desactivado'} exitosamente`);
+      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+      toast.success(`Usuario ${isActive ? 'activado' : 'desactivado'} exitosamente`);
+    },
+    onError: (error, { isActive }) => {
+      console.error(`Error al ${isActive ? 'activar' : 'desactivar'} usuario:`, error);
+      toast.error(`Error al ${isActive ? 'activar' : 'desactivar'} el usuario`);
     },
   });
 };

@@ -1,28 +1,56 @@
 // components/common/FormField.jsx
 import React from 'react';
-import { useTheme } from '../../context/ThemeContext';
 
-const FormField = ({ label, error, children, icon: Icon }) => {
-  const { theme } = useTheme();
-  
+/**
+ * Componente reutilizable para campos de formulario
+ * 
+ * @param {Object} props
+ * @param {string} props.name - Nombre del campo
+ * @param {string} props.label - Etiqueta del campo
+ * @param {Function} props.register - Función register de react-hook-form
+ * @param {Object} props.errors - Objeto errors de react-hook-form
+ * @param {string} [props.type="text"] - Tipo de input
+ * @param {string} [props.className=""] - Clases adicionales para el contenedor
+ * @param {boolean} [props.isDark=false] - Indica si se está usando el tema oscuro
+ * @param {string} [props.placeholder=""] - Placeholder para el input
+ * @param {React.ReactNode} [props.children] - Contenido adicional para el campo
+ */
+const FormField = ({
+  name,
+  label,
+  register,
+  errors,
+  type = "text",
+  className = "",
+  isDark = false,
+  placeholder = "",
+  children,
+}) => {
   return (
-    <div>
-      <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-neutral-300' : 'text-gray-700'}`}>
+    <div className={className}>
+      <label 
+        htmlFor={name} 
+        className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
+      >
         {label}
       </label>
-      <div className="mt-1 relative">
-        {Icon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Icon className={`h-5 w-5 ${theme === 'dark' ? 'text-neutral-500' : 'text-gray-400'}`} />
-          </div>
+      <div className="mt-1">
+        {children ? (
+          children
+        ) : (
+          <input
+            type={type}
+            id={name}
+            placeholder={placeholder}
+            {...register(name)}
+            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md
+              ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : ''}`}
+          />
         )}
-        {children}
+        {errors[name] && (
+          <p className="mt-1 text-sm text-red-600">{errors[name].message}</p>
+        )}
       </div>
-      {error && (
-        <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
-          {error}
-        </p>
-      )}
     </div>
   );
 };

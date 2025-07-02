@@ -1,8 +1,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-// Comentamos esta línea ya que no tenemos la dependencia instalada
-// import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 
@@ -57,8 +56,7 @@ export default function AppProviders({ children }) {
             />
           </AuthProvider>
         </ThemeProvider>
-        {/* Comentamos esta línea ya que no tenemos la dependencia instalada */}
-        {/* {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />} */}
+        {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </BrowserRouter>
   );

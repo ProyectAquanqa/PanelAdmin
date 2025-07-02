@@ -1,5 +1,6 @@
-import apiClient from '../api/apiClient';
-import { getPatients } from './patientService';
+import { adminApiClient } from '../api';
+import { API_ROUTES } from '../config/api';
+import { getPatients } from './user';
 
 // Datos de fallback para cuando la API no responda
 const fallbackData = {
@@ -96,7 +97,7 @@ const fallbackData = {
  */
 export const getDashboardOverview = async () => {
   try {
-    const response = await apiClient.get('/dashboard/');
+    const response = await adminApiClient.get('/dashboard/');
     return response.data;
   } catch (error) {
     console.error('Error al obtener el dashboard:', error);
@@ -106,86 +107,46 @@ export const getDashboardOverview = async () => {
 };
 
 /**
- * Obtiene las estadísticas del dashboard
- * @returns {Promise} Estadísticas para el dashboard
+ * Obtiene las estadísticas resumidas para las tarjetas del dashboard.
+ * Llama al endpoint de resumen de analíticas.
+ * @returns {Promise<Object>} Un objeto con las estadísticas principales.
  */
 export const getDashboardStats = async () => {
   try {
-    // Intentar obtener estadísticas de la API
-    try {
-      const response = await apiClient.get('/dashboard/stats/');
-      return response.data;
-    } catch (dashboardError) {
-      console.error('Error al obtener estadísticas del endpoint dashboard:', dashboardError);
-      
-      // Si falla, intentar construir estadísticas a partir de los datos de pacientes
-      console.log('Intentando construir estadísticas a partir de datos de pacientes...');
-      
-      // Obtener pacientes
-      const patientsResponse = await getPatients({ page_size: 100 });
-      
-      let patientsCount = 0;
-      let patientsGrowth = 0;
-      
-      if (patientsResponse) {
-        if (patientsResponse.count) {
-          patientsCount = patientsResponse.count;
-        } else if (patientsResponse.results && Array.isArray(patientsResponse.results)) {
-          patientsCount = patientsResponse.results.length;
-        } else if (Array.isArray(patientsResponse)) {
-          patientsCount = patientsResponse.length;
-        }
-        
-        // Calcular crecimiento (simulado)
-        patientsGrowth = Math.round(Math.random() * 15);
-      }
-      
-      // Construir estadísticas con datos reales de pacientes y el resto simulado
-      return {
-        patients_count: patientsCount,
-        patients_growth: patientsGrowth,
-        appointments_today: Math.round(patientsCount * 0.1), // Simular citas de hoy (10% de pacientes)
-        appointments_growth: Math.round(Math.random() * 10),
-        monthly_revenue: Math.round(patientsCount * 250), // Simular ingresos ($250 por paciente)
-        revenue_growth: Math.round(Math.random() * 15),
-        avg_appointment_time: 25,
-        time_change: -5
-      };
-    }
+    const response = await adminApiClient.get('/api/dashboard/stats/');
+    return response.data;
   } catch (error) {
-    console.error('Error al obtener estadísticas:', error);
-    // En caso de error, devolver datos estáticos
-    return fallbackData.stats;
+    console.error('Error al obtener estadísticas del dashboard:', error);
+    // En caso de error, lanzar para que React Query lo maneje y muestre un estado de error.
+    throw error;
   }
 };
 
 /**
- * Obtiene la actividad reciente para el dashboard
- * @returns {Promise} Lista de actividades recientes
+ * Obtiene la actividad reciente para el dashboard.
+ * @returns {Promise<Array<Object>>} Una lista de actividades recientes.
  */
 export const getRecentActivity = async () => {
   try {
-    const response = await apiClient.get('/dashboard/recent-activity/');
+    const response = await adminApiClient.get(API_ROUTES.DASHBOARD.RECENT_ACTIVITY);
     return response.data;
   } catch (error) {
     console.error('Error al obtener actividad reciente:', error);
-    // En caso de error, devolver datos estáticos
-    return fallbackData.recentActivity;
+    // Devolver un array vacío en caso de error para no romper la UI.
+    // El error 500 es del backend, el frontend debe ser resiliente.
+    return [];
   }
 };
 
 /**
- * Obtiene datos para los gráficos del dashboard
- * @param {string} chartType - Tipo de gráfico (citas, ingresos, especialidades)
- * @returns {Promise} Datos para el gráfico solicitado
+ * Obtiene datos para los gráficos del dashboard.
+ * Actualmente, los endpoints específicos para gráficos no existen.
+ * Esta función devuelve datos vacíos para evitar errores 404.
+ * @param {string} chartType - El tipo de gráfico (no se usa actualmente).
+ * @returns {Promise<Object>} Un objeto con un array de datos vacío.
  */
 export const getChartData = async (chartType) => {
-  try {
-    const response = await apiClient.get(`/analytics/${chartType}/`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al obtener datos del gráfico ${chartType}:`, error);
-    // En caso de error, devolver datos estáticos según el tipo de gráfico
-    return fallbackData.charts[chartType] || { data: [] };
-  }
+  console.warn(`La obtención de datos para el gráfico '${chartType}' está deshabilitada temporalmente.`);
+  // Devuelve una promesa que resuelve con un array vacío para evitar errores en la UI.
+  return Promise.resolve({ data: [] });
 }; 

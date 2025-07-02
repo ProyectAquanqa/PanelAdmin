@@ -6,15 +6,21 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import DashboardPage from '../pages/DashboardPage';
 import UsersPage from '../pages/users/UsersPage';
 import DoctorListPage from '../pages/doctors/DoctorListPage';
+import DoctorDetailsPage from '../pages/doctors/DoctorDetailsPage';
+import DoctorFormPage from '../pages/doctors/DoctorFormPage';
 import DoctorDebugPage from '../pages/doctors/DoctorDebugPage';
-import DoctorApiTestPage from '../pages/doctors/DoctorApiTestPage';
 import PatientListPage from '../pages/patients/PatientListPage';
-import PatientDebugPage from '../pages/patients/PatientDebugPage';
 import PatientApiTestPage from '../pages/patients/PatientApiTestPage';
+import AppointmentHistoryPage from '../pages/patients/AppointmentHistoryPage';
 import SpecialtyListPage from '../pages/specialties/SpecialtyListPage';
 import AppointmentListPage from '../pages/appointments/AppointmentListPage';
 import ChatbotListPage from '../pages/chatbot/ChatbotListPage';
 import SettingsPage from '../pages/settings/SettingsPage';
+import DoctorSchedulePage from '../pages/doctors/DoctorSchedulePage';
+import DoctorAvailabilityPage from '../pages/doctors/DoctorAvailabilityPage';
+import PaymentListPage from '../pages/payments/PaymentListPage';
+import AuditLogListPage from '../pages/audit/AuditLogListPage';
+import AnalyticsDashboardPage from '../pages/analytics/AnalyticsDashboardPage';
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -59,10 +65,8 @@ const AppRouter = () => {
       {process.env.NODE_ENV === 'development' && (
         <>
           <Route path="/auth-debug" element={<AuthDebugPage />} />
-          <Route path="/doctors-debug" element={<DoctorDebugPage />} />
-          <Route path="/doctors-api-test" element={<DoctorApiTestPage />} />
-          <Route path="/patients-debug" element={<PatientDebugPage />} />
           <Route path="/patients-api-test" element={<PatientApiTestPage />} />
+          <Route path="/doctors-debug" element={<DoctorDebugPage />} />
         </>
       )}
       
@@ -71,11 +75,24 @@ const AppRouter = () => {
         <Route index element={<DashboardPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="doctors" element={<DoctorListPage />} />
+        {/* Primero las rutas específicas de doctores */}
+        <Route path="doctors/new" element={<DoctorFormPage />} />
+        <Route path="doctors/debug" element={<DoctorDebugPage />} />
+        {/* Luego las rutas con parámetros */}
+        <Route path="doctors/edit/:id" element={<DoctorFormPage />} />
+        <Route path="doctors/schedule/:id" element={<DoctorSchedulePage />} />
+        <Route path="doctors/availability/:id" element={<DoctorAvailabilityPage />} />
+        <Route path="doctors/availability" element={<DoctorAvailabilityPage />} />
+        <Route path="doctors/:id" element={<DoctorDetailsPage />} />
         <Route path="patients" element={<PatientListPage />} />
+        <Route path="patients/:patientId/appointments" element={<AppointmentHistoryPage />} />
         <Route path="appointments" element={<AppointmentListPage />} />
         <Route path="specialties" element={<SpecialtyListPage />} />
         <Route path="chatbot" element={<ChatbotListPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="payments" element={<PaymentListPage />} />
+        <Route path="audit" element={<AuditLogListPage />} />
+        <Route path="analytics" element={<AnalyticsDashboardPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

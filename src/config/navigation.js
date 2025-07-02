@@ -9,7 +9,9 @@ import {
   TagIcon,
   UserGroupIcon,
   CalendarIcon,
-  ChatBubbleLeftIcon
+  ChatBubbleLeftIcon,
+  CurrencyDollarIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { FiUsers, FiCalendar, FiList, FiUserPlus, FiMessageSquare } from 'react-icons/fi';
 
@@ -19,10 +21,10 @@ export const navigationLinks = [
   { name: 'Doctores', href: '/doctors', icon: UserIcon },
   { name: 'Pacientes', href: '/patients', icon: UserGroupIcon },
   { name: 'Citas', href: '/appointments', icon: CalendarIcon },
+  { name: 'Pagos', href: '/payments', icon: CurrencyDollarIcon },
   { name: 'Especialidades', href: '/specialties', icon: TagIcon },
   { name: 'Chatbot', href: '/chatbot', icon: ChatBubbleLeftIcon },
-  { name: 'Reportes', href: '/reports', icon: ChartBarIcon },
-  { name: 'Auditoría', href: '/audit', icon: ShieldCheckIcon },
-  { name: 'Catálogos', href: '/catalogs', icon: DocumentTextIcon },
+  { name: 'Analítica', href: '/analytics', icon: ChartBarIcon },
+  { name: 'Auditoría', href: '/audit', icon: ClipboardDocumentListIcon },
   { name: 'Configuración', href: '/settings', icon: CogIcon }
 ]; 

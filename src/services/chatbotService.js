@@ -1,4 +1,4 @@
-import apiClient from '../api/apiClient';
+import adminApiClient from '../api/adminApiClient';
 import { API_ROUTES } from '../config/api';
 
 /**
@@ -9,7 +9,7 @@ import { API_ROUTES } from '../config/api';
 export const getChatbotKnowledge = async (params = {}) => {
   try {
     console.log('🔍 Solicitando entradas del chatbot con parámetros:', params);
-    const response = await apiClient.get(API_ROUTES.CHATBOT.KNOWLEDGE_BASE, { params });
+    const response = await adminApiClient.get(API_ROUTES.CHATBOT.KNOWLEDGE_BASE, { params });
     
     // Asegurarse de que siempre devolvemos un formato consistente
     const normalizedData = {
@@ -40,7 +40,7 @@ export const getChatbotKnowledge = async (params = {}) => {
 export const getChatbotKnowledgeById = async (id) => {
   try {
     console.log(`🔍 Solicitando entrada del chatbot con ID: ${id}`);
-    const response = await apiClient.get(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`);
+    const response = await adminApiClient.get(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`);
     return response.data;
   } catch (error) {
     console.error(`💥 Error al obtener entrada del chatbot con ID ${id}:`, error);
@@ -56,7 +56,7 @@ export const getChatbotKnowledgeById = async (id) => {
 export const createChatbotKnowledge = async (data) => {
   try {
     console.log('📝 Creando entrada del chatbot:', data);
-    const response = await apiClient.post(API_ROUTES.CHATBOT.KNOWLEDGE_BASE, data);
+    const response = await adminApiClient.post(API_ROUTES.CHATBOT.KNOWLEDGE_BASE, data);
     return response.data;
   } catch (error) {
     console.error('💥 Error al crear entrada del chatbot:', error);
@@ -73,7 +73,7 @@ export const createChatbotKnowledge = async (data) => {
 export const updateChatbotKnowledge = async (id, data) => {
   try {
     console.log(`🔄 Actualizando entrada del chatbot ${id}:`, data);
-    const response = await apiClient.put(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`, data);
+    const response = await adminApiClient.put(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`, data);
     return response.data;
   } catch (error) {
     console.error(`💥 Error al actualizar entrada del chatbot ${id}:`, error);
@@ -89,10 +89,38 @@ export const updateChatbotKnowledge = async (id, data) => {
 export const deleteChatbotKnowledge = async (id) => {
   try {
     console.log(`🗑️ Eliminando entrada del chatbot con ID: ${id}`);
-    const response = await apiClient.delete(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`);
+    const response = await adminApiClient.delete(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`);
     return response.data;
   } catch (error) {
     console.error(`💥 Error al eliminar entrada del chatbot ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene las conversaciones del chatbot
+ * @param {Object} params - Parámetros de filtrado
+ * @returns {Promise} Promise con la respuesta
+ */
+export const getConversations = async (params = {}) => {
+  try {
+    const response = await adminApiClient.get(API_ROUTES.CHATBOT.CONVERSATIONS.BASE, { params });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Obtiene una conversación por su ID
+ * @param {number} id - ID de la conversación
+ * @returns {Promise} Promise con la respuesta
+ */
+export const getConversationById = async (id) => {
+  try {
+    const response = await adminApiClient.get(API_ROUTES.CHATBOT.CONVERSATIONS.BY_ID(id));
+    return response.data;
+  } catch (error) {
     throw error;
   }
 }; 

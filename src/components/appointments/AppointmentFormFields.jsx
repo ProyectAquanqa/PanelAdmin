@@ -11,9 +11,8 @@ import {
 } from '@heroicons/react/24/outline';
 import FormField from '../common/FormField';
 import SelectField from '../common/SelectField';
-import AvailabilityDisplay from './AvailabilityDisplay'; // ✅ NUEVO: Importar componente
+import AvailabilityDisplay from './AvailabilityDisplay';
 import { useGetSpecialties } from '../../hooks/useSpecialties';
-import { useGetPatients } from '../../hooks/usePatients';
 
 const STATUS_OPTIONS = [
   { id: 'SCHEDULED', name: 'Programada' },
@@ -39,30 +38,41 @@ const AppointmentFormFields = ({
   loadingDoctors,
   availableTimeBlocks,
   loadingTimeBlocks,
-  availabilityInfo, // ✅ NUEVO: Recibir info de disponibilidad
+  availabilityInfo,
   selectedSpecialty,
   selectedDoctor,
   selectedDate,
-  watch, // ✅ NUEVO: Para obtener el time_block seleccionado
+  patients,
+  loadingPatients,
+  register,
+  handleInputChange,
+  formData,
+  watch,
 }) => {
   const { data: specialties, isLoading: isLoadingSpecialties } = useGetSpecialties();
-  const { data: patients, isLoading: isLoadingPatients } = useGetPatients();
+
+  const handleTimeBlockSelect = (timeBlockId) => {
+    handleInputChange({ target: { name: 'time_block', value: timeBlockId } });
+  };
+
+  const doctorOptions = doctors?.map(doc => ({
+    id: doc.id,
+    name: `${doc.first_name} ${doc.last_name}`
+  })) || [];
 
   return (
     <div className="space-y-6">
-      {/* Campos del formulario */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Paciente */}
-        <FormField label="Paciente *" error={errors.patient?.message} icon={UserCircleIcon}>
+        <FormField label="Paciente *" error={errors.patient?.message}>
           <Controller
             name="patient"
             control={control}
             render={({ field }) => (
               <SelectField
                 {...field}
-                options={patients?.results || []}
-                disabled={isLoadingPatients || isEditing}
-                placeholder="Seleccionar paciente"
+                options={patients || []}
+                disabled={loadingPatients || isEditing}
+                placeholder={loadingPatients ? "Cargando..." : "Seleccionar paciente"}
                 darkMode={darkMode}
                 icon={UserCircleIcon}
               />
@@ -70,8 +80,7 @@ const AppointmentFormFields = ({
           />
         </FormField>
 
-        {/* Especialidad */}
-        <FormField label="Especialidad *" error={errors.specialty?.message} icon={TagIcon}>
+        <FormField label="Especialidad *" error={errors.specialty?.message}>
           <Controller
             name="specialty"
             control={control}
@@ -79,7 +88,7 @@ const AppointmentFormFields = ({
               <SelectField
                 {...field}
                 options={specialties?.results || []}
-                disabled={isLoadingSpecialties || isEditing}
+                disabled={isLoadingSpecialties}
                 placeholder="Seleccionar especialidad"
                 darkMode={darkMode}
                 icon={TagIcon}
@@ -88,25 +97,16 @@ const AppointmentFormFields = ({
           />
         </FormField>
 
-        {/* Doctor */}
-        <FormField label="Doctor *" error={errors.doctor?.message} icon={UserIcon}>
+        <FormField label="Doctor *" error={errors.doctor?.message}>
           <Controller
             name="doctor"
             control={control}
             render={({ field }) => (
               <SelectField
                 {...field}
-                options={doctors}
-                disabled={!selectedSpecialty || loadingDoctors || isEditing}
-                placeholder={
-                  loadingDoctors 
-                    ? "🔄 Cargando doctores..." 
-                    : !selectedSpecialty 
-                      ? "Primero seleccione una especialidad" 
-                      : doctors.length === 0 
-                        ? "No hay doctores disponibles" 
-                        : `Seleccionar doctor (${doctors.length} disponibles)`
-                }
+                options={doctorOptions}
+                disabled={!selectedSpecialty || loadingDoctors}
+                placeholder={loadingDoctors ? "Cargando..." : "Seleccionar doctor"}
                 darkMode={darkMode}
                 icon={UserIcon}
               />
@@ -114,57 +114,23 @@ const AppointmentFormFields = ({
           />
         </FormField>
 
-        {/* Fecha */}
-        <FormField label="Fecha *" error={errors.appointment_date?.message} icon={CalendarIcon}>
+        <FormField label="Fecha *" error={errors.appointment_date?.message}>
           <Controller
             name="appointment_date"
             control={control}
-            render={({ field }) => {
-              // Permitir citas desde HOY (incluyendo hoy)
-              const today = new Date();
-              const minDate = today.toISOString().split('T')[0];
-              
-              return (
-                <input
-                  type="date"
-                  {...field}
-                  min={minDate}
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
-                    darkMode ? 'bg-neutral-700 border-neutral-600 text-white' : 'border-gray-300'
-                  }`}
-                />
-              );
-            }}
-          />
-        </FormField>
-
-        {/* Bloque Horario */}
-        <FormField label="Bloque Horario *" error={errors.time_block?.message} icon={ClockIcon}>
-          <Controller
-            name="time_block"
-            control={control}
             render={({ field }) => (
-              <SelectField
+              <input
+                type="date"
                 {...field}
-                options={availableTimeBlocks}
-                disabled={!selectedDoctor || !selectedDate || loadingTimeBlocks}
-                placeholder={
-                  loadingTimeBlocks 
-                    ? "🔄 Cargando horarios..." 
-                    : !selectedDoctor || !selectedDate 
-                      ? "Seleccione doctor y fecha primero" 
-                      : availableTimeBlocks.length === 0 
-                        ? "❌ Doctor no atiende este día - Seleccione otra fecha" 
-                        : `Seleccionar horario (${availableTimeBlocks.length} disponibles)`
-                }
-                darkMode={darkMode}
-                icon={ClockIcon}
+                min={new Date().toISOString().split('T')[0]}
+                className={`block w-full py-2 px-3 border rounded-md ${
+                  darkMode ? 'bg-neutral-700 border-neutral-600 text-white' : 'border-gray-300'
+                }`}
               />
             )}
           />
         </FormField>
 
-        {/* Estado (solo al editar) */}
         {isEditing && (
           <FormField label="Estado" error={errors.status?.message}>
             <Controller
@@ -181,7 +147,6 @@ const AppointmentFormFields = ({
           </FormField>
         )}
 
-        {/* Estado de Pago (solo al editar) */}
         {isEditing && (
           <FormField label="Estado de Pago" error={errors.payment_status?.message}>
             <Controller
@@ -197,37 +162,35 @@ const AppointmentFormFields = ({
             />
           </FormField>
         )}
-
-        {/* Motivo de consulta */}
-        <div className="md:col-span-2">
-          <FormField label="Motivo de la consulta *" error={errors.reason?.message} icon={DocumentTextIcon}>
-            <Controller
-              name="reason"
-              control={control}
-              render={({ field }) => (
-                <textarea
-                  {...field}
-                  rows={4}
-                  placeholder="Describa el motivo de la consulta"
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md ${
-                    darkMode ? 'bg-neutral-700 border-neutral-600 text-white' : 'border-gray-300'
-                  }`}
-                />
-              )}
-            />
-          </FormField>
-        </div>
       </div>
 
-      {/* ✅ NUEVO: Mostrar información de disponibilidad */}
       {selectedDoctor && selectedDate && (
-        <AvailabilityDisplay
-          availabilityInfo={availabilityInfo}
-          availableTimeBlocks={availableTimeBlocks}
-          selectedTimeBlock={watch ? watch('time_block') : null}
-          className="mt-4"
-        />
+        <div className="col-span-1 md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Horario Disponible *</label>
+          <AvailabilityDisplay
+            loading={loadingTimeBlocks}
+            error={errorTimeBlocks}
+            availabilityInfo={availabilityInfo}
+            availableTimeBlocks={availableTimeBlocks}
+            onTimeBlockSelect={handleTimeBlockSelect}
+            selectedValue={formData?.time_block}
+          />
+          {errors.time_block && <p className="mt-2 text-sm text-red-600">{errors.time_block.message}</p>}
+        </div>
       )}
+      
+      <div className="col-span-1 md:col-span-2">
+        <FormField label="Motivo de la consulta *" error={errors.reason?.message}>
+            <textarea
+              {...register("reason")}
+              rows={4}
+              placeholder="Describa el motivo de la consulta"
+              className={`block w-full py-2 px-3 border rounded-md ${
+                darkMode ? 'bg-neutral-700 border-neutral-600 text-white' : 'border-gray-300'
+              }`}
+            />
+        </FormField>
+      </div>
     </div>
   );
 };

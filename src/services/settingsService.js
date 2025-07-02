@@ -1,4 +1,4 @@
-import apiClient from '../api/apiClient';
+import adminApiClient from '../api/adminApiClient';
 import { API_ROUTES } from '../config/api';
 
 /**
@@ -9,7 +9,7 @@ import { API_ROUTES } from '../config/api';
 export const getSettings = async (params = {}) => {
   try {
     console.log('🔍 Solicitando configuraciones con parámetros:', params);
-    const response = await apiClient.get(API_ROUTES.SETTINGS.BASE, { params });
+    const response = await adminApiClient.get(API_ROUTES.SETTINGS.BASE, { params });
     
     // Asegurarse de que siempre devolvemos un formato consistente
     const normalizedData = {
@@ -35,7 +35,7 @@ export const getSettings = async (params = {}) => {
 export const getSettingByKey = async (key) => {
   try {
     console.log(`🔍 Solicitando configuración con clave: ${key}`);
-    const response = await apiClient.get(`${API_ROUTES.SETTINGS.BASE}?search=${key}`);
+    const response = await adminApiClient.get(`${API_ROUTES.SETTINGS.BASE}?search=${key}`);
     
     const settings = response.data?.results || [];
     if (settings.length === 0) {
@@ -58,7 +58,7 @@ export const getSettingByKey = async (key) => {
 export const getSettingsByCategory = async () => {
   try {
     console.log('🔍 Solicitando configuraciones por categoría');
-    const response = await apiClient.get(`${API_ROUTES.SETTINGS.BASE}by_category/`);
+    const response = await adminApiClient.get(`${API_ROUTES.SETTINGS.BASE}by_category/`);
     console.log('✅ Configuraciones por categoría obtenidas:', response.data);
     return response.data;
   } catch (error) {
@@ -74,7 +74,7 @@ export const getSettingsByCategory = async () => {
 export const getPublicSettings = async () => {
   try {
     console.log('🔍 Solicitando configuraciones públicas');
-    const response = await apiClient.get(`${API_ROUTES.SETTINGS.BASE}public_settings/`);
+    const response = await adminApiClient.get(`${API_ROUTES.SETTINGS.BASE}public_settings/`);
     console.log('✅ Configuraciones públicas obtenidas:', response.data);
     return response.data;
   } catch (error) {
@@ -92,7 +92,7 @@ export const getPublicSettings = async () => {
 export const updateSetting = async (id, data) => {
   try {
     console.log(`🔄 Actualizando configuración ${id}:`, data);
-    const response = await apiClient.patch(`${API_ROUTES.SETTINGS.BY_ID(id)}/`, data);
+    const response = await adminApiClient.patch(`${API_ROUTES.SETTINGS.BY_ID(id)}/`, data);
     console.log('✅ Configuración actualizada:', response.data);
     return response.data;
   } catch (error) {
@@ -109,7 +109,7 @@ export const updateSetting = async (id, data) => {
 export const bulkUpdateSettings = async (data) => {
   try {
     console.log('🔄 Actualizando múltiples configuraciones:', data);
-    const response = await apiClient.post(`${API_ROUTES.SETTINGS.BASE}bulk_update/`, data);
+    const response = await adminApiClient.post(`${API_ROUTES.SETTINGS.BASE}bulk_update/`, data);
     console.log('✅ Configuraciones actualizadas:', response.data);
     return response.data;
   } catch (error) {
@@ -125,7 +125,7 @@ export const bulkUpdateSettings = async (data) => {
 export const initializeDefaultSettings = async () => {
   try {
     console.log('🔄 Inicializando configuraciones por defecto');
-    const response = await apiClient.post(`${API_ROUTES.SETTINGS.BASE}initialize_defaults/`);
+    const response = await adminApiClient.post(`${API_ROUTES.SETTINGS.BASE}initialize_defaults/`);
     console.log('✅ Configuraciones inicializadas:', response.data);
     return response.data;
   } catch (error) {

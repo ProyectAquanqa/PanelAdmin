@@ -35,21 +35,14 @@ export default function LoginPage() {
     setDiagnosticInfo(null);
     
     try {
-      console.log('🔑 Intentando login con:', data.email);
       const response = await login(data);
-      console.log('✅ Login exitoso:', response);
       toast.success('Inicio de sesión exitoso');
       navigate('/');
     } catch (err) {
-      console.error("Error completo:", err);
-      
-      // Mostrar mensaje de error detallado
       let errorMessage = "Error al iniciar sesión. Por favor, inténtelo de nuevo.";
       let diagnosticData = null;
       
       if (err.response) {
-        // El servidor respondió con un código de error
-        console.log("Datos de respuesta:", err.response.data);
         diagnosticData = {
           status: err.response.status,
           statusText: err.response.statusText,
@@ -58,7 +51,6 @@ export default function LoginPage() {
           data: err.response.data
         };
         
-        // Manejo específico de errores de Django
         if (err.response.data?.error) {
           errorMessage = err.response.data.error;
         } else if (err.response.data?.detail) {
@@ -73,7 +65,6 @@ export default function LoginPage() {
           errorMessage = "Error interno del servidor. Por favor, contacte al administrador.";
         }
       } else if (err.request) {
-        // La solicitud se realizó pero no se recibió respuesta
         errorMessage = "No se pudo conectar con el servidor Django. Verifique que el servidor esté ejecutándose en el puerto 8000.";
         diagnosticData = {
           message: "No se recibió respuesta del servidor",

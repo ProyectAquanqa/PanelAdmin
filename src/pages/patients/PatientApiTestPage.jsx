@@ -1,261 +1,142 @@
 // ============================================================================
-// 🏥 PÁGINA DE PRUEBA: Patient API Test Page
-// Página para probar la comunicación con la API de pacientes
+// 🏥 PÁGINA DE PRUEBAS: API de Pacientes
+// Página para probar las llamadas a la API de pacientes
 // ============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import { getPatients, getPatientById } from '../../services/user';
 import { useTheme } from '../../context/ThemeContext';
-import { getPatients, getPatientById, createPatient, updatePatient } from '../../services/patientService';
-import testPatientApiConnection from '../../utils/testPatientConnection';
 
 export default function PatientApiTestPage() {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const [results, setResults] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   
-  // Estados para las diferentes pruebas
-  const [connectionTest, setConnectionTest] = useState({ status: 'idle', data: null });
-  const [getListTest, setGetListTest] = useState({ status: 'idle', data: null });
-  const [getByIdTest, setGetByIdTest] = useState({ status: 'idle', data: null });
-  const [createTest, setCreateTest] = useState({ status: 'idle', data: null });
-  const [updateTest, setUpdateTest] = useState({ status: 'idle', data: null });
-  
-  // Estado para el ID de paciente a probar
-  const [patientId, setPatientId] = useState('');
-  
-  // Ejecutar test de conexión al cargar la página
-  useEffect(() => {
-    runConnectionTest();
-  }, []);
-
-  // Probar conexión con API
-  const runConnectionTest = async () => {
+  // Probar obtención de lista de pacientes
+  const handleTestGetPatients = async () => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setConnectionTest({ status: 'loading', data: null });
-      const results = await testPatientApiConnection();
-      setConnectionTest({ status: 'success', data: results });
-    } catch (error) {
-      setConnectionTest({ status: 'error', error });
-    }
-  };
-
-  // Probar obtención de lista
-  const runGetListTest = async () => {
-    try {
-      setGetListTest({ status: 'loading', data: null });
+      console.log('🔍 Probando getPatients...');
       const results = await getPatients();
-      setGetListTest({ status: 'success', data: results });
-      
-      // Si hay pacientes, usar el primer ID para la siguiente prueba
-      if (results.results?.length > 0) {
-        setPatientId(results.results[0].id.toString());
-      }
+      console.log('✅ Resultados:', results);
+      setResults(results);
     } catch (error) {
-      setGetListTest({ status: 'error', error });
+      console.error('❌ Error:', error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  // Probar obtención por ID
-  const runGetByIdTest = async () => {
-    if (!patientId) {
-      alert('Ingresa un ID de paciente válido');
-      return;
-    }
-    
-    try {
-      setGetByIdTest({ status: 'loading', data: null });
-      const results = await getPatientById(patientId);
-      setGetByIdTest({ status: 'success', data: results });
-    } catch (error) {
-      setGetByIdTest({ status: 'error', error });
-    }
-  };
-
-  // Probar creación
-  const runCreateTest = async () => {
-    // Datos para el nuevo paciente
-    const timestamp = Date.now();
-    const newPatient = {
-      email: `test${timestamp}@example.com`,
-      password: "password123",
-      document_number: timestamp.toString().substring(0, 8),
-      first_name: "Test",
-      last_name: "Patient",
-      birth_date: new Date().toISOString().split('T')[0],
-      gender: "OTHER", // Al backend llega como 'O'
-      phone: "987654321"
-    };
-    
-    try {
-      setCreateTest({ status: 'loading', data: null });
-      const results = await createPatient(newPatient);
-      setCreateTest({ status: 'success', data: results });
-      
-      // Usar ID para la próxima prueba
-      if (results && results.id) {
-        setPatientId(results.id.toString());
-      }
-    } catch (error) {
-      setCreateTest({ status: 'error', error });
-    }
-  };
-
-  // Probar actualización
-  const runUpdateTest = async () => {
-    if (!patientId) {
-      alert('Ingresa un ID de paciente válido o crea un nuevo paciente');
-      return;
-    }
-    
-    // Datos para actualizar
-    const updatedData = {
-      first_name: "Updated",
-      last_name: "Patient",
-      blood_type: "A_POSITIVE" // Al backend llega como 'A+'
-    };
-    
-    try {
-      setUpdateTest({ status: 'loading', data: null });
-      const results = await updatePatient(patientId, updatedData);
-      setUpdateTest({ status: 'success', data: results });
-    } catch (error) {
-      setUpdateTest({ status: 'error', error });
-    }
-  };
-
-  // Estilos según el tema
-  const cardClass = `rounded-lg p-4 shadow ${isDark ? 'bg-neutral-800 border border-neutral-700' : 'bg-white border border-gray-200'}`;
-  const headingClass = `text-lg font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-800'}`;
-  const buttonClass = `px-4 py-2 font-medium rounded-lg ${isDark ? 'bg-primary-600 hover:bg-primary-700 text-white' : 'bg-primary-500 hover:bg-primary-600 text-white'}`;
-  const inputClass = `w-full p-2 rounded-lg border ${isDark ? 'bg-neutral-700 border-neutral-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`;
-  const preClass = `mt-3 p-2 rounded-lg text-sm font-mono overflow-auto max-h-56 ${isDark ? 'bg-neutral-900 text-neutral-300' : 'bg-gray-100 text-gray-800'}`;
   
-  // Función para renderizar estado de prueba
-  const renderTestStatus = (test) => {
-    if (test.status === 'loading') {
-      return (
-        <div className="flex items-center mt-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500 mr-2"></div>
-          <span className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>Ejecutando prueba...</span>
-        </div>
-      );
-    }
+  // Probar obtención de paciente por ID
+  const handleTestGetPatientById = async () => {
+    setIsLoading(true);
+    setError(null);
     
-    if (test.status === 'error') {
-      return (
-        <div className="mt-2">
-          <p className="text-red-500">Error: {test.error?.message || 'Error desconocido'}</p>
-          {test.error?.response && (
-            <pre className={preClass}>
-              {JSON.stringify(test.error.response.data || {}, null, 2)}
-            </pre>
-          )}
-        </div>
-      );
+    try {
+      // Primero obtener lista para tener un ID válido
+      const patientsList = await getPatients();
+      
+      if (!patientsList.results || patientsList.results.length === 0) {
+        throw new Error('No hay pacientes disponibles para probar');
+      }
+      
+      const firstPatient = patientsList.results[0];
+      console.log(`🔍 Probando getPatientById con ID ${firstPatient.id}...`);
+      
+      const results = await getPatientById(firstPatient.id);
+      console.log('✅ Resultados:', results);
+      setResults(results);
+    } catch (error) {
+      console.error('❌ Error:', error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (test.status === 'success') {
-      return (
-        <div className="mt-2">
-          <p className={`text-sm ${isDark ? 'text-green-400' : 'text-green-600'} mb-1`}>✅ Prueba exitosa</p>
-          <pre className={preClass}>
-            {JSON.stringify(test.data || {}, null, 2)}
-          </pre>
-        </div>
-      );
-    }
-    
-    return null;
   };
-
+  
   return (
     <DashboardLayout>
       <div className="px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className={`text-2xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          🧪 Pruebas API de Pacientes
+        <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          🧪 Pruebas de API de Pacientes
         </h1>
         
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Test de conexión */}
-          <div className={cardClass}>
-            <h2 className={headingClass}>Test de Conexión</h2>
-            <button onClick={runConnectionTest} className={buttonClass} disabled={connectionTest.status === 'loading'}>
-              Probar Conexión
-            </button>
-            {renderTestStatus(connectionTest)}
-          </div>
-          
-          {/* Get Lista de Pacientes */}
-          <div className={cardClass}>
-            <h2 className={headingClass}>Obtener Lista de Pacientes</h2>
-            <button onClick={runGetListTest} className={buttonClass} disabled={getListTest.status === 'loading'}>
-              Obtener Lista
-            </button>
-            {renderTestStatus(getListTest)}
-          </div>
-          
-          {/* Get Paciente por ID */}
-          <div className={cardClass}>
-            <h2 className={headingClass}>Obtener Paciente por ID</h2>
-            <div className="flex space-x-2 mb-2">
-              <input
-                type="text"
-                value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-                placeholder="ID del paciente"
-                className={inputClass}
-              />
-              <button
-                onClick={runGetByIdTest}
-                className={buttonClass}
-                disabled={getByIdTest.status === 'loading'}
-              >
-                Obtener
-              </button>
-            </div>
-            {renderTestStatus(getByIdTest)}
-          </div>
-          
-          {/* Crear Paciente */}
-          <div className={cardClass}>
-            <h2 className={headingClass}>Crear Paciente</h2>
+        <div className="mt-8 space-y-6">
+          {/* Botones de prueba */}
+          <div className="flex flex-wrap gap-4">
             <button
-              onClick={runCreateTest}
-              className={buttonClass}
-              disabled={createTest.status === 'loading'}
+              onClick={handleTestGetPatients}
+              disabled={isLoading}
+              className={`px-4 py-2 rounded ${
+                theme === 'dark'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              } disabled:opacity-50`}
             >
-              Crear Paciente de Prueba
+              Probar getPatients
             </button>
-            <p className="text-xs mt-2 text-neutral-400">
-              Se crearán datos aleatorios para el paciente
-            </p>
-            {renderTestStatus(createTest)}
+            
+            <button
+              onClick={handleTestGetPatientById}
+              disabled={isLoading}
+              className={`px-4 py-2 rounded ${
+                theme === 'dark'
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-green-500 hover:bg-green-600 text-white'
+              } disabled:opacity-50`}
+            >
+              Probar getPatientById
+            </button>
           </div>
           
-          {/* Actualizar Paciente */}
-          <div className={cardClass}>
-            <h2 className={headingClass}>Actualizar Paciente</h2>
-            <div className="flex space-x-2 mb-2">
-              <input
-                type="text"
-                value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-                placeholder="ID del paciente"
-                className={inputClass}
-              />
-              <button
-                onClick={runUpdateTest}
-                className={buttonClass}
-                disabled={updateTest.status === 'loading'}
-              >
-                Actualizar
-              </button>
+          {/* Estado de carga */}
+          {isLoading && (
+            <div className="flex items-center space-x-3">
+              <div className="w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+              <p className={theme === 'dark' ? 'text-neutral-300' : 'text-gray-600'}>
+                Ejecutando prueba...
+              </p>
             </div>
-            <p className="text-xs mt-1 text-neutral-400">
-              Actualiza nombre y tipo de sangre
-            </p>
-            {renderTestStatus(updateTest)}
-          </div>
+          )}
+          
+          {/* Mensaje de error */}
+          {error && (
+            <div className={`p-4 rounded-lg ${
+              theme === 'dark'
+                ? 'bg-red-900/20 border border-red-500/20 text-red-400'
+                : 'bg-red-50 border border-red-200 text-red-700'
+            }`}>
+              <h3 className="font-medium">Error</h3>
+              <p className="mt-1">{error}</p>
+            </div>
+          )}
+          
+          {/* Resultados */}
+          {results && !error && (
+            <div className={`p-4 rounded-lg ${
+              theme === 'dark'
+                ? 'bg-neutral-800 border border-neutral-700'
+                : 'bg-white border border-gray-200'
+            }`}>
+              <h3 className={`font-medium ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Resultados
+              </h3>
+              <pre className={`mt-2 p-4 rounded ${
+                theme === 'dark'
+                  ? 'bg-neutral-900 text-neutral-300'
+                  : 'bg-gray-50 text-gray-800'
+              } overflow-auto`}>
+                {JSON.stringify(results, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

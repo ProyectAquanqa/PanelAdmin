@@ -517,6 +517,284 @@ export const showSystemInfo = () => {
   console.log(`🔧 Base URL: ${import.meta.env.BASE_URL}`);
 };
 
+/**
+ * Utilidades para depurar y diagnosticar problemas con especialidades
+ */
+
+/**
+ * Comprueba si el objeto de especialidades tiene la estructura correcta
+ * @param {Object} specialties - Objeto de especialidades a verificar
+ * @returns {Object} Resultado del diagnóstico
+ */
+export const checkSpecialtiesStructure = (specialties) => {
+  const result = {
+    isValid: false,
+    hasResults: false,
+    resultsIsArray: false,
+    count: 0,
+    messages: []
+  };
+  
+  // Verificar si el objeto existe
+  if (!specialties) {
+    result.messages.push('El objeto specialties es nulo o indefinido');
+    return result;
+  }
+  
+  // Verificar si tiene propiedad results
+  if (!specialties.results) {
+    result.messages.push('El objeto specialties no tiene una propiedad results');
+    return result;
+  }
+  
+  result.hasResults = true;
+  
+  // Verificar si results es un array
+  if (!Array.isArray(specialties.results)) {
+    result.messages.push('La propiedad results no es un array');
+    return result;
+  }
+  
+  result.resultsIsArray = true;
+  result.count = specialties.results.length;
+  
+  // Verificar si el array está vacío
+  if (specialties.results.length === 0) {
+    result.messages.push('El array de especialidades está vacío');
+    return result;
+  }
+  
+  // Verificar estructura de las especialidades
+  const firstItem = specialties.results[0];
+  if (!firstItem.id) {
+    result.messages.push('Las especialidades no tienen una propiedad id');
+    return result;
+  }
+  
+  if (!firstItem.name) {
+    result.messages.push('Las especialidades no tienen una propiedad name');
+  }
+  
+  // Si llegamos aquí, la estructura es válida
+  result.isValid = true;
+  result.messages.push('La estructura de especialidades es válida');
+  
+  return result;
+};
+
+/**
+ * Verifica la consistencia de IDs de especialidades en un doctor
+ * @param {Object} doctor - Objeto de doctor a verificar
+ * @param {Object} specialtiesList - Lista completa de especialidades
+ * @returns {Object} Resultado del diagnóstico
+ */
+export const checkDoctorSpecialties = (doctor, specialtiesList) => {
+  const result = {
+    isValid: false,
+    hasSpecialties: false,
+    specialtiesIsArray: false,
+    specialtiesCount: 0,
+    validSpecialties: [],
+    invalidSpecialties: [],
+    messages: []
+  };
+  
+  // Verificar si el doctor existe
+  if (!doctor) {
+    result.messages.push('El objeto doctor es nulo o indefinido');
+    return result;
+  }
+  
+  // Verificar si tiene especialidades
+  if (!doctor.specialties) {
+    result.messages.push('El doctor no tiene especialidades definidas');
+    return result;
+  }
+  
+  result.hasSpecialties = true;
+  
+  // Verificar si especialidades es un array
+  if (!Array.isArray(doctor.specialties)) {
+    result.messages.push('Las especialidades del doctor no son un array');
+    return result;
+  }
+  
+  result.specialtiesIsArray = true;
+  result.specialtiesCount = doctor.specialties.length;
+  
+  // Verificar si el array está vacío
+  if (doctor.specialties.length === 0) {
+    result.messages.push('El doctor no tiene especialidades asignadas');
+    return result;
+  }
+  
+  // Verificar que la lista de especialidades exista
+  if (!specialtiesList || !specialtiesList.results || !Array.isArray(specialtiesList.results)) {
+    result.messages.push('No se proporcionó una lista válida de especialidades');
+    return result;
+  }
+  
+  // Comprobar cada especialidad del doctor
+  doctor.specialties.forEach(specialty => {
+    let specialtyId;
+    
+    // Determinar el ID según el formato
+    if (typeof specialty === 'number') {
+      specialtyId = specialty;
+    } else if (typeof specialty === 'object' && specialty.id) {
+      specialtyId = specialty.id;
+    } else if (typeof specialty === 'object' && specialty.specialty) {
+      specialtyId = typeof specialty.specialty === 'object' ? specialty.specialty.id : specialty.specialty;
+    } else if (typeof specialty === 'string' && /^\d+$/.test(specialty)) {
+      specialtyId = parseInt(specialty, 10);
+    } else {
+      result.invalidSpecialties.push(specialty);
+      return;
+    }
+    
+    // Verificar si existe en la lista completa
+    const exists = specialtiesList.results.some(s => {
+      const id = typeof s.id === 'string' ? parseInt(s.id, 10) : s.id;
+      return id === specialtyId;
+    });
+    
+    if (exists) {
+      result.validSpecialties.push(specialtyId);
+    } else {
+      result.invalidSpecialties.push(specialty);
+    }
+  });
+  
+  // Evaluar resultado
+  if (result.invalidSpecialties.length === 0) {
+    result.isValid = true;
+    result.messages.push(`Todas las especialidades del doctor son válidas (${result.validSpecialties.length})`);
+  } else {
+    result.messages.push(`Se encontraron ${result.invalidSpecialties.length} especialidades inválidas`);
+  }
+  
+  return result;
+};
+
+/**
+ * Limpia y corrige las especialidades de un doctor
+ * @param {Object} doctor - Doctor a corregir
+ * @param {Object} specialtiesList - Lista completa de especialidades
+ * @returns {Object} Doctor con especialidades corregidas
+ */
+export const fixDoctorSpecialties = (doctor, specialtiesList) => {
+  if (!doctor) return null;
+  
+  // Clonar para no modificar el original
+  const fixedDoctor = { ...doctor };
+  
+  // Si no tiene especialidades, inicializar como array vacío
+  if (!fixedDoctor.specialties) {
+    fixedDoctor.specialties = [];
+    return fixedDoctor;
+  }
+  
+  // Si no es array, convertir
+  if (!Array.isArray(fixedDoctor.specialties)) {
+    if (typeof fixedDoctor.specialties === 'object') {
+      // Intentar extraer valores si es un objeto
+      fixedDoctor.specialties = Object.values(fixedDoctor.specialties)
+        .filter(val => val !== null && val !== undefined);
+    } else {
+      // Si no es objeto ni array, inicializar como array vacío
+      fixedDoctor.specialties = [];
+      return fixedDoctor;
+    }
+  }
+  
+  // Filtrar y normalizar especialidades válidas
+  if (specialtiesList && specialtiesList.results && Array.isArray(specialtiesList.results)) {
+    fixedDoctor.specialties = fixedDoctor.specialties
+      .map(specialty => {
+        let specialtyId;
+        
+        // Extraer ID según formato
+        if (typeof specialty === 'number') {
+          specialtyId = specialty;
+        } else if (typeof specialty === 'object' && specialty.id) {
+          specialtyId = specialty.id;
+        } else if (typeof specialty === 'object' && specialty.specialty) {
+          specialtyId = typeof specialty.specialty === 'object' ? specialty.specialty.id : specialty.specialty;
+        } else if (typeof specialty === 'string' && /^\d+$/.test(specialty)) {
+          specialtyId = parseInt(specialty, 10);
+        } else {
+          return null;
+        }
+        
+        // Verificar si existe en la lista
+        const exists = specialtiesList.results.some(s => {
+          const id = typeof s.id === 'string' ? parseInt(s.id, 10) : s.id;
+          return id === specialtyId;
+        });
+        
+        return exists ? specialtyId : null;
+      })
+      .filter(id => id !== null);
+  }
+  
+  return fixedDoctor;
+};
+
+/**
+ * Diagnostica problemas de especialidades y muestra un reporte
+ */
+export const runSpecialtiesDiagnostic = (specialties, doctors) => {
+  console.group('📊 DIAGNÓSTICO DE ESPECIALIDADES');
+  
+  // Verificar estructura de especialidades
+  console.log('Verificando estructura de especialidades...');
+  const structureCheck = checkSpecialtiesStructure(specialties);
+  
+  if (structureCheck.isValid) {
+    console.log('✅ Estructura de especialidades correcta');
+  } else {
+    console.warn('⚠️ Problemas en la estructura de especialidades:');
+    structureCheck.messages.forEach(msg => console.warn(`  - ${msg}`));
+  }
+  
+  // Si hay doctores, verificar sus especialidades
+  if (doctors && Array.isArray(doctors)) {
+    console.log(`\nVerificando especialidades de ${doctors.length} doctores...`);
+    
+    let validCount = 0;
+    let invalidCount = 0;
+    
+    doctors.forEach(doctor => {
+      const check = checkDoctorSpecialties(doctor, specialties);
+      if (check.isValid) {
+        validCount++;
+      } else {
+        invalidCount++;
+        console.warn(`⚠️ Doctor ${doctor.id} (${doctor.first_name} ${doctor.last_name}): ${check.messages.join(', ')}`);
+      }
+    });
+    
+    console.log(`✅ ${validCount} doctores con especialidades válidas`);
+    if (invalidCount > 0) {
+      console.warn(`⚠️ ${invalidCount} doctores con problemas de especialidades`);
+    }
+  }
+  
+  console.groupEnd();
+  
+  return {
+    structureValid: structureCheck.isValid,
+    messages: structureCheck.messages
+  };
+};
+
+export default {
+  checkSpecialtiesStructure,
+  checkDoctorSpecialties,
+  fixDoctorSpecialties,
+  runSpecialtiesDiagnostic
+};
+
 // Hacer las funciones disponibles globalmente para debugging
 if (typeof window !== 'undefined') {
   window.diagnoseSpecialtyIssues = diagnoseSpecialtyIssues;

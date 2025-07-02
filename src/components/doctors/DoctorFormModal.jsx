@@ -1,59 +1,136 @@
-import { Fragment, useEffect, useState } from 'react';
+import React, { useEffect, useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { 
-  XMarkIcon, 
-  UserIcon, 
-  EnvelopeIcon, 
-  PhoneIcon,
-  AcademicCapIcon,
-  BuildingOfficeIcon,
-  IdentificationIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  CheckCircleIcon
-} from '@heroicons/react/24/outline';
-import { useForm, Controller } from 'react-hook-form';
+import { XMarkIcon, ExclamationTriangleIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCreateDoctor, useUpdateDoctor } from '../../hooks/useDoctors';
-import { useGetSpecialties } from '../../hooks/useSpecialties';
+import { useCreateDoctor, useUpdateDoctor, useGetDoctorById } from '../../hooks/useDoctors';
+import { useGetAllSpecialties, useGetDoctorSpecialties } from '../../hooks/useDoctorSpecialties';
 import { toast } from 'react-hot-toast';
+import { useTheme } from '../../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
+
+// Componentes
+import DoctorPersonalInfo from './DoctorPersonalInfo';
+import DoctorProfessionalInfo from './DoctorProfessionalInfo';
+import DoctorSpecialtiesSection from './DoctorSpecialtiesSection';
+import FormActions from '../common/FormActions';
 
 // Esquema de validación
 const doctorSchema = z.object({
   first_name: z.string().min(2, 'Mínimo 2 caracteres').max(50, 'Máximo 50 caracteres'),
   last_name: z.string().min(2, 'Mínimo 2 caracteres').max(50, 'Máximo 50 caracteres'),
   email: z.string().email('Email inválido').toLowerCase(),
-  password: z.string().min(8, 'Mínimo 8 caracteres').optional(),
+  password: z.string().min(8, 'Mínimo 8 caracteres')
+    .optional()
+    .or(z.literal(''))
+    .transform(val => val === '' ? undefined : val),
   cmp_number: z.string().min(5, 'Mínimo 5 caracteres').max(20, 'Máximo 20 caracteres'),
   phone: z.string().min(9, 'Teléfono inválido').optional().or(z.literal('')),
   contact_phone: z.string().min(9, 'Teléfono inválido').optional().or(z.literal('')),
   consultation_room: z.string().max(10, 'Máximo 10 caracteres').optional().or(z.literal('')),
   second_last_name: z.string().max(50, 'Máximo 50 caracteres').optional().or(z.literal('')),
-  doctor_type: z.enum(['PRIMARY', 'SPECIALIST']).default('SPECIALIST'),
+  doctor_type: z.enum(['PRIMARY', 'SPECIALIST'], {
+    errorMap: () => ({ message: "Debe seleccionar un tipo de doctor." }),
+  }).default('SPECIALIST'),
   is_external: z.boolean().default(false),
   can_refer: z.boolean().default(false),
   is_active: z.boolean().default(true),
   specialties: z.array(z.number()).min(1, 'Seleccione al menos una especialidad'),
+  primary_specialty_id: z.number().nullable().optional(),
+  id: z.number().optional()
 });
 
-function DoctorFormModal({ isOpen, onClose, doctor = null }) {
+// Agregar un componente de alerta para la disponibilidad
+const AvailabilityAlert = ({ isEditing, doctorId }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const navigate = useNavigate();
+  
+  const handleNavigateToAvailability = () => {
+    if (isEditing && doctorId) {
+      navigate(`/doctors/availability/${doctorId}`);
+    }
+  };
+  
+  return (
+    <div className={`mt-6 p-4 rounded-lg border ${
+      isDark ? 'border-amber-500/30 bg-amber-900/20' : 'border-amber-200 bg-amber-50'
+    }`}>
+      <div className="flex">
+        <ExclamationTriangleIcon className={`h-5 w-5 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
+        <div className="ml-3">
+          <h3 className={`text-sm font-medium ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>
+            Recordatorio importante
+          </h3>
+          <div className={`mt-2 text-sm ${isDark ? 'text-amber-200' : 'text-amber-700'}`}>
+            <p>
+              {isEditing 
+                ? 'Recuerde configurar los horarios de disponibilidad del doctor para que pueda recibir citas.'
+                : 'Después de crear el doctor, deberá configurar sus horarios de disponibilidad para que pueda recibir citas.'}
+            </p>
+            {isEditing && doctorId && (
+              <button
+                type="button"
+                onClick={handleNavigateToAvailability}
+                className={`mt-3 inline-flex items-center px-3 py-1.5 border rounded-md text-sm font-medium ${
+                  isDark 
+                    ? 'border-amber-500/50 text-amber-300 hover:bg-amber-900/30' 
+                    : 'border-amber-300 text-amber-700 hover:bg-amber-100'
+                }`}
+              >
+                <CalendarDaysIcon className="w-4 h-4 mr-1" />
+                Configurar horarios
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Modal para crear o editar un doctor
+ */
+function DoctorFormModal({ isOpen, onClose, doctor = null, onSuccess }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const isEditing = !!doctor;
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Obtener especialidades
-  const { data: specialtiesData, isLoading: loadingSpecialties } = useGetSpecialties();
-  const specialties = specialtiesData?.results || [];
-  
+  // Obtener datos del doctor si estamos editando
+  const { 
+    data: doctorDetails, 
+    isLoading: loadingDoctorDetails 
+  } = useGetDoctorById(doctor?.id, { 
+    enabled: isEditing && !!doctor?.id 
+  });
+
+  // Obtener todas las especialidades disponibles
+  const { 
+    data: specialtiesData, 
+    isLoading: loadingSpecialties, 
+    error: specialtiesError,
+    refetch: refetchSpecialties
+  } = useGetAllSpecialties();
+
+  // Obtener especialidades del doctor si estamos editando
+  const {
+    data: doctorSpecialtiesData,
+    isLoading: loadingDoctorSpecialties,
+    refetch: refetchDoctorSpecialties
+  } = useGetDoctorSpecialties(doctor?.id);
+
   // Hooks para crear/actualizar doctor
   const createDoctor = useCreateDoctor();
   const updateDoctor = useUpdateDoctor();
 
+  // React Hook Form
   const { 
     register, 
     handleSubmit, 
-    formState: { errors }, 
+    formState: { errors, isSubmitting }, 
     reset,
     setValue,
     watch,
@@ -75,194 +152,216 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
       can_refer: false,
       is_active: true,
       specialties: [],
+      primary_specialty_id: null,
     }
   });
 
   // Observar especialidades seleccionadas
   const selectedSpecialties = watch('specialties') || [];
 
-  // Cargar datos del doctor para edición
+  // Debug: Mostrar información sobre especialidades
   useEffect(() => {
-    if (isEditing && doctor) {
-      console.log('🔄 Cargando datos del doctor para edición:', doctor);
-      console.log('🔑 ID del doctor:', doctor.id);
+    console.log('🔍 DEBUG DOCTOR FORM:');
+    console.log('Especialidades disponibles:', specialtiesData?.results);
+    console.log('Especialidades del doctor:', doctorSpecialtiesData);
+    console.log('Especialidades seleccionadas:', selectedSpecialties);
+    
+    // Verificar si hay discrepancias entre las especialidades del doctor y las seleccionadas
+    if (doctorSpecialtiesData?.ids && selectedSpecialties.length > 0) {
+      const missingIds = doctorSpecialtiesData.ids.filter(id => !selectedSpecialties.includes(id));
+      const extraIds = selectedSpecialties.filter(id => !doctorSpecialtiesData.ids.includes(id));
       
-      // Datos básicos
-      const formData = {
-        first_name: doctor.first_name || '',
-        last_name: doctor.last_name || '',
-        email: doctor.user?.email || doctor.email || '',
-        cmp_number: doctor.cmp_number || '',
-        phone: doctor.phone || '',
-        contact_phone: doctor.contact_phone || '',
-        consultation_room: doctor.consultation_room || '',
-        second_last_name: doctor.second_last_name || '',
-        doctor_type: doctor.doctor_type || 'SPECIALIST',
-        is_external: Boolean(doctor.is_external),
-        can_refer: Boolean(doctor.can_refer),
-        is_active: doctor.is_active !== undefined ? Boolean(doctor.is_active) : true,
-        specialties: [],
-        id: doctor.id // Importante: incluir el ID
-      };
-      
-      // Procesar especialidades
-      if (doctor.specialties) {
-        let specialtyIds = [];
-        
-        // Manejar diferentes formatos de especialidades
-        if (Array.isArray(doctor.specialties)) {
-          specialtyIds = doctor.specialties.map(spec => {
-            // Si es un objeto con id directo
-            if (typeof spec === 'object' && spec.id) {
-              return spec.id;
-            }
-            // Si es un objeto con specialty anidado
-            if (typeof spec === 'object' && spec.specialty && spec.specialty.id) {
-              return spec.specialty.id;
-            }
-            // Si es un número directo
-            if (typeof spec === 'number') {
-              return spec;
-            }
-            return null;
-          }).filter(Boolean);
-        }
-        
-        console.log('✅ Especialidades procesadas:', specialtyIds);
-        formData.specialties = specialtyIds;
+      if (missingIds.length > 0) {
+        console.warn('⚠️ Especialidades del doctor que no están seleccionadas:', missingIds);
       }
       
-      // Resetear el formulario con los datos procesados
-      reset(formData);
-      console.log('✅ Formulario inicializado con datos:', formData);
-    } else {
-      console.log('🔄 Inicializando formulario para nuevo doctor');
-      reset({
-        first_name: '',
-        last_name: '',
-        email: '',
-        password: '',
-        cmp_number: '',
-        phone: '',
-        contact_phone: '',
-        consultation_room: '',
-        second_last_name: '',
-        doctor_type: 'SPECIALIST',
-        is_external: false,
-        can_refer: false,
-        is_active: true,
-        specialties: [],
+      if (extraIds.length > 0) {
+        console.warn('⚠️ Especialidades seleccionadas que no están en el doctor:', extraIds);
+      }
+    }
+  }, [specialtiesData, doctorSpecialtiesData, selectedSpecialties]);
+
+  // Cargar datos del doctor para edición
+  useEffect(() => {
+    if (isEditing) {
+      setIsLoading(true);
+      
+      // Si tenemos datos detallados del doctor, usarlos
+      const doctorData = doctorDetails || doctor;
+      
+      if (doctorData) {
+        // Cargar datos básicos del doctor
+      const formData = {
+          first_name: doctorData.first_name || '',
+          last_name: doctorData.last_name || '',
+          email: doctorData.user?.email || doctorData.email || '',
+          cmp_number: doctorData.cmp_number || doctorData.license_number || '',
+          phone: doctorData.phone || '',
+          contact_phone: doctorData.contact_phone || '',
+          consultation_room: doctorData.consultation_room || '',
+          second_last_name: doctorData.second_last_name || '',
+          doctor_type: doctorData.doctor_type || 'SPECIALIST',
+          is_external: Boolean(doctorData.is_external),
+          can_refer: Boolean(doctorData.can_refer),
+          is_active: doctorData.is_active !== undefined ? Boolean(doctorData.is_active) : true,
+          id: doctorData.id
+        };
+        
+        // Establecer datos básicos
+      Object.entries(formData).forEach(([key, value]) => {
+        setValue(key, value);
       });
-    }
-  }, [doctor, isEditing, reset]);
-
-  // Manejar selección de especialidades
-  const handleSpecialtyToggle = (specialtyId) => {
-    const currentSpecialties = watch('specialties') || [];
-    console.log('🔄 Especialidades actuales:', currentSpecialties);
-    console.log('🎯 Especialidad a toggle:', specialtyId);
-    
-    let newSpecialties;
-    if (currentSpecialties.includes(specialtyId)) {
-      // Quitar especialidad
-      newSpecialties = currentSpecialties.filter(id => id !== specialtyId);
+      }
+      
+      setIsLoading(false);
     } else {
-      // Agregar especialidad
-      newSpecialties = [...currentSpecialties, specialtyId];
+      // Para nuevo doctor, resetear el formulario
+      reset();
     }
-    
-    console.log('✅ Nuevas especialidades:', newSpecialties);
-    setValue('specialties', newSpecialties, { shouldValidate: true });
-  };
+  }, [doctor, doctorDetails, isEditing, setValue, reset]);
 
+  // Cargar especialidades del doctor
+  useEffect(() => {
+    // Se ejecuta al editar y cuando tanto las especialidades del doctor como las disponibles se han cargado.
+    if (isEditing && doctorSpecialtiesData?.ids && specialtiesData?.results) {
+      console.log('🔄 Cargando y validando especialidades del doctor:', {
+        doctorSpecialties: doctorSpecialtiesData.ids,
+        availableSpecialties: specialtiesData.results.map(s => s.id)
+      });
+      
+      // Los IDs ya vienen procesados desde el hook useGetDoctorSpecialties.
+      const doctorSpecialtyIds = doctorSpecialtiesData.ids
+        .map(id => parseInt(id, 10))
+        .filter(id => !isNaN(id));
+      
+      const availableIds = specialtiesData.results.map(s => parseInt(s.id, 10));
+      
+      // Filtrar los IDs del doctor para asegurar que están en la lista de disponibles.
+      const validIds = doctorSpecialtyIds.filter(id => availableIds.includes(id));
+      
+      if (validIds.length !== doctorSpecialtyIds.length) {
+        console.warn('⚠️ Algunos IDs de especialidades del doctor no están en la lista de especialidades disponibles:', {
+          doctorIds: doctorSpecialtyIds,
+          availableIds,
+          invalidIds: doctorSpecialtyIds.filter(id => !availableIds.includes(id))
+        });
+      }
+      
+      console.log('✅ IDs de especialidades validados para el formulario:', validIds);
+      setValue('specialties', validIds, { shouldValidate: true });
+    }
+  }, [isEditing, doctorSpecialtiesData, specialtiesData, setValue]);
+
+  // Manejar envío del formulario
   const onSubmit = async (data) => {
     try {
-      setIsSubmitting(true);
-      console.log('📝 Datos del formulario:', data);
-      
-      // Verificar que haya al menos una especialidad
-      if (!data.specialties || data.specialties.length === 0) {
+      // Validar especialidades
+      if (!data.specialties?.length) {
         toast.error('Debe seleccionar al menos una especialidad');
-        setIsSubmitting(false);
         return;
       }
 
-      // Limpiar campos vacíos opcionales
-      const cleanData = { ...data };
-      if (!cleanData.phone || cleanData.phone.trim() === '') delete cleanData.phone;
-      if (!cleanData.contact_phone || cleanData.contact_phone.trim() === '') delete cleanData.contact_phone;
-      if (!cleanData.consultation_room || cleanData.consultation_room.trim() === '') delete cleanData.consultation_room;
-      if (!cleanData.second_last_name || cleanData.second_last_name.trim() === '') delete cleanData.second_last_name;
+      // Preparar datos
+      const doctorData = {
+        ...data,
+        // Solo incluir password si se está creando o si se ha modificado
+        password: isEditing ? undefined : data.password,
+        id: isEditing ? doctor.id : undefined
+      };
 
-      console.log('🔄 Datos procesados para enviar:', cleanData);
+      // Eliminar campos vacíos
+      Object.keys(doctorData).forEach(key => {
+        if (doctorData[key] === '') {
+          delete doctorData[key];
+        }
+      });
+
+      console.log('Enviando datos del doctor:', doctorData);
+
+      // Crear o actualizar doctor
+      const mutation = isEditing ? updateDoctor : createDoctor;
+      const response = await mutation.mutateAsync(doctorData);
       
+      // Refrescar datos de especialidades
       if (isEditing) {
-        if (!doctor?.id) {
-          throw new Error('ID de doctor no disponible para actualización');
-        }
-        
-        // Para edición, no enviar password si está vacío
-        if (!cleanData.password || cleanData.password.trim() === '') {
-          delete cleanData.password;
-        }
-        
-        console.log(`🔄 Enviando actualización para doctor ID: ${doctor.id}`);
-        const updatedDoctor = await updateDoctor.mutateAsync({ 
-          id: doctor.id, 
-          data: cleanData 
-        });
-        
-        console.log('✅ Doctor actualizado:', updatedDoctor);
-        toast.success('Doctor actualizado correctamente');
-      } else {
-        // Para creación, verificar que tenga password
-        if (!cleanData.password || cleanData.password.length < 8) {
-          cleanData.password = 'temporal123';
-          toast.info('Se ha generado una contraseña temporal');
-        }
-        
-        const newDoctor = await createDoctor.mutateAsync(cleanData);
-        console.log('✅ Doctor creado:', newDoctor);
-        toast.success('Doctor creado correctamente');
+        await refetchDoctorSpecialties();
       }
       
+      toast.success(
+        isEditing 
+          ? 'Doctor actualizado correctamente' 
+          : 'Doctor creado correctamente'
+      );
+      
+      // Mostrar mensaje sobre la configuración de disponibilidad
+      toast.success(
+        isEditing
+          ? 'Recuerde configurar la disponibilidad del doctor'
+          : 'Doctor creado. Ahora puede configurar su disponibilidad',
+        { duration: 5000 }
+      );
+      
+      onSuccess?.();
       onClose();
       reset();
     } catch (error) {
-      console.error('❌ Error al procesar el formulario:', error);
+      console.error('Error al guardar doctor:', error);
       
-      // Manejar errores específicos del backend
+      // Manejar errores específicos
       if (error.response?.data) {
         const errorData = error.response.data;
-        console.log('📋 Datos del error:', errorData);
         
-        if (errorData.email) {
-          toast.error(`Email: ${Array.isArray(errorData.email) ? errorData.email[0] : errorData.email}`);
-        } else if (errorData.cmp_number) {
-          toast.error(`CMP: ${Array.isArray(errorData.cmp_number) ? errorData.cmp_number[0] : errorData.cmp_number}`);
+        if (errorData.specialties) {
+          toast.error(`Error en especialidades: ${Array.isArray(errorData.specialties) 
+            ? errorData.specialties[0] 
+            : errorData.specialties}`);
+        } else if (errorData.email) {
+          toast.error(`Email: ${errorData.email}`);
         } else if (errorData.detail) {
           toast.error(errorData.detail);
-        } else if (errorData.non_field_errors) {
-          toast.error(errorData.non_field_errors[0] || 'Error de validación');
         } else {
-          // Mostrar todos los errores de validación
-          const allErrors = Object.entries(errorData).map(([field, errors]) => 
-            `${field}: ${Array.isArray(errors) ? errors[0] : errors}`
-          ).join(', ');
-          toast.error(`Errores: ${allErrors}`);
+          toast.error(`Error al ${isEditing ? 'actualizar' : 'crear'} doctor`);
         }
       } else {
-        toast.error(error.message || 'Error de conexión. Verifica que el servidor esté funcionando.');
+        toast.error(`Error al ${isEditing ? 'actualizar' : 'crear'} doctor: ${error.message || 'Intente nuevamente'}`);
       }
-    } finally {
-      setIsSubmitting(false);
     }
+  };
+
+  // Manejar selección de especialidad
+  const handleSpecialtyToggle = (specialtyId) => {
+    const currentSpecialties = selectedSpecialties || [];
+    let newSpecialties;
+    
+    if (currentSpecialties.includes(specialtyId)) {
+      // Quitar especialidad si ya está seleccionada
+      newSpecialties = currentSpecialties.filter(id => id !== specialtyId);
+    } else {
+      // Agregar especialidad si no está seleccionada
+      newSpecialties = [...currentSpecialties, specialtyId];
+    }
+    
+    setValue('specialties', newSpecialties, { shouldValidate: true });
+  };
+
+  // Mostrar error si no se pudieron cargar las especialidades
+  useEffect(() => {
+    if (specialtiesError) {
+      toast.error('No se pudieron cargar las especialidades. Intente nuevamente.');
+    }
+  }, [specialtiesError]);
+
+  // Determinar si estamos cargando datos
+  const isLoadingData = isLoading || loadingDoctorDetails || loadingDoctorSpecialties;
+
+  const handleClose = () => {
+    reset();
+    onClose();
   };
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        {/* Backdrop */}
+      <Dialog as="div" className="relative z-50" onClose={handleClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -272,12 +371,11 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black bg-opacity-60" />
         </Transition.Child>
 
-        {/* Modal Container */}
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -287,389 +385,50 @@ function DoctorFormModal({ isOpen, onClose, doctor = null }) {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
-                
-                {/* Header */}
-                <div className="bg-gradient-to-r from-[#033662] to-[#044b88] px-6 py-4 text-white">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
-                        <UserIcon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <Dialog.Title className="text-xl font-bold">
-                          {isEditing ? 'Editar Doctor' : 'Nuevo Doctor'}
-                        </Dialog.Title>
-                        <p className="text-sm text-blue-100">
-                          {isEditing ? 'Actualizar información del doctor' : 'Agregar un nuevo doctor al sistema'}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="rounded-full bg-white/20 p-1.5 text-white hover:bg-white/30"
-                      onClick={onClose}
-                    >
-                      <XMarkIcon className="h-5 w-5" />
-                    </button>
-                  </div>
+              <Dialog.Panel className={`w-full max-w-4xl transform rounded-2xl ${isDark ? 'bg-neutral-900' : 'bg-gray-50'} text-left align-middle shadow-xl transition-all flex flex-col`}>
+                <div className={`sticky top-0 z-10 px-6 py-4 border-b ${isDark ? 'border-neutral-800 bg-neutral-900' : 'border-gray-200 bg-white'} rounded-t-2xl`}>
+                  <Dialog.Title as="h3" className={`text-xl font-bold leading-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {isEditing ? 'Editar Doctor' : 'Crear Nuevo Doctor'}
+                  </Dialog.Title>
+                  <p className={`mt-1 text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                    {isEditing ? 'Actualice la información del doctor.' : 'Complete el formulario para añadir un nuevo doctor.'}
+                  </p>
+                  <button
+                    type="button"
+                    className={`absolute top-4 right-4 p-2 rounded-full ${isDark ? 'text-gray-400 hover:bg-neutral-700' : 'text-gray-400 hover:bg-gray-100'}`}
+                    onClick={handleClose}
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
                 </div>
-
-                {/* Form Content */}
-                <div className="px-6 py-5 max-h-[calc(100vh-200px)] overflow-y-auto">
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                
+                <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+                  <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                    <div className="px-6 py-6 space-y-8">
+                      <DoctorPersonalInfo register={register} errors={errors} isDark={isDark} />
+                      <DoctorProfessionalInfo register={register} errors={errors} control={control} isDark={isDark} />
+                      <DoctorSpecialtiesSection
+                        selectedSpecialties={selectedSpecialties}
+                        specialtiesData={specialtiesData}
+                        handleSpecialtyToggle={handleSpecialtyToggle}
+                        loadingSpecialties={loadingSpecialties}
+                        specialtiesError={specialtiesError}
+                        isDark={isDark}
+                        watch={watch}
+                        setValue={setValue}
+                      />
+                      <AvailabilityAlert isEditing={isEditing} doctorId={doctor?.id} />
+                    </div>
                     
-                    {/* Información Personal */}
-                    <div className="space-y-3">
-                      <h3 className="flex items-center space-x-2 font-medium text-gray-800">
-                        <UserIcon className="h-4 w-4 text-[#033662]" />
-                        <span>Información Personal</span>
-                      </h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nombres *
-                          </label>
-                          <input
-                            type="text"
-                            {...register('first_name')}
-                            className={`w-full px-3 py-2 border rounded-lg ${
-                              errors.first_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                            }`}
-                            placeholder="Ej: Carlos Eduardo"
-                          />
-                          {errors.first_name && (
-                            <p className="mt-1 text-xs text-red-600">{errors.first_name.message}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Apellido Paterno *
-                          </label>
-                          <input
-                            type="text"
-                            {...register('last_name')}
-                            className={`w-full px-3 py-2 border rounded-lg ${
-                              errors.last_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                            }`}
-                            placeholder="Ej: García"
-                          />
-                          {errors.last_name && (
-                            <p className="mt-1 text-xs text-red-600">{errors.last_name.message}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Apellido Materno
-                          </label>
-                          <input
-                            type="text"
-                            {...register('second_last_name')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                            placeholder="Ej: López"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Información de Contacto */}
-                    <div className="space-y-3">
-                      <h3 className="flex items-center space-x-2 font-medium text-gray-800">
-                        <EnvelopeIcon className="h-4 w-4 text-[#033662]" />
-                        <span>Información de Contacto</span>
-                      </h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email *
-                          </label>
-                          <div className="relative">
-                            <EnvelopeIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                            <input
-                              type="email"
-                              {...register('email')}
-                              className={`w-full pl-10 pr-3 py-2 border rounded-lg ${
-                                errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                              }`}
-                              placeholder="doctor@hospital.com"
-                            />
-                          </div>
-                          {errors.email && (
-                            <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
-                          )}
-                        </div>
-
-                        {!isEditing && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Contraseña *
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showPassword ? 'text' : 'password'}
-                                {...register('password')}
-                                className={`w-full px-3 py-2 pr-10 border rounded-lg ${
-                                  errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                                }`}
-                                placeholder="Mínimo 8 caracteres"
-                              />
-                              <button
-                                type="button"
-                                className="absolute right-3 top-2.5 text-gray-400"
-                                onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {showPassword ? (
-                                  <EyeSlashIcon className="h-4 w-4" />
-                                ) : (
-                                  <EyeIcon className="h-4 w-4" />
-                                )}
-                              </button>
-                            </div>
-                            {errors.password && (
-                              <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-                            )}
-                          </div>
-                        )}
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Teléfono Principal
-                          </label>
-                          <div className="relative">
-                            <PhoneIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                            <input
-                              type="text"
-                              {...register('phone')}
-                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg"
-                              placeholder="+51 987 654 321"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Teléfono Adicional
-                          </label>
-                          <div className="relative">
-                            <PhoneIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                            <input
-                              type="text"
-                              {...register('contact_phone')}
-                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg"
-                              placeholder="Teléfono alternativo"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Información Profesional */}
-                    <div className="space-y-3">
-                      <h3 className="flex items-center space-x-2 font-medium text-gray-800">
-                        <IdentificationIcon className="h-4 w-4 text-[#033662]" />
-                        <span>Información Profesional</span>
-                      </h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Número CMP *
-                          </label>
-                          <input
-                            type="text"
-                            {...register('cmp_number')}
-                            className={`w-full px-3 py-2 border rounded-lg ${
-                              errors.cmp_number ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                            }`}
-                            placeholder="CMP12345"
-                          />
-                          {errors.cmp_number && (
-                            <p className="mt-1 text-xs text-red-600">{errors.cmp_number.message}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Consultorio
-                          </label>
-                          <div className="relative">
-                            <BuildingOfficeIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                            <input
-                              type="text"
-                              {...register('consultation_room')}
-                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg"
-                              placeholder="Ej: 101, A-1"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tipo de Doctor *
-                          </label>
-                          <select
-                            {...register('doctor_type')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          >
-                            <option value="PRIMARY">Médico Principal</option>
-                            <option value="SPECIALIST">Especialista</option>
-                          </select>
-                        </div>
-                        
-                        <div className="flex flex-col space-y-2 justify-center">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="is_external"
-                              {...register('is_external')}
-                              className="h-4 w-4 text-[#033662] border-gray-300 rounded"
-                            />
-                            <label htmlFor="is_external" className="ml-2 block text-sm text-gray-700">
-                              Es médico externo
-                            </label>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <Controller
-                              name="can_refer"
-                              control={control}
-                              render={({ field }) => (
-                            <input
-                              type="checkbox"
-                                  {...field}
-                                  checked={field.value}
-                                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                />
-                              )}
-                            />
-                            <label htmlFor="can_refer" className="ml-2 block text-sm text-gray-900">
-                              Puede derivar pacientes
-                            </label>
-                          </div>
-
-                          {/* Switch de activación/desactivación */}
-                          {isEditing && (
-                            <div className="flex items-center">
-                              <Controller
-                                name="is_active"
-                                control={control}
-                                render={({ field }) => (
-                                  <div className="flex items-center">
-                                    <input
-                                      type="checkbox"
-                                      {...field}
-                                      checked={field.value}
-                                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                    />
-                                    <label className="ml-2 flex items-center text-sm text-gray-900">
-                                      {field.value ? (
-                                        <CheckCircleIcon className="mr-1 h-5 w-5 text-green-500" />
-                                      ) : (
-                                        <XMarkIcon className="mr-1 h-5 w-5 text-red-500" />
-                                      )}
-                                      {field.value ? 'Doctor Activo' : 'Doctor Inactivo'}
-                                    </label>
-                                  </div>
-                                )}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Especialidades */}
-                    <div className="space-y-3">
-                      <h3 className="flex items-center space-x-2 font-medium text-gray-800">
-                        <AcademicCapIcon className="h-4 w-4 text-[#033662]" />
-                        <span>Especialidades Médicas *</span>
-                      </h3>
-                      
-                      {loadingSpecialties ? (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-gray-500">Cargando especialidades...</p>
-                        </div>
-                      ) : specialties.length === 0 ? (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-gray-500">No hay especialidades disponibles</p>
-                        </div>
-                      ) : (
-                        <>
-                          <Controller
-                            name="specialties"
-                            control={control}
-                            render={({ field }) => (
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {specialties.map((specialty) => (
-                                  <button
-                                    key={specialty.id}
-                                    type="button"
-                                    onClick={() => handleSpecialtyToggle(specialty.id)}
-                                    className={`p-2 rounded-lg border flex items-center ${
-                                      selectedSpecialties.includes(specialty.id)
-                                        ? 'border-[#033662] bg-[#033662]/10 text-[#033662]'
-                                        : 'border-gray-300 text-gray-700'
-                                    }`}
-                                  >
-                                    {selectedSpecialties.includes(specialty.id) && (
-                                      <CheckCircleIcon className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                                    )}
-                                    <span className="text-sm truncate">{specialty.name}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          />
-                          
-                          {errors.specialties && (
-                            <p className="mt-1 text-xs text-red-600">{errors.specialties.message}</p>
-                          )}
-                          
-                          <div className="text-xs text-gray-500">
-                            {selectedSpecialties.length > 0 ? (
-                              <p>
-                                {selectedSpecialties.length} especialidad(es) seleccionada(s)
-                              </p>
-                            ) : (
-                              <p>Seleccione al menos una especialidad</p>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Buttons */}
-                    <div className="flex justify-end pt-4 border-t">
-                      <div className="flex space-x-3">
-                        <button
-                          type="button"
-                          onClick={onClose}
-                          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700"
-                          disabled={isSubmitting}
-                        >
-                          Cancelar
-                        </button>
-                        
-                        <button
-                          type="submit"
-                          disabled={isSubmitting}
-                          className="px-6 py-2 bg-[#033662] text-white rounded-lg disabled:opacity-50 flex items-center"
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Guardando...
-                            </>
-                          ) : isEditing ? 'Guardar Cambios' : 'Crear Doctor'}
-                        </button>
-                      </div>
+                    <div className={`sticky bottom-0 z-10 px-6 py-4 border-t ${isDark ? 'border-neutral-800 bg-neutral-900' : 'border-gray-200 bg-white'} rounded-b-2xl`}>
+                      <FormActions
+                        isSubmitting={isSubmitting || isLoading}
+                        onCancel={handleClose}
+                        isEditing={isEditing}
+                        isDark={isDark}
+                        createText="Crear Doctor"
+                        saveText="Guardar Cambios"
+                      />
                     </div>
                   </form>
                 </div>

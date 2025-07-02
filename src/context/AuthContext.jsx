@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import * as authService from '../services/authService';
 
@@ -20,7 +20,6 @@ export const AuthProvider = ({ children }) => {
           
           if (decoded.exp && decoded.exp < currentTime) {
             // Token expirado
-            console.warn("Token expirado, cerrando sesión");
             logout();
             return;
           }
@@ -41,7 +40,6 @@ export const AuthProvider = ({ children }) => {
             setIsAuthenticated(true);
           }
         } catch (error) {
-          console.error("Error al procesar el token:", error);
           logout();
         }
       }
@@ -55,8 +53,6 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await authService.login(credentials);
-      
-      console.log('Respuesta de login de Django:', response);
       
       // Extraer los tokens de la respuesta de Django
       const accessToken = response.token;
@@ -81,7 +77,6 @@ export const AuthProvider = ({ children }) => {
       
       return response;
     } catch (error) {
-      console.error("Error al iniciar sesión:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -93,7 +88,7 @@ export const AuthProvider = ({ children }) => {
       // Intentar hacer logout en el servidor Django
       await authService.logout();
     } catch (error) {
-      console.warn("Error al cerrar sesión en el servidor:", error);
+      // Ignorar error de logout en servidor
     } finally {
       // Siempre limpiar estado local
       localStorage.removeItem('authToken');
@@ -125,13 +120,12 @@ export const AuthProvider = ({ children }) => {
       
       return true;
     } catch (error) {
-      console.error("Error refreshing token:", error);
       logout();
       return false;
     }
   };
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     token,
     isAuthenticated,
@@ -139,7 +133,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     refreshAuthToken
-  };
+  }), [user, token, isAuthenticated, isLoading]);
 
   return (
     <AuthContext.Provider value={value}>
