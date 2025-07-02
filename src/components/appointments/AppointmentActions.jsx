@@ -16,7 +16,6 @@ import {
  * @param {Function} props.onCancel - Función para cancelar la cita
  * @param {Function} props.onComplete - Función para completar la cita
  * @param {Function} props.onNoShow - Función para marcar como no presentada
- * @param {Function} props.onReschedule - Función para reprogramar la cita
  * @param {Function} props.onView - Función para ver detalles de la cita
  * @param {boolean} props.isPast - Indica si la cita está en el pasado
  * @param {string} props.theme - Tema actual ('dark' o 'light')
@@ -28,7 +27,6 @@ const AppointmentActions = ({
   onCancel, 
   onComplete, 
   onNoShow, 
-  onReschedule, 
   onView,
   isPast,
   theme 
@@ -41,7 +39,6 @@ const AppointmentActions = ({
   const canCancel = status === 'SCHEDULED';
   const canComplete = status === 'SCHEDULED' || status === 'IN_CONSULTATION';
   const canMarkNoShow = status === 'SCHEDULED' && isPast;
-  const canReschedule = status === 'SCHEDULED';
   
   // Clases para los botones
   const buttonClass = `p-1.5 rounded-md ${
@@ -114,20 +111,6 @@ const AppointmentActions = ({
         >
           <XMarkIcon className={`h-5 w-5 ${
             darkMode ? 'text-yellow-400' : 'text-yellow-600'
-          }`} />
-        </button>
-      )}
-      
-      {/* Reprogramar */}
-      {canReschedule && (
-        <button
-          type="button"
-          onClick={() => onReschedule(appointment)}
-          className={buttonClass}
-          title="Reprogramar cita"
-        >
-          <CalendarIcon className={`h-5 w-5 ${
-            darkMode ? 'text-purple-400' : 'text-purple-600'
           }`} />
         </button>
       )}

@@ -14,7 +14,6 @@ import { formatDate, isTimeBlockPast } from '../../utils/dateUtils';
  * @param {Function} props.onCancel - Función para cancelar una cita
  * @param {Function} props.onComplete - Función para completar una cita
  * @param {Function} props.onNoShow - Función para marcar como no presentada
- * @param {Function} props.onReschedule - Función para reprogramar una cita
  * @param {Function} props.onView - Función para ver detalles de una cita
  * @param {string} props.theme - Tema actual ('dark' o 'light')
  * @returns {JSX.Element} Componente de tabla
@@ -27,7 +26,6 @@ const AppointmentTable = ({
   onCancel,
   onComplete,
   onNoShow,
-  onReschedule,
   onView,
   theme
 }) => {
@@ -202,7 +200,6 @@ const AppointmentTable = ({
                       onCancel={onCancel}
                       onComplete={onComplete}
                       onNoShow={onNoShow}
-                      onReschedule={onReschedule}
                       onView={onView}
                       isPast={isPast}
                       theme={theme}

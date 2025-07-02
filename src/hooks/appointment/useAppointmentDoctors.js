@@ -12,24 +12,34 @@ export const useAppointmentDoctors = (specialtyId) => {
   const [loadingDoctors, setLoadingDoctors] = useState(false);
 
   // Función para obtener doctores por especialidad
-  const fetchDoctorsBySpecialty = async () => {
-    if (!specialtyId) {
+  const fetchDoctorsBySpecialty = async (sid = specialtyId) => {
+    if (!sid) {
       setDoctors([]);
-      return;
+      return [];
     }
     
     setLoadingDoctors(true);
     try {
-      console.log(`🔍 Obteniendo doctores para especialidad ${specialtyId}...`);
+      console.log(`🔍 Obteniendo doctores para especialidad ${sid}...`);
       
-      const doctorsList = await getDoctorsBySpecialty(specialtyId);
+      const doctorsList = await getDoctorsBySpecialty(sid);
+      
+      if (!doctorsList || !Array.isArray(doctorsList)) {
+        console.warn('⚠️ La respuesta de doctores no es un array:', doctorsList);
+        setDoctors([]);
+        return [];
+      }
+      
+      console.log(`✅ Se encontraron ${doctorsList.length} doctores para la especialidad ${sid}`);
       
       const formattedDoctors = doctorsList.map(doctor => ({
         id: doctor.id,
-        name: doctor.full_name || 
-              (doctor.first_name && doctor.last_name ? `${doctor.first_name} ${doctor.last_name}` : null) ||
-              doctor.name || 
-              `Doctor #${doctor.id}`
+        full_name: doctor.full_name || 
+                  (doctor.first_name && doctor.last_name ? `${doctor.first_name} ${doctor.last_name}` : null) ||
+                  doctor.name || 
+                  `Doctor #${doctor.id}`,
+        first_name: doctor.first_name || '',
+        last_name: doctor.last_name || ''
       }));
       
       setDoctors(formattedDoctors);
@@ -46,7 +56,11 @@ export const useAppointmentDoctors = (specialtyId) => {
 
   // Efecto para cargar doctores cuando cambia la especialidad
   useEffect(() => {
-    fetchDoctorsBySpecialty();
+    if (specialtyId) {
+      fetchDoctorsBySpecialty();
+    } else {
+      setDoctors([]);
+    }
   }, [specialtyId]);
 
   return {

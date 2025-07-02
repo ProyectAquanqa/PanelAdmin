@@ -120,4 +120,17 @@ export const isTimeBlockPast = (dateString, timeBlock) => {
     console.error('Error al verificar si el bloque horario está en el pasado:', error);
     return false;
   }
+};
+
+/**
+ * Formatea un bloque horario a un formato legible.
+ * @param {string} timeBlock - El bloque horario (ej. 'MORNING').
+ * @returns {string} El bloque horario formateado.
+ */
+export const formatTimeBlock = (timeBlock) => {
+  const timeBlockMap = {
+    MORNING: 'Mañana (8:00 AM - 12:00 PM)',
+    AFTERNOON: 'Tarde (2:00 PM - 6:00 PM)',
+  };
+  return timeBlockMap[timeBlock] || 'No especificado';
 }; 

@@ -14,18 +14,23 @@ import React from 'react';
  * @param {boolean} [props.isDark=false] - Indica si se está usando el tema oscuro
  * @param {string} [props.placeholder=""] - Placeholder para el input
  * @param {React.ReactNode} [props.children] - Contenido adicional para el campo
+ * @param {string} [props.error] - Mensaje de error directo (alternativa a errors[name].message)
  */
 const FormField = ({
   name,
   label,
   register,
-  errors,
+  errors = {},
   type = "text",
   className = "",
   isDark = false,
   placeholder = "",
   children,
+  error,
 }) => {
+  // Determinar el mensaje de error (puede venir directo o a través del objeto errors)
+  const errorMessage = error || (errors[name]?.message);
+  
   return (
     <div className={className}>
       <label 
@@ -42,13 +47,13 @@ const FormField = ({
             type={type}
             id={name}
             placeholder={placeholder}
-            {...register(name)}
+            {...(register ? register(name) : {})}
             className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md
               ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : ''}`}
           />
         )}
-        {errors[name] && (
-          <p className="mt-1 text-sm text-red-600">{errors[name].message}</p>
+        {errorMessage && (
+          <p className="mt-1 text-sm text-red-600">{errorMessage}</p>
         )}
       </div>
     </div>

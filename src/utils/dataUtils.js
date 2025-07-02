@@ -175,4 +175,21 @@ export const sortByField = (items, sortField, sortOrder = 'asc') => {
   });
   
   return sortedItems;
+};
+
+/**
+ * Formatea un número como una cadena de moneda.
+ * @param {number | string} amount - La cantidad a formatear.
+ * @param {string} currency - El código de la moneda (ej. 'USD').
+ * @returns {string} La cantidad formateada.
+ */
+export const formatCurrency = (amount, currency = 'PEN') => {
+  const numericAmount = Number(amount);
+  if (isNaN(numericAmount)) {
+    return 'N/A';
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+  }).format(numericAmount);
 }; 

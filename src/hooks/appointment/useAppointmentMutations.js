@@ -1,12 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  createAppointment, 
-  updateAppointment, 
-  cancelAppointment,
-  rescheduleAppointment,
-  completeAppointment,
-  markNoShow
-} from '../../services/appointment';
+import { toast } from 'react-hot-toast';
+import * as appointmentService from '../../services/appointment/appointmentApiService';
 
 // Clave para la cache de citas
 const APPOINTMENTS_QUERY_KEY = 'appointments';
@@ -18,20 +12,13 @@ export const useCreateAppointment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data) => {
-      console.log('Datos enviados para crear cita:', data);
-      return createAppointment(data);
-    },
-    onSuccess: (data) => {
-      console.log('Cita creada exitosamente:', data);
-      // Invalidar la cache para que se recargue la lista
+    mutationFn: appointmentService.createAppointment,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'today'] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'upcoming'] });
     },
     onError: (error) => {
       console.error('Error al crear cita:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      toast.error(error.response?.data?.detail || 'Error al crear la cita');
     },
   });
 };
@@ -43,22 +30,14 @@ export const useUpdateAppointment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }) => {
-      console.log(`Actualizando cita ${id} con datos:`, data);
-      return updateAppointment(id, data);
-    },
-    onSuccess: (data, variables) => {
-      console.log('Cita actualizada exitosamente:', data);
-      // Invalidar la cache para que se recargue la lista
+    mutationFn: ({ id, appointmentData }) => appointmentService.updateAppointment(id, appointmentData),
+    onSuccess: (data, { id }) => {
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'today'] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'upcoming'] });
-      // Actualizar cita específica en la cache
-      queryClient.setQueryData([APPOINTMENTS_QUERY_KEY, variables.id], data);
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
     },
     onError: (error) => {
       console.error('Error al actualizar cita:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      toast.error(error.response?.data?.detail || 'Error al actualizar la cita');
     },
   });
 };
@@ -70,22 +49,15 @@ export const useCancelAppointment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, reason }) => {
-      console.log(`Cancelando cita ${id} con razón:`, reason);
-      return cancelAppointment(id, { reason });
-    },
-    onSuccess: (data, variables) => {
-      console.log(`Cita ${variables.id} cancelada exitosamente:`, data);
-      // Invalidar la cache para que se recargue la lista
+    mutationFn: ({ id, reason }) => appointmentService.cancelAppointment(id, { reason }),
+    onSuccess: (data, { id }) => {
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'today'] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'upcoming'] });
-      // Actualizar cita específica en la cache
-      queryClient.setQueryData([APPOINTMENTS_QUERY_KEY, variables.id], data);
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      toast.success('Cita cancelada exitosamente');
     },
     onError: (error) => {
       console.error('Error al cancelar cita:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      toast.error(error.response?.data?.detail || 'Error al cancelar la cita');
     },
   });
 };
@@ -97,22 +69,15 @@ export const useRescheduleAppointment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }) => {
-      console.log(`Reprogramando cita ${id} con datos:`, data);
-      return rescheduleAppointment(id, data);
-    },
-    onSuccess: (data, variables) => {
-      console.log(`Cita ${variables.id} reprogramada exitosamente:`, data);
-      // Invalidar la cache para que se recargue la lista
+    mutationFn: ({ id, data }) => appointmentService.rescheduleAppointment(id, data),
+    onSuccess: (data, { id }) => {
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'today'] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'upcoming'] });
-      // Actualizar cita específica en la cache
-      queryClient.setQueryData([APPOINTMENTS_QUERY_KEY, variables.id], data);
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      toast.success('Cita reprogramada exitosamente');
     },
     onError: (error) => {
       console.error('Error al reprogramar cita:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      toast.error(error.response?.data?.detail || 'Error al reprogramar la cita');
     },
   });
 };
@@ -124,22 +89,15 @@ export const useCompleteAppointment = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id) => {
-      console.log(`Marcando cita ${id} como completada`);
-      return completeAppointment(id);
-    },
+    mutationFn: (id) => appointmentService.completeAppointment(id),
     onSuccess: (data, id) => {
-      console.log(`Cita ${id} completada exitosamente:`, data);
-      // Invalidar la cache para que se recargue la lista
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'today'] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'upcoming'] });
-      // Actualizar cita específica en la cache
-      queryClient.setQueryData([APPOINTMENTS_QUERY_KEY, id], data);
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      toast.success('Cita marcada como completada');
     },
     onError: (error) => {
       console.error('Error al completar cita:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      toast.error(error.response?.data?.detail || 'Error al completar la cita');
     },
   });
 };
@@ -151,22 +109,15 @@ export const useMarkNoShow = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id) => {
-      console.log(`Marcando cita ${id} como no presentada`);
-      return markNoShow(id);
-    },
+    mutationFn: (id) => appointmentService.markNoShow(id),
     onSuccess: (data, id) => {
-      console.log(`Cita ${id} marcada como no presentada exitosamente:`, data);
-      // Invalidar la cache para que se recargue la lista
       queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'today'] });
-      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, 'upcoming'] });
-      // Actualizar cita específica en la cache
-      queryClient.setQueryData([APPOINTMENTS_QUERY_KEY, id], data);
+      queryClient.invalidateQueries({ queryKey: [APPOINTMENTS_QUERY_KEY, id] });
+      toast.success('Cita marcada como no presentada');
     },
     onError: (error) => {
       console.error('Error al marcar cita como no presentada:', error);
-      // No mostrar toast aquí, se maneja en el componente
+      toast.error(error.response?.data?.detail || 'Error al marcar la cita');
     },
   });
 }; 

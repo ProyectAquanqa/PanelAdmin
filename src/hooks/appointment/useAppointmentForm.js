@@ -1,8 +1,10 @@
-import { useAppointmentFormState } from './useAppointmentFormState';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { appointmentSchema } from './useAppointmentFormState';
 import { useAppointmentDoctors } from './useAppointmentDoctors';
 import { useAppointmentAvailability } from './useAppointmentAvailability';
 import { useAppointmentPatients } from './useAppointmentPatients';
-import { useForm } from 'react-hook-form';
 
 /**
  * Hook principal para el formulario de citas
@@ -10,48 +12,57 @@ import { useForm } from 'react-hook-form';
  * @param {Object} appointment - Datos de la cita para edición (opcional)
  * @returns {Object} Estado y funciones combinadas para el formulario de citas
  */
-export const useAppointmentForm = (appointment) => {
-  const isEditing = !!appointment?.id;
+export const useAppointmentForm = (appointment = null) => {
+  const isEditing = !!appointment;
 
   const formMethods = useForm({
+    resolver: zodResolver(appointmentSchema),
     defaultValues: {
-      patient: appointment?.patient?.id || '',
-      specialty: appointment?.specialty?.id || '',
-      doctor: appointment?.doctor?.id || '',
-      appointment_date: appointment?.appointment_date || '',
-      time_block: appointment?.time_block || '',
-      reason: appointment?.reason || '',
-      status: appointment?.status || 'SCHEDULED',
-    },
+      patient: '',
+      doctor: '',
+      specialty: '',
+      appointment_date: '',
+      time_block: '',
+      reason: '',
+      status: 'SCHEDULED',
+      payment_status: 'PROCESSING'
+    }
   });
 
-  const { watch, setValue } = formMethods;
+  const { watch, setValue, reset } = formMethods;
 
-  // Estado del formulario
-  const {
-    form,
-    selectedSpecialty,
-    selectedDoctor,
-    selectedDate,
-    reset
-  } = useAppointmentFormState(appointment);
+  const selectedSpecialty = watch('specialty');
+  const selectedDoctor = watch('doctor');
+  const selectedDate = watch('appointment_date');
 
-  // Doctores por especialidad
-  const {
-    doctors,
-    loadingDoctors,
-    fetchDoctorsBySpecialty
-  } = useAppointmentDoctors(selectedSpecialty);
+  useEffect(() => {
+    if (isEditing && appointment) {
+      const defaultValues = {
+        patient: appointment.patient?.id || appointment.patient || '',
+        specialty: appointment.specialty?.id || appointment.specialty || '',
+        appointment_date: appointment.appointment_date || '',
+        time_block: appointment.time_block || '',
+        reason: appointment.reason || '',
+        status: appointment.status || 'SCHEDULED',
+        payment_status: appointment.payment_status || 'PROCESSING',
+        doctor: appointment.doctor?.id || appointment.doctor || ''
+      };
+      reset(defaultValues);
+    } else if (!isEditing) {
+      reset();
+    }
+  }, [isEditing, appointment, reset]);
+  
+  // Clear doctor and time_block field when specialty changes, but not when initially setting for editing
+  useEffect(() => {
+    if (!isEditing) {
+      setValue('doctor', '');
+      setValue('time_block', '');
+    }
+  }, [selectedSpecialty, setValue, isEditing]);
 
-  // Disponibilidad de horarios
-  const {
-    availableTimeBlocks,
-    loadingTimeBlocks,
-    availabilityInfo,
-    refreshAvailability
-  } = useAppointmentAvailability(selectedDoctor, selectedDate);
-
-  // Pacientes
+  const { doctors, loadingDoctors } = useAppointmentDoctors(selectedSpecialty);
+  const { availableTimeBlocks, loadingTimeBlocks, availabilityInfo, refreshAvailability } = useAppointmentAvailability(selectedDoctor, selectedDate);
   const { patients, loadingPatients } = useAppointmentPatients();
 
   const handleInputChange = (event) => {
@@ -67,20 +78,12 @@ export const useAppointmentForm = (appointment) => {
     selectedSpecialty,
     selectedDoctor,
     selectedDate,
-    reset,
-    
-    // Doctores
     doctors,
     loadingDoctors,
-    fetchDoctorsBySpecialty,
-    
-    // Disponibilidad
     availableTimeBlocks,
     loadingTimeBlocks,
     availabilityInfo,
     refreshAvailability,
-
-    // Pacientes
     patients,
     loadingPatients,
   };

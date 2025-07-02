@@ -1,15 +1,23 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import paymentService from '../services/paymentService';
 import { toast } from 'react-hot-toast';
 
 /**
- * Hook for fetching payments with optional filtering
+ * Hook for fetching payments with optional filtering and infinite scroll
  */
-export const useGetPayments = (params = {}, options = {}) => {
-  return useQuery({
-    queryKey: ['payments', params],
-    queryFn: () => paymentService.getPayments(params),
-    ...options
+export const useGetPayments = (filters = {}, options = {}) => {
+  return useInfiniteQuery({
+    queryKey: ['payments', filters],
+    queryFn: ({ pageParam = 1 }) => paymentService.getPayments({ ...filters, page: pageParam }),
+    getNextPageParam: (lastPage) => {
+      if (lastPage.next) {
+        const url = new URL(lastPage.next);
+        return url.searchParams.get('page');
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
+    ...options,
   });
 };
 

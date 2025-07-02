@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGetAppointments } from '../../hooks/appointment';
+import { useCancelAppointment, useCompleteAppointment } from '../../hooks/appointment/useAppointmentMutations';
 import AppointmentFormModal from '../../components/appointments/AppointmentFormModal';
 import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'react-hot-toast';
@@ -8,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import AppointmentHeader from '../../components/appointments/AppointmentHeader';
 import AppointmentFilters from '../../components/appointments/AppointmentFilters';
 import AppointmentTable from '../../components/appointments/AppointmentTable';
+import AppointmentDetailsModal from '../../components/appointments/AppointmentDetailsModal';
 
 /**
  * Página de listado de citas
@@ -15,10 +17,16 @@ import AppointmentTable from '../../components/appointments/AppointmentTable';
  */
 function AppointmentListPage() {
   const { theme } = useTheme();
+  const cancelAppointmentMutation = useCancelAppointment();
+  const completeAppointmentMutation = useCompleteAppointment();
   
-  // Estado del modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Estado del modal de formulario
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  
+  // Estado del modal de detalles
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [viewingAppointment, setViewingAppointment] = useState(null);
   
   // Estado de los filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,16 +45,27 @@ function AppointmentListPage() {
     date: dateFilter
   });
 
-  // Manejadores de eventos
-  const handleOpenModal = (appointment = null) => {
+  // Manejadores de eventos del modal de formulario
+  const handleOpenFormModal = (appointment = null) => {
     setSelectedAppointment(appointment);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
     setSelectedAppointment(null);
     refetch(); // Recargar datos después de cerrar el modal
+  };
+  
+  // Manejadores de eventos del modal de detalles
+  const handleOpenDetailsModal = (appointment) => {
+    setViewingAppointment(appointment);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setViewingAppointment(null);
   };
 
   const handleSearch = (e) => {
@@ -63,17 +82,19 @@ function AppointmentListPage() {
 
   // Manejadores de acciones de citas
   const handleEditAppointment = (appointment) => {
-    handleOpenModal(appointment);
+    handleOpenFormModal(appointment);
   };
 
   const handleCancelAppointment = (appointment) => {
-    // Implementar lógica para cancelar cita
-    toast.success(`Cancelando cita ${appointment.id}...`);
+    if (window.confirm(`¿Estás seguro de que deseas cancelar la cita #${appointment.id}? Esta acción no se puede deshacer.`)) {
+      cancelAppointmentMutation.mutate({ id: appointment.id });
+    }
   };
 
   const handleCompleteAppointment = (appointment) => {
-    // Implementar lógica para completar cita
-    toast.success(`Completando cita ${appointment.id}...`);
+    if (window.confirm(`¿Estás seguro de que deseas marcar la cita #${appointment.id} como completada?`)) {
+      completeAppointmentMutation.mutate(appointment.id);
+    }
   };
 
   const handleNoShowAppointment = (appointment) => {
@@ -81,21 +102,15 @@ function AppointmentListPage() {
     toast.success(`Marcando cita ${appointment.id} como no presentada...`);
   };
 
-  const handleRescheduleAppointment = (appointment) => {
-    // Implementar lógica para reprogramar cita
-    toast.success(`Reprogramando cita ${appointment.id}...`);
-  };
-
   const handleViewAppointment = (appointment) => {
-    // Implementar lógica para ver detalles
-    toast.success(`Ver detalles de cita ${appointment.id}...`);
+    handleOpenDetailsModal(appointment);
   };
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
       {/* Encabezado */}
       <AppointmentHeader 
-        onNewAppointment={() => handleOpenModal()} 
+        onNewAppointment={() => handleOpenFormModal()} 
         theme={theme} 
       />
       
@@ -126,7 +141,6 @@ function AppointmentListPage() {
           onCancel={handleCancelAppointment}
           onComplete={handleCompleteAppointment}
           onNoShow={handleNoShowAppointment}
-          onReschedule={handleRescheduleAppointment}
           onView={handleViewAppointment}
           theme={theme}
             />
@@ -134,9 +148,16 @@ function AppointmentListPage() {
 
       {/* Modal de formulario */}
       <AppointmentFormModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={isFormModalOpen}
+        onClose={handleCloseFormModal}
         appointment={selectedAppointment}
+      />
+
+      {/* Modal de detalles */}
+      <AppointmentDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        appointment={viewingAppointment}
       />
     </div>
   );

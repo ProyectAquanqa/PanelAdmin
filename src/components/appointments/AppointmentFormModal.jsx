@@ -21,7 +21,6 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
     register,
     handleInputChange,
     formData,
-    setFormData,
     doctors,
     loadingDoctors,
     availableTimeBlocks,
@@ -46,47 +45,36 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
         return;
       }
       
+      // Construct the data payload with only the fields expected by the backend
       const appointmentData = {
-        ...data,
         patient: Number(data.patient),
         doctor: Number(data.doctor),
         specialty: Number(data.specialty),
+        appointment_date: data.appointment_date,
+        time_block: data.time_block,
+        reason: data.reason,
       };
+
+      if (appointment) {
+        // For updates, include status fields if they exist
+        appointmentData.status = data.status;
+        appointmentData.payment_status = data.payment_status;
+      }
 
       console.log('📤 Enviando datos de cita:', appointmentData);
 
       if (appointment) {
-        await updateAppointment.mutateAsync({ id: appointment.id, data: appointmentData });
-        toast.success('✅ Cita actualizada exitosamente');
+        await updateAppointment.mutateAsync({ id: appointment.id, appointmentData });
       } else {
         await createAppointment.mutateAsync(appointmentData);
-        toast.success('✅ Cita creada exitosamente');
       }
       
+      // No toast needed here, react-query's onSuccess handles it
       onClose();
       reset();
     } catch (error) {
-      console.error('❌ Error:', error);
-      
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        
-        if (typeof errorData === 'string') {
-          toast.error(errorData);
-        } else if (errorData.detail) {
-          toast.error(errorData.detail);
-        } else if (errorData.error) {
-          toast.error(errorData.error);
-        } else if (typeof errorData === 'object') {
-          const firstErrorKey = Object.keys(errorData)[0];
-          const firstError = errorData[firstErrorKey];
-          toast.error(`${firstErrorKey}: ${Array.isArray(firstError) ? firstError[0] : firstError}`);
-        } else {
-          toast.error('Error al procesar la solicitud');
-        }
-      } else {
-        toast.error('Error al procesar la solicitud');
-      }
+      console.error('❌ Error en onSubmit:', error);
+      // No toast needed here, react-query's onError handles it
     }
   };
 
@@ -158,27 +146,24 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                 {/* Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <AppointmentFormFields
-                    {...{
-                      formData,
-                      handleInputChange,
-                      errors,
-                      setFormData,
-                      watch,
-                      register,
-                      control,
-                      darkMode,
-                      isEditing: !!appointment,
-                      doctors,
-                      loadingDoctors,
-                      availableTimeBlocks,
-                      loadingTimeBlocks,
-                      availabilityInfo,
-                      selectedSpecialty,
-                      selectedDoctor,
-                      selectedDate,
-                      patients,
-                      loadingPatients,
-                    }}
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    errors={errors || {}}
+                    watch={watch}
+                    register={register}
+                    control={control}
+                    darkMode={darkMode}
+                    isEditing={!!appointment}
+                    doctors={doctors || []}
+                    loadingDoctors={loadingDoctors || false}
+                    availableTimeBlocks={availableTimeBlocks || []}
+                    loadingTimeBlocks={loadingTimeBlocks || false}
+                    availabilityInfo={availabilityInfo || null}
+                    selectedSpecialty={selectedSpecialty || ''}
+                    selectedDoctor={selectedDoctor || ''}
+                    selectedDate={selectedDate || ''}
+                    patients={patients || []}
+                    loadingPatients={loadingPatients || false}
                   />
 
                   {/* Actions */}
@@ -208,7 +193,7 @@ function AppointmentFormModal({ isOpen, onClose, appointment = null }) {
                           Procesando...
                         </span>
                       ) : (
-                        'Crear Cita'
+                        appointment ? 'Actualizar Cita' : 'Crear Cita'
                       )}
                     </button>
                   </div>

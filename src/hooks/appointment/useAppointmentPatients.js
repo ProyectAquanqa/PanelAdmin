@@ -12,9 +12,9 @@ export const useAppointmentPatients = () => {
   useEffect(() => {
     if (usersData?.results) {
       const patientList = usersData.results
-        .filter(user => user.role === 'PATIENT')
+        .filter(user => user.role === 'PATIENT' && user.patient)
         .map(user => ({
-          id: user.id,
+          id: user.patient.id,
           name: user.full_name || `${user.first_name} ${user.last_name}`,
         }));
       setPatients(patientList);

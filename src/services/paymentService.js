@@ -1,4 +1,5 @@
-import mainApiClient from '../api/mainApiClient';
+import { adminApiClient } from '../api';
+import { API_ROUTES } from '../config/api';
 
 /**
  * Service for managing payments through the Django Admin API
@@ -11,7 +12,7 @@ class PaymentService {
    */
   async getPayments(params = {}) {
     try {
-      const response = await mainApiClient.get('/payments/', { params });
+      const response = await adminApiClient.get(API_ROUTES.PAYMENTS.LIST, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching payments:', error);
@@ -26,7 +27,7 @@ class PaymentService {
    */
   async getPaymentById(id) {
     try {
-      const response = await mainApiClient.get(`/payments/${id}/`);
+      const response = await adminApiClient.get(API_ROUTES.PAYMENTS.BY_ID(id));
       return response.data;
     } catch (error) {
       console.error(`Error fetching payment with ID ${id}:`, error);
@@ -41,7 +42,7 @@ class PaymentService {
    */
   async createPayment(paymentData) {
     try {
-      const response = await mainApiClient.post('/payments/', paymentData);
+      const response = await adminApiClient.post(API_ROUTES.PAYMENTS.CREATE, paymentData);
       return response.data;
     } catch (error) {
       console.error('Error creating payment:', error);
@@ -57,7 +58,7 @@ class PaymentService {
    */
   async updatePayment(id, paymentData) {
     try {
-      const response = await mainApiClient.put(`/payments/${id}/`, paymentData);
+      const response = await adminApiClient.put(API_ROUTES.PAYMENTS.BY_ID(id), paymentData);
       return response.data;
     } catch (error) {
       console.error(`Error updating payment with ID ${id}:`, error);
@@ -72,7 +73,7 @@ class PaymentService {
    */
   async deletePayment(id) {
     try {
-      const response = await mainApiClient.delete(`/payments/${id}/`);
+      const response = await adminApiClient.delete(API_ROUTES.PAYMENTS.BY_ID(id));
       return response.data;
     } catch (error) {
       console.error(`Error deleting payment with ID ${id}:`, error);
@@ -86,7 +87,7 @@ class PaymentService {
    */
   async getCompletedPayments() {
     try {
-      const response = await mainApiClient.get('/payments/completed/');
+      const response = await adminApiClient.get(API_ROUTES.PAYMENTS.COMPLETED);
       return response.data;
     } catch (error) {
       console.error('Error fetching completed payments:', error);
@@ -100,7 +101,7 @@ class PaymentService {
    */
   async getProcessingPayments() {
     try {
-      const response = await mainApiClient.get('/payments/processing/');
+      const response = await adminApiClient.get(API_ROUTES.PAYMENTS.PROCESSING);
       return response.data;
     } catch (error) {
       console.error('Error fetching processing payments:', error);
@@ -115,7 +116,7 @@ class PaymentService {
    */
   async refundPayment(id) {
     try {
-      const response = await mainApiClient.post(`/payments/${id}/refund/`);
+      const response = await adminApiClient.post(API_ROUTES.PAYMENTS.REFUND(id));
       return response.data;
     } catch (error) {
       console.error(`Error refunding payment with ID ${id}:`, error);

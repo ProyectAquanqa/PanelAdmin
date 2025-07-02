@@ -104,6 +104,7 @@ export const API_ROUTES = {
     LIST: '/api/payments/',
     CREATE: '/api/payments/',
     BY_ID: (id) => `/api/payments/${id}/`,
+    REFUND: (id) => `/api/payments/${id}/refund/`,
     COMPLETED: '/api/payments/completed/',
     PROCESSING: '/api/payments/processing/',
     WEBHOOKS: {
