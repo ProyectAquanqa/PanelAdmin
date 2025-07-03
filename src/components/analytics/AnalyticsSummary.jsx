@@ -1,5 +1,7 @@
 import React from 'react';
-import { useGetAnalyticsSummary } from '../../hooks/useAnalytics';
+import { useQuery } from '@tanstack/react-query';
+import { getDashboardStats } from '../../services/dashboardService';
+import analyticsService from '../../services/analyticsService';
 import {
   CurrencyDollarIcon,
   UsersIcon,
@@ -41,7 +43,19 @@ const StatCard = ({ title, value, icon, description, isLoading, color }) => {
 };
 
 const AnalyticsSummary = () => {
-  const { data, isLoading, error } = useGetAnalyticsSummary();
+  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useQuery({
+    queryKey: ['analytics', 'summary'],
+    queryFn: () => analyticsService.getAnalyticsSummary(),
+    refetchInterval: 5000,
+  });
+
+  const { data: dashboardStats, isLoading: statsLoading, error: statsError } = useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: getDashboardStats,
+  });
+
+  const isLoading = analyticsLoading || statsLoading;
+  const error = analyticsError || statsError;
 
   if (error) {
     return (
@@ -51,9 +65,9 @@ const AnalyticsSummary = () => {
     );
   }
 
-  const financialOverview = data?.financial_overview || {};
-  const patientDemographics = data?.patient_demographics || {};
-  const appointmentStats = data?.appointment_stats || {};
+  const financialOverview = analyticsData?.financial_overview || {};
+  const patientDemographics = analyticsData?.patient_demographics || {};
+  const appointmentStats = analyticsData?.appointment_stats || {};
 
   return (
     <div>
@@ -73,7 +87,7 @@ const AnalyticsSummary = () => {
         {/* Total de Pacientes */}
         <StatCard
           title="Total de Pacientes"
-          value={isLoading ? '' : data?.total_patients?.toLocaleString() || '0'}
+          value={isLoading ? '' : dashboardStats?.patients_count?.toLocaleString() || '0'}
           icon={<UsersIcon className="h-6 w-6 text-blue-600" />}
           description="Pacientes registrados en el sistema"
           isLoading={isLoading}
@@ -102,7 +116,7 @@ const AnalyticsSummary = () => {
       </div>
       
       {/* Sección de Detalles Adicionales */}
-      {!isLoading && data && (
+      {!isLoading && analyticsData && (
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">

@@ -8,10 +8,13 @@ import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../../context/ThemeContext';
 import PatientForm from './PatientForm';
+import PatientEditForm from './PatientEditForm';
 
-const PatientFormModal = ({ isOpen, onClose, patient = null }) => {
+const PatientFormModal = ({ isOpen, onClose, patient = null, mode = 'view' }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  const isEditing = mode === 'edit';
 
   return (
     <Dialog
@@ -29,7 +32,7 @@ const PatientFormModal = ({ isOpen, onClose, patient = null }) => {
         } p-6 overflow-y-auto max-h-[90vh]`}>
           <div className="flex justify-between items-center mb-6">
             <Dialog.Title className="text-xl font-semibold">
-              Detalles del Paciente Virtual
+              {isEditing ? 'Editar Paciente' : 'Detalles del Paciente'}
             </Dialog.Title>
             <button
               onClick={onClose}
@@ -43,7 +46,11 @@ const PatientFormModal = ({ isOpen, onClose, patient = null }) => {
             </button>
           </div>
           
-          <PatientForm patient={patient} />
+          {isEditing ? (
+            <PatientEditForm patient={patient} onClose={onClose} />
+          ) : (
+            <PatientForm patient={patient} />
+          )}
         </Dialog.Panel>
       </div>
     </Dialog>

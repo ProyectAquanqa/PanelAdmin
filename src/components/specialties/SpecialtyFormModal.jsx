@@ -84,6 +84,7 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
           setValue('description', specialty.description || '');
           setValue('consultation_price', parseFloat(specialty.consultation_price) || 0);
           setValue('discount_percentage', parseFloat(specialty.discount_percentage) || 0);
+          setValue('is_active', specialty.is_active);
           clearErrors();
           setIsDirty(false);
         }, 100);
@@ -94,6 +95,7 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
           description: '',
           consultation_price: 0,
           discount_percentage: 0,
+          is_active: true,
         });
         setIsDirty(false);
       }
@@ -121,6 +123,7 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
         description: data.description.trim(),
         consultation_price: parseFloat(data.consultation_price),
         discount_percentage: parseFloat(data.discount_percentage) || 0,
+        is_active: data.is_active,
       };
       
       console.log('📤 Datos a enviar:', specialtyData);
@@ -188,6 +191,33 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
       minimumFractionDigits: 2
     }).format(amount || 0);
   };
+
+  // Componente para el interruptor de estado
+  function ToggleSwitch({ label, description, enabled, setEnabled, register, name }) {
+    return (
+      <div
+        onClick={() => setEnabled(!enabled)}
+        className="flex items-center justify-between cursor-pointer p-4 rounded-lg hover:bg-gray-50"
+      >
+        <div>
+          <h4 className="font-medium text-gray-800">{label}</h4>
+          <p className="text-sm text-gray-500">{description}</p>
+        </div>
+        <div
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+            enabled ? 'bg-blue-600' : 'bg-gray-200'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+              enabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </div>
+        <input type="checkbox" {...register(name)} checked={enabled} className="hidden" />
+      </div>
+    );
+  }
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -448,6 +478,26 @@ function SpecialtyFormModal({ isOpen, onClose, specialty = null }) {
                         {watch('description')?.length || 0}/255 caracteres
                       </div>
                     </div>
+
+                    {/* Sección de Configuración Adicional */}
+                    {isEditing && (
+                      <div className="mt-6 border-t pt-6">
+                        <h3 className="text-lg font-medium text-gray-900">Configuraciones Adicionales</h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Controla el estado y comportamiento de la especialidad.
+                        </p>
+                        <div className="mt-4 space-y-2">
+                           <ToggleSwitch
+                            label="Especialidad Activa"
+                            description="Si está inactiva, no se podrá usar para nuevas citas."
+                            enabled={watch('is_active')}
+                            setEnabled={(value) => setValue('is_active', value, { shouldDirty: true })}
+                            register={register}
+                            name="is_active"
+                           />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer mejorado */}

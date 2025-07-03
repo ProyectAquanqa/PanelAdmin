@@ -13,7 +13,8 @@ export const {
   activateUser,
   deactivateUser,
   getPatients,
-  getPatientById
+  getPatientById,
+  updatePatient
 } = apiService;
 
 export const {

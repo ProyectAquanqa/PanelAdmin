@@ -72,6 +72,7 @@ export const API_ROUTES = {
     AVAILABLE_SLOTS: '/api/appointments/available-slots/',
     AVAILABLE_TIME_BLOCKS: '/api/appointments/available-time-blocks/',
     DOCTORS_BY_SPECIALTY: '/api/appointments/doctors-by-specialty/',
+    SPECIALTIES: '/api/appointments/specialties/',
     TODAY: '/api/appointments/today/',
     UPCOMING: '/api/appointments/upcoming/',
     STATS: '/api/appointments/stats/',
@@ -120,7 +121,8 @@ export const API_ROUTES = {
     BY_ID: (id) => `/api/settings/hospital-settings/${id}/`,
     PUBLIC: '/api/settings/hospital-settings/public_settings/',
     BY_CATEGORY: '/api/settings/hospital-settings/by_category/',
-    BULK_UPDATE: '/api/settings/hospital-settings/bulk_update/'
+    BULK_UPDATE: '/api/settings/hospital-settings/bulk_update/',
+    INITIALIZE_DEFAULTS: '/api/settings/hospital-settings/initialize_defaults/',
   },
 
   // Analíticas y Dashboard
@@ -151,8 +153,19 @@ export const API_ROUTES = {
   },
 
   AUDIT: {
-    LIST: '/api/audit/',
-    BY_ID: (id) => `/api/audit/${id}/`,
-    RECENT: '/api/audit/recent/',
+    LIST: '/api/audit/logs/',
+    BY_ID: (id) => `/api/audit/logs/${id}/`,
+    DELETE: (id) => `/api/audit/logs/${id}/`,
+    RECENT: '/api/audit/logs/recent/',
+    STATS: '/api/audit/logs/stats/',
+    CHOICES: '/api/audit/logs/choices/',
+  },
+
+  MEDICAL: {
+    RECORDS: {
+      LIST: '/api/medical/records/',
+      CREATE: '/api/medical/records/',
+      BY_ID: (id) => `/api/medical/records/${id}/`,
+    }
   },
 };

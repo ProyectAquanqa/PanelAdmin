@@ -92,3 +92,17 @@ export const getSpecialtiesStats = async () => {
     throw error;
   }
 };
+
+/**
+ * Obtiene solo las especialidades activas (para formularios, etc.)
+ */
+export const getActiveSpecialties = async () => {
+  try {
+    // Este endpoint ya devuelve solo las especialidades activas.
+    const response = await adminApiClient.get(API_ROUTES.APPOINTMENTS.SPECIALTIES);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching active specialties:', error);
+    throw error;
+  }
+};

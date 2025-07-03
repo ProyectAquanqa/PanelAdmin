@@ -1,3 +1,6 @@
+C:\Users\Admin\Downloads>python listar_endpoints.py
+📌 Lista de endpoints con descripción:
+
 GET    /api/analytics/summary/
       → Proporciona un resumen analítico con las principales métricas de rendimiento del hospital.
 
@@ -6,8 +9,7 @@ GET    /api/appointments/
 Incluye filtros por paciente, doctor, especialidad, estado y fecha.
 
 POST   /api/appointments/
-      → Provee operaciones CRUD (Crear, Leer, Actualizar, Eliminar) para las citas médicas.
-Incluye filtros por paciente, doctor, especialidad, estado y fecha.
+      → Sobrescribe el método create para añadir logging detallado.
 
 GET    /api/appointments/{id}/
       → Provee operaciones CRUD (Crear, Leer, Actualizar, Eliminar) para las citas médicas.
@@ -50,7 +52,7 @@ GET    /api/appointments/available-slots-get/
       → Consultar Cupos Disponibles (GET)
 
 GET    /api/appointments/available-time-blocks/
-      → Consultar Bloques Horarios Disponibles
+      → Obtiene los bloques de tiempo disponibles para un doctor en una fecha específica.
 
 GET    /api/appointments/doctors-by-specialty/
       → Consultar Doctores por Especialidad
@@ -237,7 +239,7 @@ GET    /api/dashboard/recent-activity/
       → Actividad reciente del sistema (últimos 10 eventos).
 
 GET    /api/dashboard/stats/
-      → Estadísticas detalladas del hospital con datos reales.
+      → Estadísticas detalladas del hospital con datos reales para las tarjetas del dashboard.
 
 GET    /api/doctors/availability/
       → Listar horarios de doctores
@@ -280,6 +282,9 @@ PATCH  /api/doctors/doctors/{id}/
 
 DELETE /api/doctors/doctors/{id}/
       → Eliminar un doctor
+
+GET    /api/doctors/doctors/{id}/available-dates/
+      → Obtiene las fechas disponibles de un doctor para un mes específico.
 
 GET    /api/doctors/doctors/available_on_day/
       → Doctores disponibles en un día específico
@@ -407,9 +412,6 @@ GET    /api/settings/hospital-settings/public_settings/
 GET    /api/users/patients/
       → Listar todos los pacientes
 
-POST   /api/users/patients/
-      → Crear un nuevo paciente
-
 GET    /api/users/patients/{id}/
       → Obtener detalles de un paciente
 
@@ -418,13 +420,11 @@ PUT    /api/users/patients/{id}/
 
 PATCH  /api/users/patients/{id}/
       → ViewSet para la gestión de pacientes.
-Permite crear, leer, actualizar y eliminar registros de pacientes.
+Permite leer, actualizar y eliminar registros de pacientes.
+La creación de pacientes se realiza desde el portal del paciente, no desde el admin.
 
 DELETE /api/users/patients/{id}/
       → Eliminar un paciente
-
-POST   /api/users/patients/{id}/verify_reniec/
-      → Verificar paciente con RENIEC
 
 GET    /api/users/patients/by_document/
       → Buscar paciente por documento
@@ -476,3 +476,4 @@ GET    /info/
 
 GET    /schema/
       → OpenApi3 schema for this API. Format can be selected via content negotiation.
+

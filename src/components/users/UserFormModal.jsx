@@ -4,7 +4,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCreateUser, useUpdateUser } from '../../hooks/useUsers';
+import { useCreateUser, useUpdateUser, useGetUserById } from '../../hooks/useUsers';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
 import FormActions from '../common/FormActions';
@@ -26,10 +26,12 @@ const createUserSchema = (isEditing = false) => z.object({
   is_active: z.boolean().optional(),
 });
 
-function UserFormModal({ isOpen, onClose, user = null }) {
+function UserFormModal({ isOpen, onClose, userId = null }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const isEditing = !!user;
+  const isEditing = !!userId;
+
+  const { data: user, isLoading: userLoading } = useGetUserById(userId);
   
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
@@ -39,27 +41,25 @@ function UserFormModal({ isOpen, onClose, user = null }) {
     handleSubmit, 
     formState: { errors, isSubmitting }, 
     reset,
-    setValue,
     control
   } = useForm({
     resolver: zodResolver(createUserSchema(isEditing)),
-    defaultValues: {
-      dni: '',
-      email: '',
-      password: '',
-      role: 'RECEPTIONIST',
-      is_active: true,
-    }
+    // Los valores por defecto se manejarán con reset en el useEffect
   });
 
   useEffect(() => {
+    // Si estamos editando y tenemos datos del usuario, reseteamos el formulario con esos datos.
     if (isEditing && user) {
-      setValue('dni', user.dni || '');
-      setValue('email', user.email || '');
-      setValue('role', user.role || 'RECEPTIONIST');
-      setValue('is_active', user.is_active ?? true);
-      setValue('password', '');
-    } else {
+      reset({
+        dni: user.dni || '',
+        email: user.email || '',
+        role: user.role || 'RECEPTIONIST',
+        is_active: user.is_active ?? true,
+        password: '',
+      });
+    }
+    // Si estamos creando, reseteamos a los valores por defecto.
+    else if (!isEditing) {
       reset({
         dni: '',
         email: '',
@@ -68,7 +68,7 @@ function UserFormModal({ isOpen, onClose, user = null }) {
         is_active: true,
       });
     }
-  }, [user, isEditing, setValue, reset]);
+  }, [user, isEditing, reset]);
 
   const onSubmit = async (data) => {
     try {
@@ -86,7 +86,7 @@ function UserFormModal({ isOpen, onClose, user = null }) {
       }
       
       if (isEditing) {
-        await updateUser.mutateAsync({ id: user.id, data: userData });
+        await updateUser.mutateAsync({ id: userId, data: userData });
         toast.success('Usuario actualizado exitosamente');
       } else {
         await createUser.mutateAsync(userData);
@@ -117,20 +117,32 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                 <div className={`sticky top-0 z-10 px-6 py-4 border-b ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
                   <Dialog.Title as="h3" className={`text-xl font-bold leading-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {isEditing ? 'Editar Usuario de Sistema' : 'Crear Nuevo Usuario de Sistema'}
-                        </Dialog.Title>
+                  </Dialog.Title>
                   <button type="button" className={`absolute top-4 right-4 p-2 rounded-full ${isDark ? 'text-gray-400 hover:bg-neutral-700' : 'text-gray-400 hover:bg-gray-100'}`} onClick={handleClose}>
                     <XMarkIcon className="h-6 w-6" />
-                    </button>
+                  </button>
                 </div>
                 <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
                   <form onSubmit={handleSubmit(onSubmit)} noValidate>
                     <div className="px-6 py-6 space-y-6">
-                      <UserRoleSelector control={control} isDark={isDark} />
-                      <UserAuthInfoSection register={register} errors={errors} control={control} isDark={isDark} isEditing={isEditing} />
+                      {userLoading && isEditing ? (
+                        <div className="text-center p-8">Cargando datos del usuario...</div>
+                      ) : (
+                        <>
+                          <UserRoleSelector control={control} isDark={isDark} />
+                          <UserAuthInfoSection 
+                            register={register} 
+                            errors={errors} 
+                            control={control} 
+                            isDark={isDark} 
+                            isEditing={isEditing}
+                          />
+                        </>
+                      )}
                     </div>
                     <div className={`sticky bottom-0 z-10 px-6 py-4 border-t ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
                       <FormActions 
-                        isSubmitting={isSubmitting} 
+                        isSubmitting={isSubmitting || userLoading}
                         onCancel={handleClose} 
                         isEditing={isEditing} 
                         isDark={isDark}
@@ -139,7 +151,7 @@ function UserFormModal({ isOpen, onClose, user = null }) {
                       />
                     </div>
                   </form>
-                  </div>
+                </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

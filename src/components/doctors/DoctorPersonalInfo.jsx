@@ -54,6 +54,23 @@ const DoctorPersonalInfo = ({ register, errors, isDark }) => {
           )}
         </div>
         
+        {/* DNI */}
+        <div className="md:col-span-1">
+          <label htmlFor="dni" className={`block text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+            DNI
+          </label>
+          <input
+            type="text"
+            id="dni"
+            {...register('dni')}
+            className={`${inputClasses} ${errors.dni ? errorClasses : ''}`}
+            maxLength="8"
+          />
+          {errors.dni && (
+            <p className="mt-1 text-sm text-red-600">{errors.dni.message}</p>
+          )}
+        </div>
+        
         {/* Email */}
         <div className="md:col-span-1">
           <label htmlFor="email" className={`block text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>

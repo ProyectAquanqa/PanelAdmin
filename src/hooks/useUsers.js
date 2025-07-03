@@ -6,15 +6,16 @@ import { toast } from 'react-hot-toast';
 const USERS_QUERY_KEY = 'users';
 
 /**
- * Hook para obtener la lista de usuarios
+ * Hook para obtener la lista de usuarios con filtros
  */
-export const useGetUsers = () => {
+export const useGetUsers = (filters) => {
   return useQuery({
-    queryKey: [USERS_QUERY_KEY],
-    queryFn: () => getUsers(), // Sin parámetros
+    queryKey: [USERS_QUERY_KEY, filters], // La clave de la query incluye los filtros
+    queryFn: () => getUsers(filters), // Pasar filtros a la función del servicio
     staleTime: 1000 * 60 * 5, // 5 minutos
     retry: 2,
     refetchOnWindowFocus: false,
+    keepPreviousData: true, // Para una experiencia de usuario más fluida al cambiar filtros
     onError: (error) => {
       console.error('Error al obtener usuarios:', error);
       toast.error('Error al cargar la lista de usuarios');

@@ -21,6 +21,7 @@ import DoctorAvailabilityPage from '../pages/doctors/DoctorAvailabilityPage';
 import PaymentListPage from '../pages/payments/PaymentListPage';
 import AuditLogListPage from '../pages/audit/AuditLogListPage';
 import AnalyticsDashboardPage from '../pages/analytics/AnalyticsDashboardPage';
+import MedicalRecordsPage from '../pages/medical/MedicalRecordsPage';
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -87,6 +88,7 @@ const AppRouter = () => {
         <Route path="patients" element={<PatientListPage />} />
         <Route path="patients/:patientId/appointments" element={<AppointmentHistoryPage />} />
         <Route path="appointments" element={<AppointmentListPage />} />
+        <Route path="medical" element={<MedicalRecordsPage />} />
         <Route path="specialties" element={<SpecialtyListPage />} />
         <Route path="chatbot" element={<ChatbotListPage />} />
         <Route path="settings" element={<SettingsPage />} />

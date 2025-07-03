@@ -13,6 +13,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
+import { useTheme } from '../../context/ThemeContext';
 
 const PaymentStatusBadge = ({ status }) => {
   const statusConfig = {
@@ -60,20 +61,18 @@ const PaymentStatusBadge = ({ status }) => {
 };
 
 const PaymentTable = ({ onViewDetails }) => {
-  const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-    payment_method: '',
-  });
+  const { theme } = useTheme();
+  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [status, setStatus] = useState('');
+  const [paymentMethodId, setPaymentMethodId] = useState('');
 
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-  } = useGetPayments(filters);
+  const { data, isLoading, isError, error } = useGetPayments({
+    page,
+    search: searchTerm,
+    status,
+    payment_method_id: paymentMethodId,
+  });
   const { data: paymentMethodsData } = useGetPaymentMethods();
   const refundMutation = useRefundPayment({
     onSuccess: () => {
@@ -84,9 +83,19 @@ const PaymentTable = ({ onViewDetails }) => {
     },
   });
 
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    if (name === 'search') {
+      setSearchTerm(value);
+    } else if (name === 'status') {
+      setStatus(value);
+    } else if (name === 'payment_method_id') {
+      setPaymentMethodId(value);
+    }
   };
 
   const handleRefund = (paymentId) => {
@@ -130,7 +139,7 @@ const PaymentTable = ({ onViewDetails }) => {
               id="search"
               className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
               placeholder="Nombre o Apellido"
-              value={filters.search}
+              value={searchTerm}
               onChange={handleFilterChange}
             />
           </div>
@@ -143,7 +152,7 @@ const PaymentTable = ({ onViewDetails }) => {
             id="status"
             name="status"
             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            value={filters.status}
+            value={status}
             onChange={handleFilterChange}
           >
             <option value="">Todos</option>
@@ -154,18 +163,16 @@ const PaymentTable = ({ onViewDetails }) => {
             <option value="CANCELLED">Cancelado</option>
           </select>
         </div>
-        <div>
-          <label htmlFor="payment_method" className="block text-sm font-medium text-gray-700">
-            Método de Pago
-          </label>
+        <div className="flex-1">
+          <label htmlFor="paymentMethod" className="sr-only">Método de Pago</label>
           <select
-            id="payment_method"
-            name="payment_method"
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            value={filters.payment_method}
-            onChange={handleFilterChange}
+            id="paymentMethod"
+            name="paymentMethod"
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            value={paymentMethodId}
+            onChange={(e) => setPaymentMethodId(e.target.value)}
           >
-            <option value="">Todos</option>
+            <option value="">Todos los Métodos</option>
             {paymentMethodsData?.results.map((method) => (
               <option key={method.id} value={method.id}>
                 {method.name}
@@ -239,17 +246,6 @@ const PaymentTable = ({ onViewDetails }) => {
             )}
           </tbody>
         </table>
-        {hasNextPage && (
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => fetchNextPage()}
-              disabled={isFetchingNextPage}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-300"
-            >
-              {isFetchingNextPage ? 'Cargando...' : 'Cargar más'}
-            </button>
-          </div>
-        )}
       </div>
     </>
   );

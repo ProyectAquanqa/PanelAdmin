@@ -1,40 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import useAudit from '../../hooks/useAudit';
 import AuditLogTable from '../../components/audit/AuditLogTable';
-import AuditLogDetail from '../../components/audit/AuditLogDetail';
+import AuditLogFilters from '../../components/audit/AuditLogFilters';
+import AuditLogDetailModal from '../../components/audit/AuditLogDetailModal';
+import AuditTestGenerator from '../../components/audit/AuditTestGenerator';
+
+const initialFilters = {
+  search: '',
+  created_at_gte: null,
+  created_at_lte: null,
+  operation_type: '',
+  module: '',
+  page: 1,
+};
 
 const AuditLogListPage = () => {
-  const [selectedAuditLogId, setSelectedAuditLogId] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filters, setFilters] = useState(initialFilters);
+  const { auditLogs, pagination, isLoading, error, fetchAuditLogs } = useAudit();
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [isTestGeneratorVisible, setIsTestGeneratorVisible] = useState(false);
 
-  const handleViewDetails = (auditLogId) => {
-    setSelectedAuditLogId(auditLogId);
-    setIsModalOpen(true);
+  useEffect(() => {
+    fetchAuditLogs(filters);
+  }, [filters, fetchAuditLogs]);
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));
+  };
+
+  const handleResetFilters = () => {
+    setFilters(initialFilters);
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleRowClick = (log) => {
+    setSelectedLog(log);
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    setSelectedLog(null);
+  };
+
+  const handleTestGenerated = () => {
+    fetchAuditLogs(filters);
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Registros de Auditoría</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Listado de todas las acciones registradas en el sistema.
-          </p>
-        </div>
-      </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Registros de Auditoría</h1>
       
-      <div className="mt-8">
-        <AuditLogTable onViewDetails={handleViewDetails} />
+      <div className="mb-4">
+        <button
+          onClick={() => setIsTestGeneratorVisible(!isTestGeneratorVisible)}
+          className="w-full text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold"
+        >
+          Herramienta de Prueba de Auditoría {isTestGeneratorVisible ? '▲' : '▼'}
+        </button>
+        {isTestGeneratorVisible && (
+          <div className="mt-2">
+            <AuditTestGenerator onTestGenerated={handleTestGenerated} />
+          </div>
+        )}
       </div>
-      
-      <AuditLogDetail
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        auditLogId={selectedAuditLogId}
+
+      <AuditLogFilters 
+        onFilterChange={handleFilterChange} 
+        onReset={handleResetFilters}
+        initialFilters={initialFilters}
       />
+      
+      {isLoading && <p>Cargando registros...</p>}
+      {error && <p className="text-red-500">Error al cargar los registros: {error.message}</p>}
+      
+      {!isLoading && !error && (
+        <>
+          <AuditLogTable logs={auditLogs} onRowClick={handleRowClick} />
+          {/* Aquí podrías agregar un componente de paginación si lo deseas */}
+        </>
+      )}
+
+      {selectedLog && (
+        <AuditLogDetailModal log={selectedLog} onClose={handleCloseModal} />
+      )}
     </div>
   );
 };

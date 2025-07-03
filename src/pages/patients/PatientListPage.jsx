@@ -10,9 +10,10 @@ import {
   CakeIcon,
   BeakerIcon,
   EyeIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
-import { useGetPatients } from '../../hooks/usePatients';
+import { useGetPatients, useUpdatePatient } from '../../hooks/usePatients';
 import PatientFormModal from '../../components/patients/PatientFormModal';
 import { toast } from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
@@ -41,6 +42,7 @@ export default function PatientListPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPatient, setCurrentPatient] = useState(null);
+  const [modalMode, setModalMode] = useState('view'); // 'view' o 'edit'
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [isSearching, setIsSearching] = useState(false);
@@ -99,6 +101,20 @@ export default function PatientListPage() {
     console.log('✅ Datos del paciente a ver:', patientToView);
     setCurrentPatient(patientToView);
     setIsModalOpen(true);
+  };
+
+  // Función para abrir el modal en modo de edición
+  const handleEditPatient = (patient) => {
+    setCurrentPatient(patient);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
+  // Función para cerrar el modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setCurrentPatient(null);
+    setModalMode('view');
   };
 
   // Función para calcular la edad a partir de la fecha de nacimiento
@@ -288,35 +304,28 @@ export default function PatientListPage() {
           </div>
         </td>
         {/* Acciones */}
-        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-          <div className="flex items-center justify-center space-x-2">
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+          <div className="flex items-center justify-end space-x-2">
             <button
-              onClick={(e) => {
-                e.stopPropagation(); 
-                handleViewDetails(patient);
-              }}
-              className={`p-2 rounded-full transition-colors ${
-                theme === 'dark' 
-                  ? 'text-neutral-400 hover:bg-neutral-700 hover:text-white' 
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-primary-600'
-              }`}
-              aria-label="Ver detalles del paciente"
-            >
-              <EyeIcon className="h-5 w-5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/patients/${patient.id}/appointments`);
-              }}
-              className={`p-2 rounded-full transition-colors ${
-                theme === 'dark' 
-                  ? 'text-neutral-400 hover:bg-neutral-700 hover:text-white' 
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-primary-600'
-              }`}
-              aria-label="Ver historial de citas"
+              onClick={() => navigate(`/patients/${patient.id}/appointments`)}
+              className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-blue-900/50 text-blue-400' : 'hover:bg-blue-100 text-blue-600'}`}
+              title="Ver historial de citas"
             >
               <CalendarDaysIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => handleEditPatient(patient)}
+              className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-yellow-900/50 text-yellow-400' : 'hover:bg-yellow-100 text-yellow-600'}`}
+              title="Editar Paciente"
+            >
+              <PencilIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => handleViewDetails(patient)}
+              className={`p-2 rounded-full transition-colors ${theme === 'dark' ? 'hover:bg-neutral-700 text-neutral-400' : 'hover:bg-gray-200 text-gray-600'}`}
+              title="Ver detalles"
+            >
+              <EyeIcon className="h-5 w-5" />
             </button>
           </div>
         </td>
@@ -439,13 +448,16 @@ export default function PatientListPage() {
       )}
 
       {/* Modal para detalles del paciente */}
-      {isModalOpen && currentPatient && (
-        <PatientFormModal 
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          patient={currentPatient}
-        />
-      )}
+      <AnimatePresence>
+        {isModalOpen && (
+          <PatientFormModal 
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            patient={currentPatient}
+            mode={modalMode}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

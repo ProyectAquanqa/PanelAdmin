@@ -1,4 +1,5 @@
 import adminApiClient from '../api/adminApiClient';
+import { API_ROUTES } from '../config/api';
 
 /**
  * Service for fetching analytics data through the Django Admin API
@@ -10,7 +11,7 @@ class AnalyticsService {
    */
   async getAnalyticsSummary() {
     try {
-      const response = await adminApiClient.get('/analytics/summary/');
+      const response = await adminApiClient.get(API_ROUTES.ANALYTICS.SUMMARY);
       console.log('📊 Datos recibidos del backend:', response.data);
       return response.data;
     } catch (error) {

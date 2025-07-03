@@ -33,6 +33,7 @@ const UserRoleSelector = ({ control }) => {
   const { field } = useController({
     name: 'role',
     control,
+    defaultValue: 'RECEPTIONIST',
   });
 
   return (

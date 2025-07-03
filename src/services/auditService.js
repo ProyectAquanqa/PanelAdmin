@@ -1,4 +1,5 @@
 import adminApiClient from '../api/adminApiClient';
+import { API_ROUTES } from '../config/api';
 
 /**
  * Service for managing audit logs through the Django Admin API
@@ -11,7 +12,7 @@ class AuditService {
    */
   async getAuditLogs(params = {}) {
     try {
-      const response = await adminApiClient.get('/audit/', { params });
+      const response = await adminApiClient.get(API_ROUTES.AUDIT.LIST, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching audit logs:', error);
@@ -26,7 +27,7 @@ class AuditService {
    */
   async getAuditLogById(id) {
     try {
-      const response = await adminApiClient.get(`/audit/${id}/`);
+      const response = await adminApiClient.get(API_ROUTES.AUDIT.BY_ID(id));
       return response.data;
     } catch (error) {
       console.error(`Error fetching audit log with ID ${id}:`, error);
@@ -41,7 +42,7 @@ class AuditService {
    */
   async deleteAuditLog(id) {
     try {
-      const response = await adminApiClient.delete(`/audit/${id}/`);
+      const response = await adminApiClient.delete(API_ROUTES.AUDIT.DELETE(id));
       return response.data;
     } catch (error) {
       console.error(`Error deleting audit log with ID ${id}:`, error);
@@ -55,7 +56,7 @@ class AuditService {
    */
   async getRecentAuditLogs() {
     try {
-      const response = await adminApiClient.get('/audit/recent/');
+      const response = await adminApiClient.get(API_ROUTES.AUDIT.RECENT);
       return response.data;
     } catch (error) {
       console.error('Error fetching recent audit logs:', error);
@@ -69,10 +70,24 @@ class AuditService {
    */
   async getAuditStats() {
     try {
-      const response = await adminApiClient.get('/audit/stats/');
+      const response = await adminApiClient.get(API_ROUTES.AUDIT.STATS);
       return response.data;
     } catch (error) {
       console.error('Error fetching audit statistics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get filter choices for audit logs
+   * @returns {Promise} - Promise with the filter choices data
+   */
+  async getFilterChoices() {
+    try {
+      const response = await adminApiClient.get(API_ROUTES.AUDIT.CHOICES);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching audit filter choices:', error);
       throw error;
     }
   }

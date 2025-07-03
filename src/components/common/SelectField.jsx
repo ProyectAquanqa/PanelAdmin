@@ -1,39 +1,41 @@
 // components/common/SelectField.jsx
 import React from 'react';
 
-const SelectField = React.forwardRef(({ options, placeholder, icon: Icon, darkMode, ...props }, ref) => {
+const SelectField = React.forwardRef(({ 
+  label, 
+  options = [], 
+  error, 
+  darkMode, 
+  icon: Icon, 
+  placeholder,
+  isLoading,
+  ...props 
+}, ref) => {
   return (
-    <div className="relative w-full">
-      {Icon && (
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Icon className={`h-5 w-5 ${darkMode ? 'text-neutral-500' : 'text-gray-400'}`} />
-        </div>
-      )}
-      <select
-        ref={ref}
-        {...props}
-        className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2 border rounded-md focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors
-          ${darkMode ? 'bg-neutral-700 border-neutral-600 text-white' : 'border-gray-300 text-gray-900'}`}
-      >
-        {placeholder && (
-          <option value="" disabled className={darkMode ? 'bg-neutral-800' : ''}>
-            {placeholder}
-          </option>
-        )}
-        {options && options.map(option => (
-          <option 
-            key={option.id} 
-            value={option.id}
-            className={darkMode ? 'bg-neutral-800' : ''}
-          >
-            {option.name || option.full_name}
-          </option>
-        ))}
-      </select>
+    <div>
+      {label && <label className={`block text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{label}</label>}
+      <div className="relative mt-1">
+        {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />}
+        <select
+          {...props}
+          ref={ref}
+          className={`block w-full rounded-md border-0 py-2.5 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset ${Icon ? 'pl-10' : 'pl-3'} pr-10 ${
+            darkMode 
+              ? 'bg-neutral-700 text-white ring-neutral-600 focus:ring-primary-500' 
+              : 'bg-white text-gray-900 ring-gray-300 focus:ring-primary-600'
+          } ${error ? 'ring-red-500' : ''}`}
+        >
+          <option value="">{isLoading ? 'Cargando...' : placeholder || 'Seleccione una opción'}</option>
+          {!isLoading && options.map(option => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error.message}</p>}
     </div>
   );
 });
-
-SelectField.displayName = 'SelectField';
 
 export default SelectField;

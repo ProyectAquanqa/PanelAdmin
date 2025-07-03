@@ -25,19 +25,7 @@ export const getUserById = async (id) => {
   try {
     const url = API_ROUTES.USERS.BY_ID(id);
     const response = await adminApiClient.get(url);
-    
-    // El resto de la lógica para obtener datos de paciente/doctor puede permanecer
-    const userData = response.data;
-    if (userData.role === 'PATIENT' && userData.patient) {
-      const patientResponse = await adminApiClient.get(API_ROUTES.PATIENTS.BY_ID(userData.patient));
-      userData.patient_data = patientResponse.data;
-    }
-    if (userData.role === 'DOCTOR' && userData.doctor) {
-      const doctorResponse = await adminApiClient.get(API_ROUTES.DOCTORS.BY_ID(userData.doctor));
-      userData.doctor_data = doctorResponse.data;
-    }
-    
-    return userData;
+    return response.data;
   } catch (error) {
     console.error(`💥 Error al obtener el usuario con ID ${id}:`, error);
     throw error;
@@ -154,6 +142,26 @@ export const getPatientById = async (id) => {
     return response.data;
   } catch (error) {
     console.error(`💥 Error al obtener paciente ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Actualiza un paciente existente
+ * @param {number} id - ID del paciente
+ * @param {Object} patientData - Datos del paciente
+ * @returns {Promise} Promise con la respuesta
+ */
+export const updatePatient = async ({ id, ...patientData }) => {
+  try {
+    const url = API_ROUTES.PATIENTS.BY_ID(id);
+    const response = await adminApiClient.patch(url, patientData);
+    return response.data;
+  } catch (error) {
+    console.error(`💥 Error al actualizar paciente ${id}:`, error);
+    if (error.response && error.response.data) {
+      console.error('📋 Detalles del error:', error.response.data);
+    }
     throw error;
   }
 }; 

@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSpecialties, getSpecialtyById, createSpecialty, updateSpecialty, deleteSpecialty } from '../services/specialtyService';
+import { getSpecialties, getSpecialtyById, createSpecialty, updateSpecialty, deleteSpecialty, getActiveSpecialties } from '../services/specialtyService';
 import { toast } from 'react-hot-toast';
 
 // Clave para la cache de especialidades
 const SPECIALTIES_QUERY_KEY = 'specialties';
+const ACTIVE_SPECIALTIES_QUERY_KEY = 'activeSpecialties';
 
 /**
  * Hook para obtener la lista de especialidades
@@ -43,6 +44,34 @@ export const useGetSpecialties = (params = {}) => {
       if (error.response && error.response.status !== 404) {
         toast.error('Error al cargar la lista de especialidades');
       }
+    }
+  });
+};
+
+/**
+ * Hook para obtener la lista de especialidades ACTIVAS (para formularios).
+ * No recibe parámetros y apunta a un endpoint específico.
+ */
+export const useGetActiveSpecialties = () => {
+  return useQuery({
+    queryKey: [ACTIVE_SPECIALTIES_QUERY_KEY],
+    queryFn: getActiveSpecialties, // Llama a la nueva función del servicio
+    staleTime: 1000 * 60 * 10, // 10 minutos de cache
+    retry: 1,
+    refetchOnWindowFocus: false,
+    // NORMALIZACIÓN: Asegurar que siempre devolvemos un array
+    select: (data) => {
+      if (Array.isArray(data)) {
+        return data; // Si ya es un array, lo devolvemos
+      }
+      if (data && data.results && Array.isArray(data.results)) {
+        return data.results; // Si es un objeto paginado, devolvemos los resultados
+      }
+      return []; // En cualquier otro caso, devolver un array vacío
+    },
+    onError: (error) => {
+      console.error('Error al obtener especialidades activas:', error);
+      toast.error('No se pudieron cargar las especialidades disponibles.');
     }
   });
 };
@@ -100,9 +129,11 @@ export const useUpdateSpecialty = () => {
     },
     onSuccess: (data, variables) => {
       console.log('Especialidad actualizada exitosamente:', data);
-      // Invalidar la cache para que se recargue la lista
+      // Invalidar AMBAS caches para que se recarguen las listas donde sea necesario
       queryClient.invalidateQueries({ queryKey: [SPECIALTIES_QUERY_KEY] });
-      // Actualizar especialidad específica en la cache
+      queryClient.invalidateQueries({ queryKey: [ACTIVE_SPECIALTIES_QUERY_KEY] });
+      
+      // Actualizar especialidad específica en la cache para una UI más rápida
       queryClient.setQueryData([SPECIALTIES_QUERY_KEY, variables.id], data);
     },
     onError: (error) => {

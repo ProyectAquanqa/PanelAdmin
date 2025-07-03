@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   PlusIcon, 
   PencilIcon, 
@@ -7,7 +7,8 @@ import {
   AcademicCapIcon,
   CurrencyDollarIcon,
   TagIcon,
-  ClockIcon
+  ClockIcon,
+  FunnelIcon
 } from '@heroicons/react/24/outline';
 import { useGetSpecialties, useDeleteSpecialty } from '../../hooks/useSpecialties';
 import SpecialtyFormModal from '../../components/specialties/SpecialtyFormModal';
@@ -34,35 +35,40 @@ function useDebounce(value, delay) {
 export default function SpecialtyListPage() {
   const { theme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ACTIVE'); // 'ACTIVE', 'INACTIVE', 'ALL'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSpecialty, setCurrentSpecialty] = useState(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
-  const [isSearching, setIsSearching] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+  // Construir objeto de filtros para la API
+  const filters = useMemo(() => {
+    const activeFilters = {
+      page,
+      page_size: pageSize
+    };
+    if (debouncedSearchTerm) {
+      activeFilters.search = debouncedSearchTerm;
+    }
+    if (statusFilter !== 'ALL') {
+      activeFilters.is_active = statusFilter === 'ACTIVE';
+    }
+    return activeFilters;
+  }, [debouncedSearchTerm, statusFilter, page, pageSize]);
+
   useEffect(() => {
     setPage(1);
-    setIsSearching(true);
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, statusFilter]);
 
   const { 
     data, 
     isLoading, 
     isError, 
-    error 
-  } = useGetSpecialties({ 
-    search: debouncedSearchTerm,
-    page,
-    page_size: pageSize 
-  });
-
-  useEffect(() => {
-    if (!isLoading) {
-      setIsSearching(false);
-    }
-  }, [isLoading]);
+    error,
+    isFetching // Usar para mostrar feedback de carga más sutil
+  } = useGetSpecialties(filters);
 
   const deleteSpecialty = useDeleteSpecialty();
 
@@ -125,7 +131,7 @@ export default function SpecialtyListPage() {
     );
   };
 
-  if (isLoading && !isSearching) {
+  if (isLoading && !isFetching) {
     return (
       <div className="flex justify-center items-center h-64">
         <motion.div 
@@ -237,61 +243,53 @@ export default function SpecialtyListPage() {
         </div>
       </motion.div>
 
-      {/* Búsqueda */}
+      {/* Filtros de Búsqueda y Estado */}
       <motion.div 
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         className={`${
           theme === 'dark' 
             ? 'bg-neutral-800 border-neutral-700' 
             : 'bg-white border-gray-200'
-        } shadow-sm border rounded-xl p-6`}
+        } shadow-sm border rounded-xl p-4`}
       >
-        <div className="flex-1 max-w-lg">
-          <label htmlFor="search" className="sr-only">Buscar especialidades</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className={`h-5 w-5 ${
-                theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'
-              }`} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div className="relative">
+              <MagnifyingGlassIcon className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'}`} />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o descripción..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg ${
+                  theme === 'dark' 
+                    ? 'bg-neutral-700 border-neutral-600 text-white placeholder-neutral-400' 
+                    : 'bg-gray-50 border-gray-300 text-gray-900'
+                }`}
+              />
             </div>
-            <input
-              type="text"
-              name="search"
-              id="search"
-              className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${
-                theme === 'dark' 
-                  ? 'bg-neutral-700 border-neutral-600 text-white placeholder-neutral-400' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
-              placeholder="Buscar por nombre o descripción..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
           </div>
-          <AnimatePresence>
-            {(isLoading || isSearching) && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className={`mt-2 text-sm ${
-                  theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
-                } flex items-center`}
-              >
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Buscando...
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={`w-full border rounded-lg py-2 px-3 ${
+                theme === 'dark' 
+                  ? 'bg-neutral-700 border-neutral-600 text-white' 
+                  : 'bg-gray-50 border-gray-300 text-gray-900'
+              }`}
+            >
+              <option value="ACTIVE">Activas</option>
+              <option value="INACTIVE">Inactivas</option>
+              <option value="ALL">Todas</option>
+            </select>
+          </div>
         </div>
       </motion.div>
 
-      {/* Tabla */}
+      {/* Tabla de Especialidades */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -303,6 +301,11 @@ export default function SpecialtyListPage() {
         } shadow-sm border rounded-xl overflow-hidden`}
       >
         <div className="overflow-x-auto">
+          {isFetching && (
+            <div className="absolute inset-0 bg-white/50 dark:bg-neutral-800/50 flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-primary-600 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+          )}
           <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
             <thead className={theme === 'dark' ? 'bg-neutral-900' : 'bg-gray-50'}>
               <tr>
@@ -345,12 +348,12 @@ export default function SpecialtyListPage() {
                       <h3 className={`text-sm font-medium mb-1 ${
                         theme === 'dark' ? 'text-neutral-300' : 'text-gray-900'
                       }`}>
-                        {isSearching ? 'Buscando especialidades...' : 'No se encontraron especialidades'}
+                        {isFetching ? 'Buscando especialidades...' : 'No se encontraron especialidades'}
                       </h3>
                       <p className={`text-sm ${
                         theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'
                       }`}>
-                        {!isSearching && !searchTerm && 'Comienza creando una nueva especialidad'}
+                        {!isFetching && !searchTerm && 'Comienza creando una nueva especialidad'}
                       </p>
                     </motion.div>
                   </td>

@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { ArrowLeftIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
-import { useGetUserById } from '../../hooks/useUsers';
+import { useGetPatientById } from '../../hooks/usePatients';
 import { useGetAppointmentsByPatient } from '../../hooks/appointment/useAppointmentQueries';
 import { format } from 'date-fns';
 
@@ -28,7 +28,7 @@ export default function AppointmentHistoryPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const { data: patient, isLoading: isLoadingPatient, error: errorPatient } = useGetUserById(patientId);
+  const { data: patient, isLoading: isLoadingPatient, error: errorPatient } = useGetPatientById(patientId);
   const { data: appointmentsData, isLoading: isLoadingAppointments, error: errorAppointments } = useGetAppointmentsByPatient(patientId);
   
   const appointments = appointmentsData?.results || [];
@@ -63,7 +63,7 @@ export default function AppointmentHistoryPage() {
           Historial de Citas
         </h1>
         <p className={`${isDark ? 'text-neutral-400' : 'text-gray-600'} mt-2`}>
-          Paciente: <span className="font-semibold">{patient?.user.full_name || 'Desconocido'}</span> (ID: {patientId})
+          Paciente: <span className="font-semibold">{patient?.full_name || 'Desconocido'}</span> (ID: {patientId})
         </p>
       </div>
 
@@ -83,7 +83,7 @@ export default function AppointmentHistoryPage() {
               {appointments && appointments.length > 0 ? (
                 appointments.map((appt) => (
                   <tr key={appt.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{format(new Date(appt.date), 'dd/MM/yyyy')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">{format(new Date(appt.appointment_date), 'dd/MM/yyyy')}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{appt.doctor_name || 'No asignado'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{appt.specialty_name || 'No asignada'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm"><StatusBadge status={appt.status} /></td>

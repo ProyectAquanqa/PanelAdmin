@@ -1,6 +1,50 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useCallback } from 'react';
 import auditService from '../services/auditService';
 import { toast } from 'react-hot-toast';
+
+const useAudit = () => {
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [pagination, setPagination] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchAuditLogs = useCallback(async (filters = {}) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Limpiar filtros vacíos antes de enviar
+      const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+        if (value !== null && value !== '' && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+      
+      const data = await auditService.getAuditLogs(cleanFilters);
+      setAuditLogs(data.results || []);
+      setPagination({
+        count: data.count,
+        next: data.next,
+        previous: data.previous,
+      });
+    } catch (err) {
+      setError(err);
+      toast.error('Error al cargar los registros de auditoría.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  return {
+    auditLogs,
+    pagination,
+    isLoading,
+    error,
+    fetchAuditLogs,
+  };
+};
+
+export default useAudit;
 
 /**
  * Hook for fetching audit logs with optional filtering

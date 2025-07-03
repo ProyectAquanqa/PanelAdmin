@@ -159,52 +159,24 @@ const DoctorListPage = () => {
   const renderSpecialties = (doctor) => {
     // Si no hay especialidades o no es un array
     if (!doctor.specialties || !Array.isArray(doctor.specialties) || doctor.specialties.length === 0) {
-      return <span className="text-gray-400 text-xs italic">Sin especialidades asignadas</span>;
+      return <span className="text-gray-400 text-xs italic">Sin especialidades</span>;
     }
 
     return (
       <div className="flex flex-wrap gap-1">
-        {doctor.specialties.map(spec => {
-          let specialtyId, specialtyName;
-          
-          // Manejar diferentes formatos de especialidades
-          if (typeof spec === 'object' && spec !== null) {
-            specialtyId = spec.id || spec.specialty_id || spec.specialty;
-            specialtyName = spec.name || spec.specialty_name || null;
-            
-            // Si specialty es un objeto anidado
-            if (typeof spec.specialty === 'object' && spec.specialty !== null) {
-              specialtyId = spec.specialty.id;
-              specialtyName = spec.specialty.name || null;
-            }
-          } else if (typeof spec === 'number') {
-            specialtyId = spec;
-            specialtyName = null;
-          } else if (typeof spec === 'string' && /^\d+$/.test(spec)) {
-            specialtyId = parseInt(spec, 10);
-            specialtyName = null;
-          } else {
-            // Si no podemos determinar un ID válido, omitir esta especialidad
+        {doctor.specialties.map(specialty => {
+          // El backend ahora envía el objeto de especialidad completo
+          if (!specialty || !specialty.id || !specialty.name) {
             return null;
-          }
-          
-          // Si tenemos un ID pero no un nombre, buscar en el mapa de especialidades
-          if (specialtyId && !specialtyName && specialtiesMap.has(specialtyId)) {
-            specialtyName = specialtiesMap.get(specialtyId).name;
-          }
-          
-          // Si aún no tenemos nombre, usar un valor por defecto
-          if (!specialtyName) {
-            specialtyName = `Especialidad ${specialtyId}`;
           }
           
           return (
             <span
-              key={specialtyId}
+              key={specialty.id}
               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                 ${isDark ? 'bg-indigo-900/30 text-indigo-300' : 'bg-indigo-100 text-indigo-800'}`}
             >
-              {specialtyName}
+              {specialty.name}
             </span>
           );
         }).filter(Boolean)}

@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { getPatients, getPatientById } from '../services/user';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getPatients, getPatientById, updatePatient } from '../services/user';
 import { toast } from 'react-hot-toast';
 
 // Clave para la cache de pacientes
@@ -35,6 +35,28 @@ export const useGetPatientById = (id) => {
     onError: (error) => {
       console.error(`Error al obtener el paciente con ID ${id}:`, error);
       toast.error('Error al cargar los datos del paciente');
+    }
+  });
+};
+
+/**
+ * Hook para actualizar un paciente
+ */
+export const useUpdatePatient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updatePatient,
+    onSuccess: (data) => {
+      toast.success('Paciente actualizado con éxito');
+      // Invalidar la cache de la lista de pacientes
+      queryClient.invalidateQueries({ queryKey: [PATIENTS_QUERY_KEY] });
+      // También invalidar la cache del paciente específico
+      queryClient.invalidateQueries({ queryKey: [PATIENTS_QUERY_KEY, data.id] });
+    },
+    onError: (error) => {
+      console.error('Error al actualizar el paciente:', error);
+      const errorMsg = error.response?.data?.detail || 'No se pudo actualizar el paciente.';
+      toast.error(errorMsg);
     }
   });
 }; 

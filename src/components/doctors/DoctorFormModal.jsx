@@ -21,6 +21,7 @@ const doctorSchema = z.object({
   first_name: z.string().min(2, 'Mínimo 2 caracteres').max(50, 'Máximo 50 caracteres'),
   last_name: z.string().min(2, 'Mínimo 2 caracteres').max(50, 'Máximo 50 caracteres'),
   email: z.string().email('Email inválido').toLowerCase(),
+  dni: z.string().length(8, 'El DNI debe tener 8 caracteres').optional().or(z.literal('')),
   password: z.string().min(8, 'Mínimo 8 caracteres')
     .optional()
     .or(z.literal(''))
@@ -141,6 +142,7 @@ function DoctorFormModal({ isOpen, onClose, doctor = null, onSuccess }) {
       first_name: '',
       last_name: '',
       email: '',
+      dni: '',
       password: '',
       cmp_number: '',
       phone: '',
@@ -195,6 +197,7 @@ function DoctorFormModal({ isOpen, onClose, doctor = null, onSuccess }) {
           first_name: doctorData.first_name || '',
           last_name: doctorData.last_name || '',
           email: doctorData.user?.email || doctorData.email || '',
+          dni: doctorData.user?.dni || '',
           cmp_number: doctorData.cmp_number || doctorData.license_number || '',
           phone: doctorData.phone || '',
           contact_phone: doctorData.contact_phone || '',

@@ -149,6 +149,11 @@ export const prepareDoctorDataForSubmit = (doctorData) => {
   // Copia para no modificar el original
   const preparedData = { ...doctorData };
 
+  // IMPORTANTE: Asegurar que el DNI esté presente si existe
+  if (doctorData.dni) {
+    preparedData.dni = doctorData.dni;
+  }
+
   // IMPORTANTE: Asegurar que email esté presente y sea válido
   if (!preparedData.email && preparedData.user?.email) {
     preparedData.email = preparedData.user.email;

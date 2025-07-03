@@ -39,54 +39,40 @@ export default function UsersPage() {
   
   // Estados para los filtros y modales
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [roleFilter, setRoleFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ACTIVE');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // OBTENER TODOS LOS USUARIOS UNA VEZ
+  // Construir objeto de filtros para la API
+  const filters = useMemo(() => {
+    const activeFilters = {};
+    if (debouncedSearchTerm) {
+      activeFilters.search = debouncedSearchTerm;
+    }
+    if (roleFilter !== 'ALL') {
+      activeFilters.role = roleFilter;
+    }
+    if (statusFilter !== 'ALL') {
+      activeFilters.is_active = statusFilter === 'ACTIVE';
+    }
+    return activeFilters;
+  }, [debouncedSearchTerm, roleFilter, statusFilter]);
+
+  // OBTENER USUARIOS CON FILTRADO DESDE EL BACKEND
   const { 
-    data: allUsersData, 
+    data: usersData, 
     isLoading, 
     isError, 
     error,
-    refetch
-  } = useGetUsers();
+    refetch,
+    isFetching,
+  } = useGetUsers(filters);
 
   // MUTACIONES
   const deleteUserMutation = useDeleteUser();
   const toggleUserActiveMutation = useToggleUserActive();
-
-  // FILTRADO EN FRONTEND
-  const usersToDisplay = useMemo(() => {
-    if (!allUsersData?.results) return [];
-
-    let filteredUsers = allUsersData.results;
-
-    // Filtrar por estado
-    if (statusFilter !== 'ALL') {
-      const isActive = statusFilter === 'ACTIVE';
-      filteredUsers = filteredUsers.filter(user => user.is_active === isActive);
-    }
-    
-    // Filtrar por rol
-    if (roleFilter !== 'ALL') {
-      filteredUsers = filteredUsers.filter(user => user.role === roleFilter);
-    }
-    
-    // Filtrar por término de búsqueda
-    if (debouncedSearchTerm) {
-      const lowercasedFilter = debouncedSearchTerm.toLowerCase();
-      filteredUsers = filteredUsers.filter(user =>
-        (user.first_name?.toLowerCase() || '').includes(lowercasedFilter) ||
-        (user.last_name?.toLowerCase() || '').includes(lowercasedFilter) ||
-        user.email.toLowerCase().includes(lowercasedFilter)
-      );
-    }
-    
-    return filteredUsers;
-  }, [allUsersData, statusFilter, roleFilter, debouncedSearchTerm]);
 
   // Función para abrir modal de edición
   const handleEdit = (user) => {
@@ -218,7 +204,8 @@ export default function UsersPage() {
     );
   }
   
-  const totalUsers = allUsersData?.count || 0;
+  const usersToDisplay = usersData?.results || [];
+  const totalUsers = usersData?.count || 0;
 
   return (
     <div className="space-y-6">
@@ -242,11 +229,11 @@ export default function UsersPage() {
             <div className={`mt-3 flex items-center space-x-4 text-sm ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-500'}`}> 
               <span className="flex items-center">
                 <span className="w-2 h-2 bg-green-400 rounded-full mr-1.5"></span>
-                {usersToDisplay.filter(u => u.is_active).length} activos
+                {usersToDisplay.filter(u => u.is_active).length} activos en esta vista
               </span>
               <span className="flex items-center">
                 <span className="w-2 h-2 bg-gray-400 rounded-full mr-1.5"></span>
-                {totalUsers} total
+                {totalUsers} total de usuarios ({statusFilter.toLowerCase()})
               </span>
             </div>
           </div>
@@ -273,49 +260,54 @@ export default function UsersPage() {
           theme === 'dark' 
             ? 'bg-neutral-800 border-neutral-700' 
             : 'bg-white border-gray-200'
-        } shadow-sm border rounded-xl p-6`}
+        } shadow-sm border rounded-xl p-4`}
       >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Búsqueda */}
-          <div className="flex-1 max-w-lg">
-            <label htmlFor="search" className="sr-only">Buscar usuarios</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-1">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className={`h-5 w-5 ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'}`} />
-              </div>
+              <MagnifyingGlassIcon className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'}`} />
               <input
                 type="text"
-                name="search"
-                id="search"
-                className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${theme === 'dark' ? 'bg-neutral-700 border-neutral-600 text-white placeholder-neutral-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'}`}
-                placeholder="Buscar por nombre, email o documento..."
+                placeholder="Buscar por nombre, email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg ${
+                  theme === 'dark' 
+                    ? 'bg-neutral-700 border-neutral-600 text-white placeholder-neutral-400' 
+                    : 'bg-gray-50 border-gray-300 text-gray-900'
+                }`}
               />
             </div>
           </div>
-
-          {/* Filtros */}
-          <div className="flex items-center space-x-3">
-            <FunnelIcon className={`h-5 w-5 ${theme === 'dark' ? 'text-neutral-400' : 'text-gray-400'}`} />
+          <div>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className={`block w-full px-3 py-2.5 border rounded-lg focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${theme === 'dark' ? 'bg-neutral-700 border-neutral-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              className={`w-full border rounded-lg py-2 px-3 ${
+                theme === 'dark' 
+                  ? 'bg-neutral-700 border-neutral-600 text-white' 
+                  : 'bg-gray-50 border-gray-300 text-gray-900'
+              }`}
             >
-              <option value="ALL">Todos los roles</option>
-              <option value="PATIENT">Pacientes</option>
-              <option value="DOCTOR">Doctores</option>
-              <option value="ADMIN">Administradores</option>
+              <option value="ALL">Todos los Roles</option>
+              <option value="ADMIN">Administrador</option>
+              <option value="DOCTOR">Doctor</option>
+              <option value="PATIENT">Paciente</option>
             </select>
+          </div>
+          <div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`block w-full px-3 py-2.5 border rounded-lg focus:ring-primary-600 focus:border-primary-600 sm:text-sm transition-colors ${theme === 'dark' ? 'bg-neutral-700 border-neutral-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              className={`w-full border rounded-lg py-2 px-3 ${
+                theme === 'dark' 
+                  ? 'bg-neutral-700 border-neutral-600 text-white' 
+                  : 'bg-gray-50 border-gray-300 text-gray-900'
+              }`}
             >
-              <option value="ALL">Todos los estados</option>
-              <option value="ACTIVE">Activo</option>
-              <option value="INACTIVE">Inactivo</option>
+              <option value="ACTIVE">Activos</option>
+              <option value="INACTIVE">Inactivos</option>
+              <option value="ALL">Todos</option>
             </select>
           </div>
         </div>
@@ -446,11 +438,19 @@ export default function UsersPage() {
       </motion.div>
 
       {/* Modal de formulario */}
-      <UserFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        user={currentUser}
-      />
+      <AnimatePresence>
+        {isModalOpen && (
+          <UserFormModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            userId={currentUser?.id}
+            onSuccess={() => {
+              setIsModalOpen(false);
+              refetch();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
