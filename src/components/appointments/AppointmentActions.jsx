@@ -5,7 +5,8 @@ import {
   CheckIcon, 
   XMarkIcon,
   CalendarIcon,
-  EyeIcon
+  EyeIcon,
+  DocumentPlusIcon,
 } from '@heroicons/react/24/outline';
 
 /**
@@ -17,6 +18,7 @@ import {
  * @param {Function} props.onComplete - Función para completar la cita
  * @param {Function} props.onNoShow - Función para marcar como no presentada
  * @param {Function} props.onView - Función para ver detalles de la cita
+ * @param {Function} props.onCreateMedicalRecord - Función para crear un historial médico
  * @param {boolean} props.isPast - Indica si la cita está en el pasado
  * @param {string} props.theme - Tema actual ('dark' o 'light')
  * @returns {JSX.Element} Componente de acciones
@@ -28,6 +30,7 @@ const AppointmentActions = ({
   onComplete, 
   onNoShow, 
   onView,
+  onCreateMedicalRecord,
   isPast,
   theme 
 }) => {
@@ -39,6 +42,7 @@ const AppointmentActions = ({
   const canCancel = status === 'SCHEDULED';
   const canComplete = status === 'SCHEDULED' || status === 'IN_CONSULTATION';
   const canMarkNoShow = status === 'SCHEDULED' && isPast;
+  const canCreateRecord = status === 'COMPLETED' || status === 'IN_CONSULTATION';
   
   // Clases para los botones
   const buttonClass = `p-1.5 rounded-md ${
@@ -83,6 +87,20 @@ const AppointmentActions = ({
         >
           <TrashIcon className={`h-5 w-5 ${
             darkMode ? 'text-red-400' : 'text-red-600'
+          }`} />
+        </button>
+      )}
+      
+      {/* Crear Historial Médico */}
+      {canCreateRecord && (
+        <button
+          type="button"
+          onClick={() => onCreateMedicalRecord(appointment)}
+          className={buttonClass}
+          title="Crear historial médico"
+        >
+          <DocumentPlusIcon className={`h-5 w-5 ${
+            darkMode ? 'text-teal-400' : 'text-teal-600'
           }`} />
         </button>
       )}

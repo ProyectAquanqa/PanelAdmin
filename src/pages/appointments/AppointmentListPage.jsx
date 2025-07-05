@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGetAppointments } from '../../hooks/appointment';
 import { useCancelAppointment, useCompleteAppointment } from '../../hooks/appointment/useAppointmentMutations';
 import AppointmentFormModal from '../../components/appointments/AppointmentFormModal';
+import MedicalRecordFormModal from '../../components/medical/MedicalRecordFormModal';
 import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'react-hot-toast';
 
@@ -20,14 +21,18 @@ function AppointmentListPage() {
   const cancelAppointmentMutation = useCancelAppointment();
   const completeAppointmentMutation = useCompleteAppointment();
   
-  // Estado del modal de formulario
+  // Estado del modal de formulario de citas
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   
   // Estado del modal de detalles
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [viewingAppointment, setViewingAppointment] = useState(null);
-  
+
+  // Estado del modal de historial médico
+  const [isMedicalRecordModalOpen, setIsMedicalRecordModalOpen] = useState(false);
+  const [appointmentForRecord, setAppointmentForRecord] = useState(null);
+
   // Estado de los filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -66,6 +71,17 @@ function AppointmentListPage() {
   const handleCloseDetailsModal = () => {
     setIsDetailsModalOpen(false);
     setViewingAppointment(null);
+  };
+
+  const handleOpenMedicalRecordModal = (appointment) => {
+    setAppointmentForRecord(appointment);
+    setIsMedicalRecordModalOpen(true);
+  };
+
+  const handleCloseMedicalRecordModal = () => {
+    setIsMedicalRecordModalOpen(false);
+    setAppointmentForRecord(null);
+    refetch(); // Recargar citas por si el estado cambió
   };
 
   const handleSearch = (e) => {
@@ -142,6 +158,7 @@ function AppointmentListPage() {
           onComplete={handleCompleteAppointment}
           onNoShow={handleNoShowAppointment}
           onView={handleViewAppointment}
+          onCreateMedicalRecord={handleOpenMedicalRecordModal}
           theme={theme}
             />
           </div>
@@ -152,6 +169,15 @@ function AppointmentListPage() {
         onClose={handleCloseFormModal}
         appointment={selectedAppointment}
       />
+
+      {/* Modal de historial médico */}
+      {appointmentForRecord && (
+        <MedicalRecordFormModal
+          isOpen={isMedicalRecordModalOpen}
+          onClose={handleCloseMedicalRecordModal}
+          appointmentId={appointmentForRecord.id}
+        />
+      )}
 
       {/* Modal de detalles */}
       <AppointmentDetailsModal

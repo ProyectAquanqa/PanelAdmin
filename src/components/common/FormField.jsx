@@ -1,5 +1,5 @@
 // components/common/FormField.jsx
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 /**
  * Componente reutilizable para campos de formulario
@@ -16,40 +16,40 @@ import React from 'react';
  * @param {React.ReactNode} [props.children] - Contenido adicional para el campo
  * @param {string} [props.error] - Mensaje de error directo (alternativa a errors[name].message)
  */
-const FormField = ({
-  name,
+const FormField = forwardRef(({
   label,
-  register,
-  errors = {},
   type = "text",
   className = "",
   isDark = false,
   placeholder = "",
-  children,
   error,
-}) => {
-  // Determinar el mensaje de error (puede venir directo o a través del objeto errors)
-  const errorMessage = error || (errors[name]?.message);
-  
+  children,
+  ...fieldProps // Captura el resto de las props (value, onChange, onBlur, name, etc.)
+}, ref) => {
+  const errorMessage = error?.message || (typeof error === 'string' ? error : null);
+
+  const inputClasses = `px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md
+    ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : ''}`;
+
   return (
     <div className={className}>
       <label 
-        htmlFor={name} 
+        htmlFor={fieldProps.name}
         className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
       >
         {label}
       </label>
       <div className="mt-1">
         {children ? (
-          children
+          React.cloneElement(children, { ...fieldProps, ref, className: `${children.props.className || ''} ${inputClasses}` })
         ) : (
           <input
+            id={fieldProps.name}
             type={type}
-            id={name}
             placeholder={placeholder}
-            {...(register ? register(name) : {})}
-            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md
-              ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : ''}`}
+            ref={ref}
+            {...fieldProps} // Pasa todas las props de react-hook-form al input
+            className={inputClasses}
           />
         )}
         {errorMessage && (
@@ -58,6 +58,8 @@ const FormField = ({
       </div>
     </div>
   );
-};
+});
+
+FormField.displayName = 'FormField';
 
 export default FormField;

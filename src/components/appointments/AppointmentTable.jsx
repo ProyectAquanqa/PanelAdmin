@@ -15,6 +15,7 @@ import { formatDate, isTimeBlockPast } from '../../utils/dateUtils';
  * @param {Function} props.onComplete - Función para completar una cita
  * @param {Function} props.onNoShow - Función para marcar como no presentada
  * @param {Function} props.onView - Función para ver detalles de una cita
+ * @param {Function} props.onCreateMedicalRecord - Función para crear un historial médico
  * @param {string} props.theme - Tema actual ('dark' o 'light')
  * @returns {JSX.Element} Componente de tabla
  */
@@ -27,6 +28,7 @@ const AppointmentTable = ({
   onComplete,
   onNoShow,
   onView,
+  onCreateMedicalRecord,
   theme
 }) => {
   const darkMode = theme === 'dark';
@@ -201,6 +203,7 @@ const AppointmentTable = ({
                       onComplete={onComplete}
                       onNoShow={onNoShow}
                       onView={onView}
+                      onCreateMedicalRecord={onCreateMedicalRecord}
                       isPast={isPast}
                       theme={theme}
                     />

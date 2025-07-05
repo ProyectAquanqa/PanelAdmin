@@ -138,14 +138,13 @@ const AppointmentFormFields = ({ control, errors, darkMode, isEditing, setValue 
           name="time_block"
           control={control}
           rules={{ required: 'El bloque horario es obligatorio' }}
-          render={({ field }) => (
+          render={({ field, fieldState: { error } }) => (
             <AvailabilityDisplay
               {...field}
               availabilityInfo={availabilityInfo}
-              isLoading={loadingTimeBlocks}
-              onSelectTimeBlock={(timeBlock) => setValue('time_block', timeBlock, { shouldValidate: true })}
-              error={errors.time_block}
-              theme={darkMode ? 'dark' : 'light'}
+              availableTimeBlocks={availableTimeBlocks}
+              loading={loadingTimeBlocks}
+              error={error}
             />
           )}
         />

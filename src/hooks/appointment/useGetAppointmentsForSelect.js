@@ -1,28 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { getAppointments } from '../../services/appointment/appointmentApiService';
 
-const STALE_TIME = 1000 * 60 * 5; // 5 minutes
-
-export const useGetAppointmentsForSelect = (params) => {
+/**
+ * Hook para obtener una lista simplificada de citas para usar en selectores.
+ * @param {object} params - Parámetros para filtrar las citas (ej. search, status).
+ */
+export const useGetAppointmentsForSelect = (params = {}) => {
   return useQuery({
     queryKey: ['appointmentsForSelect', params],
-    queryFn: () => getAppointments(params),
-    staleTime: STALE_TIME,
-    keepPreviousData: true,
+    queryFn: () => getAppointments({ ...params, page_size: 20 }), // Limitar a 20 resultados para selectores
+    staleTime: 5 * 60 * 1000, // 5 minutos
     select: (data) => {
-      if (!data?.results) {
-        return { ...data, results: [] };
-      }
-      
-      const formattedResults = data.results.map(appointment => ({
-        value: appointment.id,
-        label: `${appointment.patient.user.full_name} - ${appointment.specialty.name} - ${new Date(appointment.start_time).toLocaleString()}`
-      }));
-      
-      return {
-        ...data,
-        results: formattedResults
-      };
-    }
+      // Formatear los datos para que sean compatibles con el componente SelectField
+      return data?.results.map(appointment => ({
+        id: appointment.id,
+        name: `Cita #${appointment.id} - ${appointment.patient?.full_name || 'N/A'} - ${appointment.appointment_date}`
+      })) || [];
+    },
   });
 }; 

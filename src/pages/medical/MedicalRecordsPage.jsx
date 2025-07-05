@@ -10,14 +10,21 @@ import {
 } from '@heroicons/react/24/outline';
 import MedicalRecordsTable from '../../components/medical/MedicalRecordsTable';
 import MedicalRecordFormModal from '../../components/medical/MedicalRecordFormModal';
+import MedicalRecordDetailsModal from '../../components/medical/MedicalRecordDetailsModal';
 
 // Placeholder for the main page
 const MedicalRecordsPage = () => {
   const { theme } = useTheme();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
+  
+  // Estado para el modal de formulario (crear/editar)
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [selectedRecordForForm, setSelectedRecordForForm] = useState(null);
+
+  // Estado para el modal de detalles
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedRecordForDetails, setSelectedRecordForDetails] = useState(null);
 
   const { data, isLoading, isError, error } = useGetMedicalRecords({
     page,
@@ -27,19 +34,26 @@ const MedicalRecordsPage = () => {
   const records = data?.results || [];
   const totalRecords = data?.count || 0;
 
-  const handleOpenModal = (record = null) => {
-    setSelectedRecord(record);
-    setIsModalOpen(true);
+  // Handlers para el modal de formulario
+  const handleOpenFormModal = (record = null) => {
+    setSelectedRecordForForm(record);
+    setIsFormModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedRecord(null);
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setSelectedRecordForForm(null);
   };
 
-  const handleViewRecord = (record) => {
-    console.log('Viewing record:', record);
-    // TODO: Implement detail view
+  // Handlers para el modal de detalles
+  const handleOpenDetailsModal = (record) => {
+    setSelectedRecordForDetails(record);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedRecordForDetails(null);
   };
 
   const handleDeleteRecord = (record) => {
@@ -120,7 +134,7 @@ const MedicalRecordsPage = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => handleOpenModal()}
+              onClick={() => handleOpenFormModal()}
               className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
@@ -133,16 +147,25 @@ const MedicalRecordsPage = () => {
       <MedicalRecordsTable 
         records={records} 
         theme={theme}
-        onView={handleViewRecord}
-        onEdit={handleOpenModal}
+        onView={handleOpenDetailsModal}
+        onEdit={handleOpenFormModal}
         onDelete={handleDeleteRecord}
       />
 
+      {/* Modal para Crear/Editar */}
       <MedicalRecordFormModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={isFormModalOpen}
+        onClose={handleCloseFormModal}
         theme={theme}
-        record={selectedRecord}
+        record={selectedRecordForForm}
+      />
+
+      {/* Modal para ver Detalles */}
+      <MedicalRecordDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        record={selectedRecordForDetails}
+        theme={theme}
       />
     </div>
   );

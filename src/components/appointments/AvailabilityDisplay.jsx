@@ -3,7 +3,7 @@
 // Muestra cupos disponibles y ocupados de manera visual
 // ============================================================================
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { 
   CalendarDaysIcon, 
   ClockIcon, 
@@ -14,14 +14,14 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
-const AvailabilityDisplay = ({
+const AvailabilityDisplay = forwardRef(({
   availabilityInfo,
   availableTimeBlocks,
   loading,
   error,
-  onTimeBlockSelect,
-  selectedValue,
-}) => {
+  onChange,
+  value,
+}, ref) => {
   if (loading) {
     return (
       <div className="mt-4 flex items-center text-sm text-gray-500">
@@ -32,7 +32,8 @@ const AvailabilityDisplay = ({
   }
 
   if (error) {
-    return <p className="text-sm text-red-600 mt-2">Error al cargar la disponibilidad.</p>;
+    const errorMessage = typeof error === 'object' && error.message ? error.message : 'Error al cargar la disponibilidad.';
+    return <p className="text-sm text-red-600 mt-2">{errorMessage}</p>;
   }
 
   if (!availabilityInfo) {
@@ -42,7 +43,7 @@ const AvailabilityDisplay = ({
   const { day_name, available_blocks_count, total_blocks } = availabilityInfo;
 
   return (
-    <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+    <div ref={ref} className="mt-4 p-4 border rounded-lg bg-gray-50">
       <h4 className="font-semibold text-gray-800">
         Disponibilidad para {day_name}
       </h4>
@@ -56,9 +57,9 @@ const AvailabilityDisplay = ({
             <button
               key={block.id}
               type="button"
-              onClick={() => onTimeBlockSelect(block.id)}
+              onClick={() => onChange(block.id)}
               className={`p-2 border rounded-md text-center text-sm transition-colors ${
-                selectedValue === block.id
+                value === block.id
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white hover:bg-gray-100 text-gray-700'
               }`}
@@ -75,6 +76,8 @@ const AvailabilityDisplay = ({
       )}
     </div>
   );
-};
+});
+
+AvailabilityDisplay.displayName = 'AvailabilityDisplay';
 
 export default AvailabilityDisplay;
