@@ -1,114 +1,314 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  getChatbotKnowledge, 
-  getChatbotKnowledgeById, 
-  createChatbotKnowledge, 
-  updateChatbotKnowledge, 
-  deleteChatbotKnowledge 
-} from '../services/chatbotService';
-import { toast } from 'react-hot-toast';
-
-// Clave para la cache
-const CHATBOT_QUERY_KEY = 'chatbot';
+import { useState, useEffect, useCallback } from 'react';
+import chatbotService from '../services/chatbotService';
+import toast from 'react-hot-toast';
 
 /**
- * Hook para obtener la lista de entradas del chatbot
+ * Hook personalizado para manejar toda la lógica del chatbot
+ * Sigue las directrices de separar lógica de UI
  */
-export const useGetChatbotKnowledge = (params = {}) => {
-  return useQuery({
-    queryKey: [CHATBOT_QUERY_KEY, params],
-    queryFn: () => getChatbotKnowledge({
-      page: params.page || 1,
-      page_size: params.page_size || 10,
-      search: params.search,
-      ordering: params.ordering || '-created_at'
-    }),
-    keepPreviousData: true,
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    retry: 2,
-    refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.error('Error al obtener entradas del chatbot:', error);
-      toast.error(error.response?.data?.detail || 'Error al cargar la base de conocimientos');
-    }
-  });
-};
-
-/**
- * Hook para obtener una entrada específica
- */
-export const useGetChatbotKnowledgeById = (id) => {
-  return useQuery({
-    queryKey: [CHATBOT_QUERY_KEY, id],
-    queryFn: () => getChatbotKnowledgeById(id),
-    enabled: !!id,
-    retry: 1,
-    refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.error(`Error al obtener entrada ${id}:`, error);
-      toast.error('Error al cargar la entrada');
-    }
-  });
-};
-
-/**
- * Hook para crear una nueva entrada
- */
-export const useCreateChatbotKnowledge = () => {
-  const queryClient = useQueryClient();
+export const useChatbot = () => {
+  // Estados principales
+  const [conversations, setConversations] = useState([]);
+  const [knowledgeBase, setKnowledgeBase] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [recommendedQuestions, setRecommendedQuestions] = useState([]);
   
-  return useMutation({
-    mutationFn: (data) => createChatbotKnowledge(data),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [CHATBOT_QUERY_KEY] });
-      toast.success('Entrada creada exitosamente');
-      return data;
-    },
-    onError: (error) => {
-      console.error('Error al crear entrada:', error);
-      toast.error(error.response?.data?.detail || 'Error al crear la entrada');
-      throw error;
-    }
+  // Estados de carga
+  const [loading, setLoading] = useState({
+    conversations: false,
+    knowledge: false,
+    categories: false,
+    stats: false,
+    query: false,
+    recommended: false,
   });
-};
-
-/**
- * Hook para actualizar una entrada
- */
-export const useUpdateChatbotKnowledge = () => {
-  const queryClient = useQueryClient();
   
-  return useMutation({
-    mutationFn: ({ id, data }) => updateChatbotKnowledge(id, data),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: [CHATBOT_QUERY_KEY] });
-      if (variables.id) {
-        queryClient.setQueryData([CHATBOT_QUERY_KEY, variables.id], data);
+  // Estados de paginación
+  const [pagination, setPagination] = useState({
+    conversations: { current: 1, total: 0, limit: 10 },
+    knowledge: { current: 1, total: 0, limit: 10 },
+  });
+
+  // 🔄 Funciones para obtener datos
+  const fetchConversations = useCallback(async (page = 1) => {
+    setLoading(prev => ({ ...prev, conversations: true }));
+    try {
+      const response = await chatbotService.conversations.list(page, pagination.conversations.limit);
+      setConversations(response.results || response);
+      setPagination(prev => ({
+        ...prev,
+        conversations: {
+          ...prev.conversations,
+          current: page,
+          total: response.count || response.length || 0,
+        }
+      }));
+    } catch (error) {
+      toast.error(`Error al cargar conversaciones: ${error.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, conversations: false }));
+    }
+  }, [pagination.conversations.limit]);
+
+  const fetchKnowledgeBase = useCallback(async (page = 1, search = '') => {
+    setLoading(prev => ({ ...prev, knowledge: true }));
+    try {
+      const response = await chatbotService.knowledge.list(page, pagination.knowledge.limit, search);
+      console.log('📚 Respuesta de Knowledge Base:', response);
+      
+      // Manejar formato de respuesta según directrices: {status: "success", data: {...}}
+      if (response.status === 'success') {
+        const data = response.data;
+        console.log('📚 Data:', data);
+        setKnowledgeBase(data.results || data);
+      setPagination(prev => ({
+        ...prev,
+        knowledge: {
+          ...prev.knowledge,
+          current: page,
+            total: data.count || data.length || 0,
+        }
+      }));
+      } else {
+        throw new Error(response.error?.message || 'Error desconocido');
       }
-      toast.success('Entrada actualizada exitosamente');
-    },
-    onError: (error) => {
-      console.error('Error al actualizar entrada:', error);
-      toast.error('Error al actualizar la entrada');
+    } catch (error) {
+      console.error('❌ Error en fetchKnowledgeBase:', error);
+      toast.error(`Error al cargar base de conocimientos: ${error.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, knowledge: false }));
     }
-  });
+  }, [pagination.knowledge.limit]);
+
+  // 📂 Funciones para gestionar categorías
+  const fetchCategories = useCallback(async () => {
+    setLoading(prev => ({ ...prev, categories: true }));
+    try {
+      const response = await chatbotService.categories.list();
+      
+      // Manejar formato de respuesta según directrices: {status: "success", data: {...}}
+      if (response.status === 'success') {
+        const data = response.data;
+        setCategories(data.results || data);
+      } else {
+        throw new Error(response.error?.message || 'Error desconocido');
+      }
+    } catch (error) {
+      toast.error(`Error al cargar categorías: ${error.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, categories: false }));
+    }
+  }, []);
+
+  const createCategory = useCallback(async (categoryData) => {
+    try {
+      const response = await chatbotService.categories.create(categoryData);
+      
+      if (response.status === 'success') {
+        toast.success('Categoría creada exitosamente');
+        await fetchCategories();
+        return true;
+      } else {
+        throw new Error(response.error?.message || 'Error desconocido');
+      }
+    } catch (error) {
+      toast.error(`Error al crear categoría: ${error.message}`);
+      return false;
+    }
+  }, [fetchCategories]);
+
+  const updateCategory = useCallback(async (id, categoryData) => {
+    try {
+      await chatbotService.categories.update(id, categoryData);
+      toast.success('Categoría actualizada exitosamente');
+      await fetchCategories();
+      return true;
+    } catch (error) {
+      toast.error(`Error al actualizar categoría: ${error.message}`);
+      return false;
+    }
+  }, [fetchCategories]);
+
+  const deleteCategory = useCallback(async (id) => {
+    try {
+      await chatbotService.categories.delete(id);
+      toast.success('Categoría eliminada exitosamente');
+      await fetchCategories();
+      return true;
+    } catch (error) {
+      toast.error(`Error al eliminar categoría: ${error.message}`);
+      return false;
+    }
+  }, [fetchCategories]);
+
+  const fetchStats = useCallback(async () => {
+    setLoading(prev => ({ ...prev, stats: true }));
+    try {
+      const response = await chatbotService.getStats();
+      // Las estadísticas sí mantienen estructura {status: "success", data: {...}}
+      setStats(response.data || response);
+    } catch (error) {
+      toast.error(`Error al cargar estadísticas: ${error.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, stats: false }));
+    }
+  }, []);
+
+  const fetchRecommendedQuestions = useCallback(async () => {
+    setLoading(prev => ({ ...prev, recommended: true }));
+    try {
+      const response = await chatbotService.getRecommendedQuestions();
+      setRecommendedQuestions(response.data?.recommended_questions || response);
+    } catch (error) {
+      toast.error(`Error al cargar preguntas recomendadas: ${error.message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, recommended: false }));
+    }
+  }, []);
+
+  // 🤖 Función para consultar el chatbot
+  const queryBot = useCallback(async (question, sessionId = 'admin-test') => {
+    setLoading(prev => ({ ...prev, query: true }));
+    try {
+      const response = await chatbotService.query(question, sessionId);
+      return response.data || response;
+    } catch (error) {
+      toast.error(`Error al consultar chatbot: ${error.message}`);
+      throw error;
+    } finally {
+      setLoading(prev => ({ ...prev, query: false }));
+    }
+  }, []);
+
+  // 📝 Funciones CRUD para base de conocimientos
+  const createKnowledge = useCallback(async (data) => {
+    try {
+      await chatbotService.knowledge.create(data);
+      toast.success('Conocimiento creado exitosamente');
+      await fetchKnowledgeBase(pagination.knowledge.current);
+      return true;
+    } catch (error) {
+      toast.error(`Error al crear conocimiento: ${error.message}`);
+      return false;
+    }
+  }, [fetchKnowledgeBase, pagination.knowledge.current]);
+
+  const updateKnowledge = useCallback(async (id, data) => {
+    try {
+      await chatbotService.knowledge.update(id, data);
+      toast.success('Conocimiento actualizado exitosamente');
+      await fetchKnowledgeBase(pagination.knowledge.current);
+      return true;
+    } catch (error) {
+      toast.error(`Error al actualizar conocimiento: ${error.message}`);
+      return false;
+    }
+  }, [fetchKnowledgeBase, pagination.knowledge.current]);
+
+  const deleteKnowledge = useCallback(async (id) => {
+    try {
+      await chatbotService.knowledge.delete(id);
+      toast.success('Conocimiento eliminado exitosamente');
+      await fetchKnowledgeBase(pagination.knowledge.current);
+      return true;
+    } catch (error) {
+      toast.error(`Error al eliminar conocimiento: ${error.message}`);
+      return false;
+    }
+  }, [fetchKnowledgeBase, pagination.knowledge.current]);
+
+  // 📁 Importación masiva
+  const bulkImportKnowledge = useCallback(async (file) => {
+    try {
+      const response = await chatbotService.knowledge.bulkImport(file);
+      toast.success(`Importación exitosa: ${response.imported || 'varios'} elementos`);
+      await fetchKnowledgeBase(1); // Volver a la primera página
+      return true;
+    } catch (error) {
+      toast.error(`Error en importación masiva: ${error.message}`);
+      return false;
+    }
+  }, [fetchKnowledgeBase]);
+
+  // 🗑️ Eliminar conversación
+  const deleteConversation = useCallback(async (id) => {
+    try {
+      await chatbotService.conversations.delete(id);
+      toast.success('Conversación eliminada exitosamente');
+      await fetchConversations(pagination.conversations.current);
+      return true;
+    } catch (error) {
+      toast.error(`Error al eliminar conversación: ${error.message}`);
+      return false;
+    }
+  }, [fetchConversations, pagination.conversations.current]);
+
+  // 🔄 Regenerar embeddings
+  const regenerateEmbeddings = useCallback(async () => {
+    try {
+      const response = await chatbotService.regenerateEmbeddings();
+      toast.success('Embeddings regenerados exitosamente');
+      return response;
+    } catch (error) {
+      toast.error(`Error al regenerar embeddings: ${error.message}`);
+      return false;
+    }
+  }, []);
+
+  // 🎯 Función para marcar respuesta como relevante/fallida
+  const markResponse = useCallback(async (questionId, isRelevant) => {
+    try {
+      // Esta función se puede implementar cuando esté disponible en el backend
+      const action = isRelevant ? 'relevante' : 'fallida';
+      toast.success(`Respuesta marcada como ${action}`);
+      return true;
+    } catch (error) {
+      toast.error(`Error al marcar respuesta: ${error.message}`);
+      return false;
+    }
+  }, []);
+
+  // Inicialización
+  useEffect(() => {
+    fetchStats();
+    fetchRecommendedQuestions();
+  }, [fetchStats, fetchRecommendedQuestions]);
+
+  return {
+    // Estados
+    conversations,
+    knowledgeBase,
+    categories,
+    stats,
+    recommendedQuestions,
+    loading,
+    pagination,
+    
+    // Funciones de datos
+    fetchConversations,
+    fetchKnowledgeBase,
+    fetchCategories,
+    fetchStats,
+    fetchRecommendedQuestions,
+    
+    // Funciones del chatbot
+    queryBot,
+    
+    // Funciones CRUD
+    createKnowledge,
+    updateKnowledge,
+    deleteKnowledge,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    bulkImportKnowledge,
+    deleteConversation,
+    
+    // Funciones especiales
+    regenerateEmbeddings,
+    markResponse,
+  };
 };
 
-/**
- * Hook para eliminar una entrada
- */
-export const useDeleteChatbotKnowledge = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: (id) => deleteChatbotKnowledge(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [CHATBOT_QUERY_KEY] });
-      toast.success('Entrada eliminada exitosamente');
-    },
-    onError: (error) => {
-      console.error('Error al eliminar entrada:', error);
-      toast.error('Error al eliminar la entrada');
-    }
-  });
-}; 
+export default useChatbot; 

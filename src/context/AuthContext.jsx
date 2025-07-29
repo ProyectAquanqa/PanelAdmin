@@ -1,139 +1,159 @@
-import { createContext, useState, useContext, useEffect, useMemo } from 'react';
-import { jwtDecode } from 'jwt-decode';
-import * as authService from '../services/authService';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import authService from '../services/authService';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('authToken') || null);
+  const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const bootstrapAuth = async () => {
-      if (token) {
-        try {
-          // Verificar si el token ha expirado
-          const decoded = jwtDecode(token);
-          const currentTime = Date.now() / 1000;
-          
-          if (decoded.exp && decoded.exp < currentTime) {
-            // Token expirado
-            logout();
-            return;
-          }
-          
-          // Token válido, obtener perfil de usuario desde Django
-          try {
-            const profileData = await authService.getProfile();
-            setUser(profileData);
-            setIsAuthenticated(true);
-          } catch (profileError) {
-            // Si falla obtener el perfil, usar datos del token
-            setUser({ 
-              id: decoded.user_id,
-              email: decoded.email || decoded.sub, 
-              role: decoded.role || 'admin',
-              name: decoded.name || decoded.username || decoded.email,
-            });
-            setIsAuthenticated(true);
-          }
-        } catch (error) {
-          logout();
+    const initAuth = async () => {
+      try {
+        // Verificar si el usuario está autenticado
+        const isAuth = authService.isAuthenticated();
+        setIsAuthenticated(isAuth);
+        
+        if (isAuth) {
+          // Obtener datos del usuario desde localStorage primero
+          const userData = await authService.getCurrentUser(true);
+          setUser(userData);
         }
+      } catch (error) {
+        console.error('Error al inicializar autenticación:', error);
+        // Limpiar datos si hay error
+        await authService.logout();
+        setIsAuthenticated(false);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setIsLoading(false);
     };
+    
+    initAuth();
+  }, []);
 
-    bootstrapAuth();
-  }, [token]);
-
+  // 🔐 Función de login actualizada para AquanQ
   const login = async (credentials) => {
     try {
-      setIsLoading(true);
+      setLoading(true);
+      
+      // Validar campos
+      if (!credentials.username || !credentials.password) {
+        throw new Error('Usuario y contraseña son obligatorios');
+      }
+
+      // Intentar autenticación
       const response = await authService.login(credentials);
       
-      // Extraer los tokens de la respuesta de Django
-      const accessToken = response.token;
-      const refreshToken = response.refresh;
-      
-      if (!accessToken) {
-        throw new Error('No se pudo obtener el token de acceso de la respuesta');
+      // Obtener datos completos del usuario desde el perfil
+      let userData = response.user;
+      if (!userData) {
+        try {
+          userData = await authService.getCurrentUser(false); // Obtener del servidor
+        } catch (profileError) {
+          console.warn('No se pudieron obtener datos del perfil:', profileError);
+          // Usar datos básicos del usuario
+          userData = { username: credentials.username };
+        }
       }
       
-      // Extraer datos de usuario de la respuesta de Django
-      const userData = response.user;
-      
-      // Guardar tokens
-      localStorage.setItem('authToken', accessToken);
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
-      
-      setToken(accessToken);
+      // Actualizar estado
       setUser(userData);
       setIsAuthenticated(true);
       
+      toast.success('¡Inicio de sesión exitoso!');
       return response;
+      
     } catch (error) {
+      console.error('Error de login:', error);
+      toast.error(error.message || 'Error al iniciar sesión');
       throw error;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  // 🚪 Función de logout
   const logout = async () => {
     try {
-      // Intentar hacer logout en el servidor Django
+      setLoading(true);
       await authService.logout();
-    } catch (error) {
-      // Ignorar error de logout en servidor
-    } finally {
-      // Siempre limpiar estado local
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
-      setToken(null);
       setUser(null);
       setIsAuthenticated(false);
+      toast.success('Sesión cerrada correctamente');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      toast.error('Error al cerrar sesión');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const refreshAuthToken = async () => {
+  // 🔄 Verificar y refrescar token si es necesario
+  const refreshAuth = async () => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
+      if (!isAuthenticated) return false;
       
-      const response = await authService.refreshToken(refreshToken);
-      
-      // Obtener el nuevo token de acceso de la respuesta de Django
-      const newAccessToken = response.access;
-      
-      if (!newAccessToken) {
-        throw new Error('No se pudo obtener el nuevo token de acceso');
-      }
-      
-      localStorage.setItem('authToken', newAccessToken);
-      setToken(newAccessToken);
-      
+      await authService.refreshToken();
       return true;
     } catch (error) {
-      logout();
+      console.error('Error al refrescar token:', error);
+      await logout();
       return false;
     }
   };
 
-  const value = useMemo(() => ({
+  // 🔑 Obtener token actual
+  const getToken = () => {
+    return authService.getToken();
+  };
+
+  // 👤 Actualizar datos del usuario
+  const updateUser = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  // 🔄 Refrescar datos del usuario desde el servidor
+  const refreshUser = async () => {
+    try {
+      if (!isAuthenticated) return null;
+      
+      const userData = await authService.getCurrentUser(false); // Forzar obtención del servidor
+      if (userData) {
+        setUser(userData);
+        return userData;
+      }
+    } catch (error) {
+      console.error('Error al refrescar datos del usuario:', error);
+    }
+    return null;
+  };
+
+  const value = {
+    // Estados
     user,
-    token,
+    loading,
     isAuthenticated,
-    isLoading,
+    
+    // Funciones
     login,
     logout,
-    refreshAuthToken
-  }), [user, token, isAuthenticated, isLoading]);
+    refreshAuth,
+    updateUser,
+    refreshUser,
+    getToken,
+    
+    // Utilidades
+    validateEmail: authService.validateEmail,
+    validatePassword: authService.validatePassword,
+    
+    // API autenticada
+    authenticatedApiCall: authService.authenticatedApiCall,
+  };
 
   return (
     <AuthContext.Provider value={value}>
@@ -144,8 +164,8 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
 }; 

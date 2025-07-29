@@ -1,126 +1,188 @@
-import adminApiClient from '../api/adminApiClient';
-import { API_ROUTES } from '../config/api';
-
 /**
- * Obtiene la lista de entradas de la base de conocimientos del chatbot
- * @param {Object} params - Parámetros para filtrar la lista
- * @returns {Promise} Promise con la respuesta
+ * Servicio para comunicación con la API del Chatbot
+ * Basado en los endpoints de AquanQ/aquanq_noticias/api_urls.py
  */
-export const getChatbotKnowledge = async (params = {}) => {
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+// Configuración base para fetch
+const apiCall = async (url, options = {}) => {
+  const token = localStorage.getItem('access_token');
+  
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+      ...options.headers,
+    },
+    ...options,
+  };
+
   try {
-    console.log('🔍 Solicitando entradas del chatbot con parámetros:', params);
-    const response = await adminApiClient.get(API_ROUTES.CHATBOT.KNOWLEDGE_BASE, { params });
+    const response = await fetch(`${BASE_URL}${url}`, config);
     
-    // Asegurarse de que siempre devolvemos un formato consistente
-    const normalizedData = {
-      results: response.data?.results || response.data || [],
-      count: response.data?.count || (Array.isArray(response.data) ? response.data.length : 0),
-      next: response.data?.next || null,
-      previous: response.data?.previous || null
-    };
-    
-    // Asegurarse de que results siempre sea un array
-    if (!Array.isArray(normalizedData.results)) {
-      normalizedData.results = [];
+    if (!response.ok) {
+      let error;
+      try {
+        error = await response.json();
+      } catch (parseError) {
+        // Si no se puede parsear como JSON, crear un error básico
+        error = { message: `HTTP ${response.status}` };
+      }
+      throw new Error(error.detail || error.message || `HTTP ${response.status}`);
     }
     
-    console.log('✅ Datos del chatbot obtenidos:', normalizedData);
-    return normalizedData;
+    // Verificar si la respuesta tiene contenido antes de parsear JSON
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const text = await response.text();
+      return text ? JSON.parse(text) : {};
+    } else {
+      // Si no es JSON, devolver respuesta vacía exitosa
+      return { success: true };
+    }
   } catch (error) {
-    console.error('💥 Error al obtener entradas del chatbot:', error);
+    console.error('API Error:', error);
     throw error;
   }
 };
 
-/**
- * Obtiene una entrada específica de la base de conocimientos
- * @param {number} id - ID de la entrada
- * @returns {Promise} Promise con la respuesta
- */
-export const getChatbotKnowledgeById = async (id) => {
-  try {
-    console.log(`🔍 Solicitando entrada del chatbot con ID: ${id}`);
-    const response = await adminApiClient.get(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`);
-    return response.data;
-  } catch (error) {
-    console.error(`💥 Error al obtener entrada del chatbot con ID ${id}:`, error);
-    throw error;
-  }
+const chatbotService = {
+  // 🤖 Consultar el chatbot
+  query: async (question, sessionId = 'admin-panel') => {
+    return await apiCall('/chatbot/query/', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        question,
+        session_id: sessionId 
+      }),
+    });
+  },
+
+  // 📊 Obtener estadísticas del chatbot (usando el endpoint correcto)
+  getStats: async () => {
+    return await apiCall('/chatbot-knowledge/statistics/');
+  },
+
+  // 💬 Gestión de conversaciones
+  conversations: {
+    list: async (page = 1, limit = 10) => {
+      return await apiCall(`/chatbot-conversations/?page=${page}&limit=${limit}`);
+    },
+    
+    get: async (id) => {
+      return await apiCall(`/chatbot-conversations/${id}/`);
+    },
+    
+    delete: async (id) => {
+      return await apiCall(`/chatbot-conversations/${id}/`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // 🧠 Gestión de base de conocimientos
+  knowledge: {
+    list: async (page = 1, limit = 10, search = '') => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(search && { search }),
+      });
+      return await apiCall(`/chatbot-knowledge/?${params}`);
+    },
+    
+    get: async (id) => {
+      return await apiCall(`/chatbot-knowledge/${id}/`);
+    },
+    
+    create: async (data) => {
+      return await apiCall('/chatbot-knowledge/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    
+    update: async (id, data) => {
+      return await apiCall(`/chatbot-knowledge/${id}/`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+    
+    delete: async (id) => {
+      return await apiCall(`/chatbot-knowledge/${id}/`, {
+        method: 'DELETE',
+      });
+    },
+    
+    // Importar datos masivos
+    bulkImport: async (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const token = localStorage.getItem('access_token'); // Usar access_token
+      
+      const response = await fetch(`${BASE_URL}/chatbot-knowledge/bulk-import/`, {
+        method: 'POST',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        let error;
+        try {
+          error = await response.json();
+        } catch (parseError) {
+          error = { message: 'Error en importación masiva' };
+        }
+        throw new Error(error.detail || error.message || 'Error en importación masiva');
+      }
+      
+      return await response.json();
+    },
+  },
+
+  // 📂 Gestión de categorías
+  categories: {
+    list: async () => {
+      return await apiCall('/chatbot-categories/');
+    },
+    
+    create: async (data) => {
+      return await apiCall('/chatbot-categories/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    
+    update: async (id, data) => {
+      return await apiCall(`/chatbot-categories/${id}/`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+    
+    delete: async (id) => {
+      return await apiCall(`/chatbot-categories/${id}/`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // 📋 Preguntas recomendadas
+  getRecommendedQuestions: async () => {
+    return await apiCall('/chatbot/recommended-questions/');
+  },
+
+  // 🔄 Regenerar embeddings (endpoint personalizado si existe)
+  regenerateEmbeddings: async () => {
+    return await apiCall('/chatbot/regenerate-embeddings/', {
+      method: 'POST',
+    });
+  },
 };
 
-/**
- * Crea una nueva entrada en la base de conocimientos
- * @param {Object} data - Datos de la entrada
- * @returns {Promise} Promise con la respuesta
- */
-export const createChatbotKnowledge = async (data) => {
-  try {
-    console.log('📝 Creando entrada del chatbot:', data);
-    const response = await adminApiClient.post(API_ROUTES.CHATBOT.KNOWLEDGE_BASE, data);
-    return response.data;
-  } catch (error) {
-    console.error('💥 Error al crear entrada del chatbot:', error);
-    throw error;
-  }
-};
-
-/**
- * Actualiza una entrada existente
- * @param {number} id - ID de la entrada
- * @param {Object} data - Datos actualizados
- * @returns {Promise} Promise con la respuesta
- */
-export const updateChatbotKnowledge = async (id, data) => {
-  try {
-    console.log(`🔄 Actualizando entrada del chatbot ${id}:`, data);
-    const response = await adminApiClient.put(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`, data);
-    return response.data;
-  } catch (error) {
-    console.error(`💥 Error al actualizar entrada del chatbot ${id}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Elimina una entrada
- * @param {number} id - ID de la entrada
- * @returns {Promise} Promise con la respuesta
- */
-export const deleteChatbotKnowledge = async (id) => {
-  try {
-    console.log(`🗑️ Eliminando entrada del chatbot con ID: ${id}`);
-    const response = await adminApiClient.delete(`${API_ROUTES.CHATBOT.KNOWLEDGE_BASE}${id}/`);
-    return response.data;
-  } catch (error) {
-    console.error(`💥 Error al eliminar entrada del chatbot ${id}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Obtiene las conversaciones del chatbot
- * @param {Object} params - Parámetros de filtrado
- * @returns {Promise} Promise con la respuesta
- */
-export const getConversations = async (params = {}) => {
-  try {
-    const response = await adminApiClient.get(API_ROUTES.CHATBOT.CONVERSATIONS.BASE, { params });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Obtiene una conversación por su ID
- * @param {number} id - ID de la conversación
- * @returns {Promise} Promise con la respuesta
- */
-export const getConversationById = async (id) => {
-  try {
-    const response = await adminApiClient.get(API_ROUTES.CHATBOT.CONVERSATIONS.BY_ID(id));
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-}; 
+export default chatbotService; 
