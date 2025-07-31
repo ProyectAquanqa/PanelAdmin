@@ -1,226 +1,277 @@
-import React, { useEffect, useState } from 'react';
-import { useChatbot } from '../../hooks/useChatbot';
-
 /**
  * Página de gestión de conversaciones del chatbot
- * Implementa el submódulo 1: "Vista General de Conversaciones"
+ * Refactorizada siguiendo el patrón modular de Categories y KnowledgeBase
+ */
+
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useChatbot } from '../../hooks/useChatbot';
+import { useDataView } from '../../hooks/useDataView';
+import toast from 'react-hot-toast';
+
+// Componentes modulares
+import {
+  ConversationFilters,
+  ConversationTable,
+  ConversationModal,
+  LoadingStates
+} from '../../components/Chatbot/Conversations';
+
+/**
+ * Página principal de conversaciones
  */
 const Conversations = () => {
   const {
     conversations,
     loading,
-    pagination,
     fetchConversations,
     deleteConversation
   } = useChatbot();
 
-  const [filters, setFilters] = useState({
-    user: '',
-    date: '',
-    status: 'all'
-  });
+  // Estados del modal y filtros
+  const [showModal, setShowModal] = useState(false);
+  const [viewingConversation, setViewingConversation] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedDateRange, setSelectedDateRange] = useState('');
+  const [selectedMatchType, setSelectedMatchType] = useState('');
+  const [expandedRows, setExpandedRows] = useState(new Set());
 
+  // Cargar conversaciones al montar
   useEffect(() => {
-    fetchConversations(1);
+    fetchConversations();
   }, [fetchConversations]);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta conversación?')) {
+  // Usar solo datos reales del backend
+  const displayConversations = conversations || [];
+
+  // Filtrado y ordenamiento de conversaciones
+  const processedConversations = useMemo(() => {
+    let filtered = [...(displayConversations || [])];
+
+    // Filtrar por búsqueda
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(conversation => 
+        (conversation.question_text && conversation.question_text.toLowerCase().includes(searchLower)) ||
+        (conversation.answer_text && conversation.answer_text.toLowerCase().includes(searchLower)) ||
+        (conversation.user?.username && conversation.user.username.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Filtrar por usuario
+    if (selectedUser.trim()) {
+      const userLower = selectedUser.toLowerCase();
+      filtered = filtered.filter(conversation => 
+        conversation.user?.username && conversation.user.username.toLowerCase().includes(userLower)
+      );
+    }
+
+    // Filtrar por estado
+    if (selectedStatus === 'exitosa') {
+      filtered = filtered.filter(conversation => 
+        conversation.answer_text && conversation.answer_text.trim()
+      );
+    } else if (selectedStatus === 'fallida') {
+      filtered = filtered.filter(conversation => 
+        !conversation.answer_text || !conversation.answer_text.trim()
+      );
+    }
+
+    // Filtrar por rango de fecha
+    if (selectedDateRange) {
+      const now = new Date();
+      let startDate;
+      
+      switch (selectedDateRange) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'yesterday':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          filtered = filtered.filter(conversation => {
+            const conversationDate = new Date(conversation.created_at);
+            return conversationDate >= startDate && conversationDate < endDate;
+          });
+          break;
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          startDate = null;
+      }
+      
+      if (startDate && selectedDateRange !== 'yesterday') {
+        filtered = filtered.filter(conversation => 
+          new Date(conversation.created_at) >= startDate
+        );
+      }
+    }
+
+    // Filtrar por tipo de coincidencia
+    if (selectedMatchType === 'with_knowledge') {
+      filtered = filtered.filter(conversation => 
+        conversation.matched_knowledge && conversation.matched_knowledge !== null
+      );
+    } else if (selectedMatchType === 'no_knowledge') {
+      filtered = filtered.filter(conversation => 
+        !conversation.matched_knowledge || conversation.matched_knowledge === null
+      );
+    }
+
+    // Ordenar por más recientes primero (por defecto)
+    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    return filtered;
+  }, [displayConversations, searchTerm, selectedUser, selectedStatus, selectedDateRange, selectedMatchType]);
+
+  // Hook personalizado para manejo de vista de datos
+  const {
+    paginatedData: paginatedConversations,
+    sortField,
+    sortDirection,
+    pagination,
+    pageNumbers,
+    displayRange,
+    navigation,
+    handleSort,
+    handlePageChange
+  } = useDataView(processedConversations, {
+    initialSortField: 'created_at',
+    initialSortDirection: 'desc',
+    itemsPerPage: 10
+  });
+
+  // Handlers de acciones
+  const handleView = useCallback((conversation) => {
+    setViewingConversation(conversation);
+    setShowModal(true);
+  }, []);
+
+  const handleDelete = useCallback(async (id) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer.')) {
       await deleteConversation(id);
     }
-  };
+  }, [deleteConversation]);
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  // Eliminar handleRefresh - la tabla debería ser dinámica
+
+  // Handler de exportar
+  const handleExport = useCallback(() => {
+    try {
+      const dataToExport = processedConversations.map(conversation => ({
+        id: conversation.id,
+        usuario: conversation.user?.username || 'Usuario Anónimo',
+        pregunta: conversation.question_text || '',
+        respuesta: conversation.answer_text || '',
+        conocimiento_id: conversation.matched_knowledge || '',
+        fecha_creacion: conversation.created_at || ''
+      }));
+
+      const csvContent = [
+        ['ID', 'Usuario', 'Pregunta', 'Respuesta', 'ID Conocimiento', 'Fecha Creación'],
+        ...dataToExport.map(item => [
+          item.id,
+          `"${item.usuario}"`,
+          `"${item.pregunta}"`,
+          `"${item.respuesta}"`,
+          item.conocimiento_id,
+          item.fecha_creacion
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `conversaciones_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`${dataToExport.length} conversaciones exportadas exitosamente`);
+    } catch (error) {
+      toast.error('Error al exportar conversaciones');
+      console.error('Export error:', error);
+    }
+  }, [processedConversations]);
+
+  const handleCloseModal = useCallback(() => {
+    setShowModal(false);
+    setViewingConversation(null);
+  }, []);
+
+  const handleToggleExpansion = useCallback((conversationId) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(conversationId)) {
+        newSet.delete(conversationId);
+      } else {
+        newSet.add(conversationId);
+      }
+      return newSet;
     });
-  };
+  }, []);
+
+  // Debug removido para código limpio en producción
+
+  // Estados de carga
+  if (loading.conversations && !displayConversations?.length) {
+    return <LoadingStates.ConversationsLoading />;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          💬 Conversaciones del Chatbot
-        </h1>
-        <p className="text-gray-600">
-          Gestiona y revisa todas las conversaciones entre usuarios y el chatbot
-        </p>
-      </div>
+    <div className="bg-gray-50">
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Filtros con todas las funciones */}
+          <ConversationFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedUser={selectedUser}
+            onUserChange={setSelectedUser}
+            selectedStatus={selectedStatus}
+            onStatusChange={setSelectedStatus}
+            selectedDateRange={selectedDateRange}
+            onDateRangeChange={setSelectedDateRange}
+            selectedMatchType={selectedMatchType}
+            onMatchTypeChange={setSelectedMatchType}
+            totalItems={processedConversations.length}
+            onExport={handleExport}
+          />
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">🔍 Filtros</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Usuario
-            </label>
-            <input
-              type="text"
-              value={filters.user}
-              onChange={(e) => setFilters({ ...filters, user: e.target.value })}
-              placeholder="Buscar por usuario..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D728F] focus:border-transparent"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fecha
-            </label>
-            <input
-              type="date"
-              value={filters.date}
-              onChange={(e) => setFilters({ ...filters, date: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D728F] focus:border-transparent"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado
-            </label>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D728F] focus:border-transparent"
-            >
-              <option value="all">Todas</option>
-              <option value="active">Activas</option>
-              <option value="resolved">Resueltas</option>
-            </select>
-          </div>
+          {/* Conversations Table */}
+          <ConversationTable
+            data={paginatedConversations}
+            loading={loading.conversations}
+            totalItems={processedConversations.length}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            pagination={pagination}
+            pageNumbers={pageNumbers}
+            displayRange={displayRange}
+            navigation={navigation}
+            onSort={handleSort}
+            onPageChange={handlePageChange}
+            onView={handleView}
+            onDelete={handleDelete}
+          />
         </div>
       </div>
 
-      {/* Conversations List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Historial de Conversaciones ({pagination.conversations.total || 0})
-          </h2>
-        </div>
-
-        {loading.conversations ? (
-          <div className="p-6">
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="animate-pulse">
-                  <div className="flex space-x-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : conversations.length > 0 ? (
-          <div className="divide-y divide-gray-200">
-            {conversations.map((conversation) => (
-              <div key={conversation.id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-8 h-8 bg-[#2D728F] rounded-full flex items-center justify-center text-white text-sm font-medium">
-                        {conversation.user?.username?.charAt(0).toUpperCase() || 'A'}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {conversation.user?.username || 'Usuario Anónimo'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(conversation.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="bg-blue-50 rounded-lg p-3">
-                        <p className="text-sm font-medium text-blue-900 mb-1">Pregunta:</p>
-                        <p className="text-sm text-blue-800">{conversation.question_text}</p>
-                      </div>
-                      
-                      <div className="bg-green-50 rounded-lg p-3">
-                        <p className="text-sm font-medium text-green-900 mb-1">Respuesta:</p>
-                        <p className="text-sm text-green-800">{conversation.answer_text}</p>
-                      </div>
-                      
-                      {conversation.matched_knowledge && (
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
-                          <span>🎯 Coincidencia encontrada</span>
-                          <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                            ID: {conversation.matched_knowledge}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="ml-4 flex flex-col space-y-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Completada
-                    </span>
-                    
-                    <button
-                      onClick={() => handleDelete(conversation.id)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-12 text-center">
-            <div className="text-6xl mb-4">💬</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No hay conversaciones
-            </h3>
-            <p className="text-gray-500">
-              Las conversaciones del chatbot aparecerán aquí cuando los usuarios interactúen con el bot.
-            </p>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {pagination.conversations.total > pagination.conversations.limit && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-700">
-                Mostrando {Math.min(pagination.conversations.limit, pagination.conversations.total)} de {pagination.conversations.total} conversaciones
-              </p>
-              
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => fetchConversations(pagination.conversations.current - 1)}
-                  disabled={pagination.conversations.current <= 1}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                >
-                  Anterior
-                </button>
-                <button
-                  onClick={() => fetchConversations(pagination.conversations.current + 1)}
-                  disabled={pagination.conversations.current * pagination.conversations.limit >= pagination.conversations.total}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Modal de Ver Detalles */}
+      <ConversationModal
+        show={showModal}
+        onClose={handleCloseModal}
+        conversation={viewingConversation}
+        loading={loading.conversations}
+      />
     </div>
   );
 };

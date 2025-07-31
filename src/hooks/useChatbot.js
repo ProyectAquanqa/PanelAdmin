@@ -55,12 +55,10 @@ export const useChatbot = () => {
     setLoading(prev => ({ ...prev, knowledge: true }));
     try {
       const response = await chatbotService.knowledge.list(page, pagination.knowledge.limit, search);
-      console.log('📚 Respuesta de Knowledge Base:', response);
       
       // Manejar formato de respuesta según directrices: {status: "success", data: {...}}
       if (response.status === 'success') {
         const data = response.data;
-        console.log('📚 Data:', data);
         setKnowledgeBase(data.results || data);
       setPagination(prev => ({
         ...prev,
@@ -184,24 +182,81 @@ export const useChatbot = () => {
   // 📝 Funciones CRUD para base de conocimientos
   const createKnowledge = useCallback(async (data) => {
     try {
-      await chatbotService.knowledge.create(data);
+      const response = await chatbotService.knowledge.create(data);
       toast.success('Conocimiento creado exitosamente');
-      await fetchKnowledgeBase(pagination.knowledge.current);
+      
+      // Optimización UX: Agregar elemento localmente sin recargar toda la lista
+      if (response.status === 'success' && response.data) {
+        setKnowledgeBase(prev => [response.data, ...prev]);
+        setPagination(prev => ({
+          ...prev,
+          knowledge: {
+            ...prev.knowledge,
+            total: prev.knowledge.total + 1
+          }
+        }));
+      } else {
+        // Fallback: recargar si no tenemos los datos
+        await fetchKnowledgeBase(pagination.knowledge.current);
+      }
+      
       return true;
     } catch (error) {
-      toast.error(`Error al crear conocimiento: ${error.message}`);
+      console.error('❌ Error al crear conocimiento:', error);
+      
+      // Manejo específico de errores comunes
+      let errorMessage = 'Error al crear conocimiento';
+      
+      if (error.message.includes('HTTP 400') || error.message.includes('duplicate') || error.message.includes('already exists')) {
+        errorMessage = 'Esta pregunta ya existe en la base de conocimientos';
+      } else if (error.message.includes('HTTP 500')) {
+        errorMessage = 'Error del servidor. La pregunta podría ya existir o hay un problema técnico';
+      } else if (error.message.includes('HTTP 413')) {
+        errorMessage = 'El contenido es demasiado largo';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Error de conexión. Revisa tu internet';
+      }
+      
+      toast.error(errorMessage);
       return false;
     }
   }, [fetchKnowledgeBase, pagination.knowledge.current]);
 
   const updateKnowledge = useCallback(async (id, data) => {
     try {
-      await chatbotService.knowledge.update(id, data);
+      const response = await chatbotService.knowledge.update(id, data);
       toast.success('Conocimiento actualizado exitosamente');
-      await fetchKnowledgeBase(pagination.knowledge.current);
+      
+      // Optimización UX: Actualizar elemento localmente sin recargar toda la lista
+      if (response.status === 'success' && response.data) {
+        setKnowledgeBase(prev => 
+          prev.map(item => item.id === id ? response.data : item)
+        );
+      } else {
+        // Fallback: recargar si no tenemos los datos
+        await fetchKnowledgeBase(pagination.knowledge.current);
+      }
+      
       return true;
     } catch (error) {
-      toast.error(`Error al actualizar conocimiento: ${error.message}`);
+      console.error('❌ Error al actualizar conocimiento:', error);
+      
+      // Manejo específico de errores comunes
+      let errorMessage = 'Error al actualizar conocimiento';
+      
+      if (error.message.includes('HTTP 400') || error.message.includes('duplicate') || error.message.includes('already exists')) {
+        errorMessage = 'Esta pregunta ya existe en la base de conocimientos';
+      } else if (error.message.includes('HTTP 404')) {
+        errorMessage = 'El conocimiento no existe o fue eliminado';
+      } else if (error.message.includes('HTTP 500')) {
+        errorMessage = 'Error del servidor. Revisa los datos o intenta más tarde';
+      } else if (error.message.includes('HTTP 413')) {
+        errorMessage = 'El contenido es demasiado largo';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Error de conexión. Revisa tu internet';
+      }
+      
+      toast.error(errorMessage);
       return false;
     }
   }, [fetchKnowledgeBase, pagination.knowledge.current]);
@@ -210,13 +265,23 @@ export const useChatbot = () => {
     try {
       await chatbotService.knowledge.delete(id);
       toast.success('Conocimiento eliminado exitosamente');
-      await fetchKnowledgeBase(pagination.knowledge.current);
+      
+      // Optimización UX: Eliminar elemento localmente sin recargar toda la lista
+      setKnowledgeBase(prev => prev.filter(item => item.id !== id));
+      setPagination(prev => ({
+        ...prev,
+        knowledge: {
+          ...prev.knowledge,
+          total: Math.max(0, prev.knowledge.total - 1)
+        }
+      }));
+      
       return true;
     } catch (error) {
       toast.error(`Error al eliminar conocimiento: ${error.message}`);
       return false;
     }
-  }, [fetchKnowledgeBase, pagination.knowledge.current]);
+  }, []);
 
   // 📁 Importación masiva
   const bulkImportKnowledge = useCallback(async (file) => {
@@ -249,12 +314,16 @@ export const useChatbot = () => {
     try {
       const response = await chatbotService.regenerateEmbeddings();
       toast.success('Embeddings regenerados exitosamente');
+      
+      // Refrescar la lista de conocimientos para mostrar los embeddings actualizados
+      await fetchKnowledgeBase(pagination.knowledge.current);
+      
       return response;
     } catch (error) {
       toast.error(`Error al regenerar embeddings: ${error.message}`);
       return false;
     }
-  }, []);
+  }, [fetchKnowledgeBase, pagination.knowledge.current]);
 
   // 🎯 Función para marcar respuesta como relevante/fallida
   const markResponse = useCallback(async (questionId, isRelevant) => {

@@ -1,18 +1,19 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+/**
+ * Componente Sidebar refactorizado
+ * Usa hooks especializados y configuración externa
+ */
+
+import React, { useMemo, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useLocation } from "react-router-dom";
 import SimpleBar from 'simplebar-react';
 import 'simplebar-react/dist/simplebar.min.css';
-import { 
-  HomeIcon,
-  CalendarIcon,
-  ChatBubbleLeftRightIcon,
-  UserGroupIcon,
-  BellIcon,
-  Cog6ToothIcon,
-  DocumentTextIcon,
-  ShieldCheckIcon
-} from "@heroicons/react/24/outline";
+
+// Importar hooks especializados
+import { useSidebar } from '../../hooks/useSidebar';
+import { useSidebarMenu } from '../../hooks/useSidebarMenu';
+
+// Importar configuración de menús
+import { menuCategories } from '../../config/menuConfig';
 
 // Importar componentes modulares
 import { 
@@ -22,234 +23,41 @@ import {
 } from "./components";
 
 /**
- * Componente principal de la barra lateral.
- * Maneja el estado de colapso/expansión y la navegación.
+ * Componente principal de la barra lateral refactorizado
  */
 const Sidebar = () => {
-  // Estado para controlar si el sidebar está colapsado
-  const [isCollapsed, setIsCollapsed] = useState(true);
-  // Estado para controlar si el sidebar está en hover (solo para el contenido, no el header)
-  const [isHovered, setIsHovered] = useState(false);
-  // Estado para rastrear el último módulo en el que se hizo clic
-  const [lastClickedMenu, setLastClickedMenu] = useState(null);
-  // Estado para rastrear el último submenú donde se seleccionó un ítem
-  const [lastSelectedSubmenu, setLastSelectedSubmenu] = useState(null);
-  const location = useLocation();
   const sidebarRef = useRef(null);
-  const contentRef = useRef(null); // Referencia al componente SimpleBar
+  const contentRef = useRef(null);
 
-  // Efecto para manejar eventos de mouse - ahora solo para el contenido y footer, no para el header
+  // Usar hooks especializados para manejar estado del sidebar
+  const {
+    isCollapsed,
+    isHovered,
+    shouldExpand,
+    toggleSidebar,
+    setupHoverEvents
+  } = useSidebar({ defaultCollapsed: true });
+
+  // Configurar eventos de hover para el contenido del sidebar (no para el header)
   useEffect(() => {
-    const handleMouseEnter = () => setIsHovered(true);
-    const handleMouseLeave = () => setIsHovered(false);
-    
-    const contentEl = contentRef.current?.getScrollElement();
-    
-    if (contentEl) {
-      contentEl.addEventListener('mouseenter', handleMouseEnter);
-      contentEl.addEventListener('mouseleave', handleMouseLeave);
-    }
+    const cleanup = setupHoverEvents(contentRef);
+    return cleanup;
+  }, [setupHoverEvents]);
 
-    return () => {
-      if (contentEl) {
-        contentEl.removeEventListener('mouseenter', handleMouseEnter);
-        contentEl.removeEventListener('mouseleave', handleMouseLeave);
-      }
-    };
-  }, []);
+  const {
+    expandedMenus,
+    lastClickedMenu,
+    checkIsActive: isActive,
+    toggleSubmenu,
+    handleSubmenuItemSelect
+  } = useSidebarMenu();
 
-  // Efecto para detectar cambios en la ruta y actualizar el último submenú seleccionado
-  useEffect(() => {
-    // Encontrar qué submenú contiene la ruta actual
-    const findSubmenuForPath = (path) => {
-      // Revisar todos los menús con submenús
-      const checkItems = (items, category) => {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if (item.submenu) {
-            // Verificar si algún submódulo coincide con la ruta actual
-            const submenuIndex = item.submenu.findIndex(
-              subItem => path === subItem.path || path.startsWith(`${subItem.path}/`)
-            );
-            if (submenuIndex !== -1) {
-              return `${category}_${i}`;
-            }
-          }
-        }
-        return null;
-      };
-      
-      // Revisar en cada categoría de menú
-      let submenuId = checkItems(menuItems, 'main');
-      if (!submenuId) submenuId = checkItems(eventosItems, 'eventos');
-      if (!submenuId) submenuId = checkItems(chatbotItems, 'chatbot');
-      if (!submenuId) submenuId = checkItems(userNotificationItems, 'users');
-      if (!submenuId) submenuId = checkItems(settingsItems, 'settings');
-      
-      return submenuId;
-    };
-    
-    const currentSubmenu = findSubmenuForPath(location.pathname);
-    if (currentSubmenu) {
-      setLastSelectedSubmenu(currentSubmenu);
-      
-      // Asegurar que el submenú que contiene la ruta actual esté abierto
-      setExpandedMenus(prevState => ({
-        ...prevState,
-        [currentSubmenu]: true
-      }));
-    }
-  }, [location.pathname]);
-
-  // Cuando el sidebar cambia de estado, no cerramos los submenús abiertos
-  // para mantener la consistencia al volver a expandir
-
-  // Calcular si el sidebar debe mostrarse expandido (por el estado de isCollapsed o por hover en el contenido/footer)
-  const shouldExpand = !isCollapsed || isHovered;
-
-  // Memoizar el toggle del sidebar para evitar recreaciones innecesarias
-  const toggleSidebar = useCallback(() => {
-    setIsCollapsed(prevState => !prevState);
-  }, []);
-
-  // Definición de los elementos del menú basados en la estructura de AquanQ
-  const menuItems = useMemo(() => [
-    {
-      title: 'Dashboard',
-      icon: <HomeIcon className="w-5 h-5" />,
-      path: '/',
-    },
-  ], []);
-
-  // Menú de Eventos
-  const eventosItems = useMemo(() => [
-    {
-      title: 'Eventos',
-      icon: <CalendarIcon className="w-5 h-5" />,
-      path: '/eventos',
-      submenu: [
-        { title: 'Gestión de Eventos', path: '/eventos/gestion' },
-        { title: 'Categorías', path: '/eventos/categorias' },
-        { title: 'Valores', path: '/eventos/valores' },
-      ],
-    },
-  ], []);
-
-  // Menú de Chatbot
-  const chatbotItems = useMemo(() => [
-    {
-      title: 'Chatbot',
-      icon: <ChatBubbleLeftRightIcon className="w-5 h-5" />,
-      path: '/chatbot',
-      submenu: [
-        { title: 'Base de Conocimiento', path: '/chatbot/knowledge' },
-        { title: 'Categorías', path: '/chatbot/categorias' },
-        { title: 'Historial de Conversaciones', path: '/chatbot/historial' },
-      ],
-    },
-  ], []);
-
-  // Menú de Usuarios y Notificaciones
-  const userNotificationItems = useMemo(() => [
-    {
-      title: 'Usuarios',
-      icon: <UserGroupIcon className="w-5 h-5" />,
-      path: '/usuarios',
-      submenu: [
-        { title: 'Gestión de Usuarios', path: '/usuarios/gestion' },
-        { title: 'Perfiles', path: '/usuarios/perfiles' },
-      ],
-    },
-    {
-      title: 'Notificaciones',
-      icon: <BellIcon className="w-5 h-5" />,
-      path: '/notificaciones',
-      submenu: [
-        { title: 'Historial de Notificaciones', path: '/notificaciones/historial' },
-        { title: 'Dispositivos Registrados', path: '/notificaciones/dispositivos' },
-      ],
-    },
-    {
-      title: 'Documentación',
-      icon: <DocumentTextIcon className="w-5 h-5" />,
-      path: '/documentacion',
-    },
-  ], []);
-
-  // Sección de configuración
-  const settingsItems = useMemo(() => [
-    {
-      title: 'Configuración',
-      icon: <Cog6ToothIcon className="w-5 h-5" />,
-      path: '/configuracion',
-      submenu: [
-        { title: 'General', path: '/configuracion/general' },
-        { title: 'API', path: '/configuracion/api' },
-      ],
-    },
-    {
-      title: 'Permisos',
-      icon: <ShieldCheckIcon className="w-5 h-5" />,
-      path: '/permisos',
-    },
-  ], []);
-
-  // Estados para los submenús expandidos
-  const [expandedMenus, setExpandedMenus] = useState({});
-
-  // Verificar si una ruta está activa - memoizada para evitar recálculos
-  const isActive = useCallback((path) => {
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  }, [location.pathname]);
-
-  // Verificar si un menú tiene algún submódulo activo
-  const hasActiveSubmenu = useCallback((item) => {
-    if (!item?.submenu) return false;
-    return item.submenu.some(subItem => isActive(subItem.path));
-  }, [isActive]);
-
-  // Optimizar la función toggleSubmenu con useCallback - modificada para mantener submenús activos abiertos
-  const toggleSubmenu = useCallback((index, item) => {
-    setLastClickedMenu(index); // Guardar el último módulo en el que se hizo clic
-    
-    setExpandedMenus(prevState => {
-      const isCurrentlyExpanded = prevState[index];
-      const newState = { ...prevState };
-      
-      // Si vamos a cerrar el actual, solo actualizamos ese
-      if (isCurrentlyExpanded) {
-        newState[index] = false;
-        return newState;
-      }
-      
-      // Si vamos a abrir uno nuevo, mantenemos abierto solo el que tiene el ítem actualmente seleccionado
-      Object.keys(prevState).forEach(key => {
-        // Si el menú actual no es el último donde se seleccionó un ítem, lo cerramos
-        if (key !== index && key !== lastSelectedSubmenu) {
-          newState[key] = false;
-        }
-      });
-      
-      // Activar el actual
-      newState[index] = true;
-      return newState;
-    });
-  }, [lastSelectedSubmenu]);
-
-  // Función para manejar la selección de un ítem de submenú
-  const handleSubmenuItemSelect = useCallback((submenuId) => {
-    // Actualizar el último submenú seleccionado
-    setLastSelectedSubmenu(submenuId);
-    
-    // Cerrar todos los demás submenús excepto el actual
-    setExpandedMenus(prevState => {
-      const newState = {};
-      Object.keys(prevState).forEach(key => {
-        newState[key] = key === submenuId;
-      });
-      return newState;
-    });
-  }, []);
+  // Obtener configuración de menús desde menuCategories
+  const menuItems = menuCategories.find(cat => cat.id === 'main')?.items || [];
+  const eventosItems = menuCategories.find(cat => cat.id === 'eventos')?.items || [];
+  const chatbotItems = menuCategories.find(cat => cat.id === 'chatbot')?.items || [];
+  const userNotificationItems = menuCategories.find(cat => cat.id === 'users')?.items || [];
+  const settingsItems = menuCategories.find(cat => cat.id === 'settings')?.items || [];
 
   // Función auxiliar para obtener el objeto de menú por su ID
   const getItemByMenuId = useCallback((menuId) => {
@@ -278,12 +86,11 @@ const Sidebar = () => {
     collapsed: { width: '5rem' }
   };
 
-  // Configuración de la transición para hacerla más suave - solo horizontal
+  // Configuración de la transición para hacerla más suave y fluida
   const transitionConfig = {
-    duration: 0.25,  // Más suave (duración más larga)
-    ease: [0.25, 0.1, 0.25, 1.0],
-    stiffness: 200,  // Menos rigidez para más suavidad
-    damping: 20      // Menos amortiguación para movimiento más suave
+    duration: 0.3,   // Duración más larga para suavidad
+    ease: [0.25, 0.46, 0.45, 0.94], // Easing más suave y natural
+    type: "tween"    // Usar tween para transiciones más fluidas
   };
 
   // Memoizar los componentes SidebarMenu para evitar rerenderizados innecesarios

@@ -60,7 +60,10 @@ KnowledgeList.propTypes = {
       keywords: PropTypes.string,
       is_active: PropTypes.bool,
       view_count: PropTypes.number,
-      question_embedding: PropTypes.string,
+      question_embedding: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.arrayOf(PropTypes.number)
+      ]),
       created_at: PropTypes.string,
       updated_at: PropTypes.string,
       category: PropTypes.shape({

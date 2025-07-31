@@ -5,7 +5,7 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 /**
  * Componente de formulario de inicio de sesión
  */
-const LoginForm = ({ onSubmit, isLoading, accentColor, inputStyle }) => {
+const LoginForm = ({ onSubmit, isLoading = false, accentColor = '#2D728F', inputStyle = 'default' }) => {
   // Estado para los campos del formulario
   const [formData, setFormData] = useState({
     username: '',
@@ -194,10 +194,6 @@ LoginForm.propTypes = {
   inputStyle: PropTypes.oneOf(['default', 'subtle'])
 };
 
-LoginForm.defaultProps = {
-  isLoading: false,
-  accentColor: '#2D728F',
-  inputStyle: 'default'
-};
+// Removed defaultProps - using default parameters instead
 
 export default LoginForm; 

@@ -21,7 +21,7 @@ const AdminLayout = () => {
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div 
-            className="absolute inset-0 bg-neutral-900/50 backdrop-blur-sm" 
+            className="absolute inset-0 bg-neutral-900/40 backdrop-blur-[1px]" 
             onClick={toggleMobileSidebar}
           ></div>
           <div className="absolute left-0 top-0 h-full z-10">

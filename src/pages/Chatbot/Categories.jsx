@@ -1,42 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
-import { useChatbot } from '../../hooks/useChatbot';
-
 /**
- * Modal reutilizable para formularios
+ * Página de gestión de categorías del chatbot
+ * Siguiendo el diseño minimalista y profesional de Knowledge Base
  */
-const Modal = ({ show, onClose, title, children }) => {
-  if (!show) return null;
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-md w-full">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="p-6">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-};
 
-Modal.propTypes = {
-  show: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
-  children: PropTypes.node.isRequired,
-};
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useChatbot } from '../../hooks/useChatbot';
+import { useDataView } from '../../hooks/useDataView';
+import toast from 'react-hot-toast';
+
+// Componentes modulares
+import CategoryModal from '../../components/Chatbot/Categories/CategoryModal';
+import CategoryActions from '../../components/Chatbot/Categories/CategoryActions';
+import CategoryTableView from '../../components/Chatbot/Categories/CategoryTableView';
+import LoadingStates from '../../components/Chatbot/Categories/LoadingStates';
 
 /**
- * Página dedicada para gestionar categorías del chatbot
+ * Página principal de categorías
  */
 const Categories = () => {
   const {
@@ -48,204 +27,223 @@ const Categories = () => {
     deleteCategory
   } = useChatbot();
 
+  // Estados del formulario y modal
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: ''
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [sortOrder, setSortOrder] = useState('');
+  const [expandedRows, setExpandedRows] = useState(new Set());
 
+  // Cargar categorías al montar
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    const success = editingCategory 
-      ? await updateCategory(editingCategory.id, formData)
-      : await createCategory(formData);
-    
-    if (success) {
-      setShowModal(false);
-      setEditingCategory(null);
-      setFormData({ name: '', description: '' });
+  // Filtrado y ordenamiento de categorías
+  const processedCategories = useMemo(() => {
+    let filtered = [...categories];
+
+    // Filtrar por búsqueda
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(category => 
+        category.name.toLowerCase().includes(searchLower) ||
+        (category.description && category.description.toLowerCase().includes(searchLower))
+      );
     }
-  };
 
-  const handleEdit = (category) => {
-    setEditingCategory(category);
-    setFormData({
-      name: category.name,
-      description: category.description || ''
-    });
+    // Filtrar por estado
+    if (selectedStatus === 'active') {
+      filtered = filtered.filter(category => category.is_active !== false);
+    } else if (selectedStatus === 'inactive') {
+      filtered = filtered.filter(category => category.is_active === false);
+    }
+
+    // Ordenar
+    if (sortOrder === 'asc') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOrder === 'desc') {
+      filtered.sort((a, b) => b.name.localeCompare(a.name));
+    } else {
+      // Ordenar por último agregado (ID más alto primero) por defecto
+      filtered.sort((a, b) => b.id - a.id);
+    }
+
+    return filtered;
+  }, [categories, searchTerm, selectedStatus, sortOrder]);
+
+  // Hook personalizado para manejo de vista de datos
+  const {
+    paginatedData: paginatedCategories,
+    sortField,
+    sortDirection,
+    pagination,
+    pageNumbers,
+    displayRange,
+    navigation,
+    handleSort,
+    handlePageChange
+  } = useDataView(processedCategories, {
+    initialSortField: null,
+    initialSortDirection: null,
+    itemsPerPage: 10
+  });
+
+  // Handlers de acciones
+  const handleCreateNew = useCallback(() => {
+    setEditingCategory(null);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar esta categoría?')) {
+  const handleEdit = useCallback((category) => {
+    setEditingCategory(category);
+    setShowModal(true);
+  }, []);
+
+  const handleDelete = useCallback(async (id) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar esta categoría? Esta acción no se puede deshacer.')) {
       await deleteCategory(id);
     }
-  };
+  }, [deleteCategory]);
 
-  const handleCreate = () => {
+  // Handler de exportar
+  const handleExport = useCallback(() => {
+    try {
+      const dataToExport = processedCategories.map(category => ({
+        id: category.id,
+        nombre: category.name,
+        descripcion: category.description || '',
+        activa: category.is_active ? 'Sí' : 'No',
+        preguntas: category.knowledge_count || 0,
+        fecha_creacion: category.created_at || ''
+      }));
+
+      const csvContent = [
+        ['ID', 'Nombre', 'Descripción', 'Activa', 'Preguntas', 'Fecha Creación'],
+        ...dataToExport.map(item => [
+          item.id,
+          `"${item.nombre}"`,
+          `"${item.descripcion}"`,
+          item.activa,
+          item.preguntas,
+          item.fecha_creacion
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `categorias_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`${dataToExport.length} categorías exportadas exitosamente`);
+    } catch (error) {
+      toast.error('Error al exportar categorías');
+      console.error('Export error:', error);
+    }
+  }, [processedCategories]);
+
+  // Handler del formulario
+  const handleSubmit = useCallback(async (formData) => {
+    const dataToSubmit = {
+      ...formData,
+    };
+
+    // Validación preventiva de duplicados
+    if (!editingCategory) {
+      const categoryExists = categories.some(
+        cat => cat.name.toLowerCase().trim() === dataToSubmit.name.toLowerCase().trim()
+      );
+      
+      if (categoryExists) {
+        toast.error('Ya existe una categoría con este nombre');
+        return false;
+      }
+    }
+
+    if (editingCategory) {
+      return await updateCategory(editingCategory.id, dataToSubmit);
+    } else {
+      return await createCategory(dataToSubmit);
+    }
+  }, [editingCategory, updateCategory, createCategory, categories]);
+
+  const handleCloseModal = useCallback(() => {
+    setShowModal(false);
     setEditingCategory(null);
-    setFormData({ name: '', description: '' });
-    setShowModal(true);
-  };
+  }, []);
+
+  const handleToggleExpansion = useCallback((categoryId) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Estados de carga
+  if (loading.categories && !categories?.length) {
+    return <LoadingStates.CategoriesLoading />;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          📂 Categorías del Chatbot
-        </h1>
-        <p className="text-gray-600">
-          Organiza las preguntas del chatbot en categorías
-        </p>
-      </div>
+    <div className="bg-gray-50">
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Actions con filtros */}
+          <CategoryActions
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedStatus={selectedStatus}
+            onStatusChange={setSelectedStatus}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+            onCreateNew={handleCreateNew}
+            totalItems={processedCategories.length}
+            loading={loading.categories}
+            onExport={handleExport}
+          />
 
-      {/* Actions Bar */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Gestión de Categorías ({categories.length})
-            </h2>
-            <p className="text-gray-600 text-sm">
-              Crea y organiza categorías para clasificar las preguntas
-            </p>
-          </div>
-          <button
-            onClick={handleCreate}
-            className="bg-[#2D728F] text-white px-4 py-2 rounded-lg hover:bg-[#235a73] transition-colors"
-          >
-            ➕ Nueva Categoría
-          </button>
+          {/* Categories Table */}
+          <CategoryTableView
+            data={paginatedCategories}
+            loading={loading.categories}
+            totalItems={processedCategories.length}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            expandedRows={expandedRows}
+            pagination={pagination}
+            pageNumbers={pageNumbers}
+            displayRange={displayRange}
+            navigation={navigation}
+            onSort={handleSort}
+            onPageChange={handlePageChange}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onToggleExpansion={handleToggleExpansion}
+            onCreateFirst={handleCreateNew}
+          />
         </div>
       </div>
 
-      {/* Categories List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {loading.categories ? (
-          <div className="p-6">
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-4">
-                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : categories.length > 0 ? (
-          <div className="divide-y divide-gray-200">
-            {categories.map((category) => (
-              <div key={category.id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">
-                      {category.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-2">
-                      {category.description || 'Sin descripción'}
-                    </p>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span>ID: {category.id}</span>
-                      {category.knowledge_count !== undefined && (
-                        <span>{category.knowledge_count} preguntas</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEdit(category)}
-                      className="text-[#2D728F] hover:text-[#235a73] font-medium text-sm"
-                    >
-                      ✏️ Editar
-                    </button>
-                    <button
-                      onClick={() => handleDelete(category.id)}
-                      className="text-red-600 hover:text-red-700 font-medium text-sm"
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-12 text-center">
-            <div className="text-gray-400 text-6xl mb-4">📂</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No hay categorías
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Crea tu primera categoría para organizar las preguntas del chatbot
-            </p>
-            <button
-              onClick={handleCreate}
-              className="bg-[#2D728F] text-white px-4 py-2 rounded-lg hover:bg-[#235a73] transition-colors"
-            >
-              ➕ Crear Primera Categoría
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Modal para Crear/Editar Categoría */}
-      <Modal
+      {/* Modal de Crear/Editar */}
+      <CategoryModal
         show={showModal}
-        onClose={() => setShowModal(false)}
-        title={editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
-      >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre de la Categoría
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D728F] focus:border-transparent"
-              placeholder="Ej: Información General"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descripción (Opcional)
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D728F] focus:border-transparent"
-              placeholder="Describe qué tipo de preguntas incluye esta categoría..."
-            />
-          </div>
-          
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={() => setShowModal(false)}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-[#2D728F] text-white rounded-lg hover:bg-[#235a73] transition-colors"
-            >
-              {editingCategory ? 'Actualizar' : 'Crear'} Categoría
-            </button>
-          </div>
-        </form>
-      </Modal>
+        onClose={handleCloseModal}
+        onSubmit={handleSubmit}
+        editingCategory={editingCategory}
+        loading={loading.categories}
+      />
     </div>
   );
 };
