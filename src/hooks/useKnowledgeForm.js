@@ -56,6 +56,15 @@ export const useKnowledgeForm = (initialData = {}, options = {}) => {
   // Estado del formulario
   const [formData, setFormData] = useState(defaultFormData);
   
+  // Sincronizar formData cuando cambien los datos iniciales
+  useEffect(() => {
+    // Solo sincronizar si realmente cambiaron los datos iniciales
+    if (JSON.stringify(prevInitialDataRef.current) !== JSON.stringify(initialData)) {
+      setFormData(defaultFormData);
+      prevInitialDataRef.current = initialData;
+    }
+  }, [initialData, defaultFormData]);
+  
   // Estado de errores
   const [errors, setErrors] = useState({});
   

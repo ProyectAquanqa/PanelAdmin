@@ -1,0 +1,367 @@
+/**
+ * Componente Universal de Filtros
+ * Elimina la duplicación de código entre KnowledgeFilters, CategoryActions y ConversationFilters
+ */
+
+import React from 'react';
+import PropTypes from 'prop-types';
+import { CustomDropdown } from '../';
+
+/**
+ * Componente base reutilizable para todos los filtros del sistema
+ */
+const UniversalFilters = ({
+  // Configuración de búsqueda
+  searchConfig,
+  
+  // Grupos de filtros
+  filterGroups = [],
+  
+  // Acciones disponibles
+  actions = [],
+  
+  // Estado actual de filtros
+  activeFilters = {},
+  
+  // Callbacks
+  onFilterChange,
+  onClearFilters,
+  
+  // Información de resultados
+  totalItems = 0,
+  itemLabel = 'elementos',
+  
+  // Configuración adicional
+  className = '',
+  loading = false
+}) => {
+  /**
+   * Maneja el cambio de cualquier filtro
+   */
+  const handleFilterChange = (filterKey, value) => {
+    onFilterChange?.(filterKey, value);
+  };
+
+  /**
+   * Renderiza la barra de búsqueda
+   */
+  const renderSearchBar = () => {
+    if (!searchConfig) return null;
+
+    return (
+      <div className="w-full">
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder={searchConfig.placeholder || 'Buscar...'}
+            value={activeFilters[searchConfig.key] || ''}
+            onChange={(e) => handleFilterChange(searchConfig.key, e.target.value)}
+            className={`w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#2D728F]/20 focus:border-[#2D728F]/30 transition-all ${
+              searchConfig.variant === 'simple' ? 'rounded-lg' : 'bg-gray-50/30'
+            }`}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Renderiza un grupo de filtros tipo botones
+   */
+  const renderButtonGroup = (group) => {
+    return (
+      <div className="flex flex-col">
+        <div className="text-[13px] font-bold text-gray-700 uppercase tracking-wider mb-3">
+          {group.title}
+        </div>
+        <div className="flex-1 flex flex-col justify-end">
+          <div className={`grid gap-1 bg-gray-50 rounded-lg h-[42px] ${
+            group.options.length === 2 ? 'grid-cols-2' : 
+            group.options.length === 3 ? 'grid-cols-3' : 
+            'grid-cols-4'
+          }`}>
+            {group.options.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleFilterChange(group.key, option.value)}
+                className={`px-2 text-[13px] font-medium rounded-md transition-all flex items-center justify-center h-full ${
+                  activeFilters[group.key] === option.value
+                    ? 'bg-slate-500 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Renderiza un grupo de filtros tipo dropdown
+   */
+  const renderDropdownGroup = (group) => {
+    return (
+      <div className="space-y-2">
+        <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">
+          {group.title}
+        </label>
+        <CustomDropdown
+          value={activeFilters[group.key] || ''}
+          onChange={(value) => handleFilterChange(group.key, value)}
+          options={group.options}
+          placeholder={group.placeholder || `Seleccionar ${group.title.toLowerCase()}...`}
+          showIcon={group.showIcon}
+          iconComponent={group.iconComponent}
+          optionTextSize="text-[13px]"
+          className={group.className}
+        />
+      </div>
+    );
+  };
+
+  /**
+   * Renderiza un grupo de filtros tipo rango de fechas
+   */
+  const renderDateRangeGroup = (group) => {
+    return (
+      <div className="space-y-2">
+        <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">
+          {group.title}
+        </label>
+        <div className="relative">
+          <div className="flex items-center gap-2 p-2 border border-gray-300 rounded-lg bg-white h-[42px]">
+            {group.showIcon && (
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={group.iconPath} />
+              </svg>
+            )}
+            <input
+              type="date"
+              placeholder="Desde"
+              value={activeFilters[group.key]?.from || ''}
+              className="flex-1 text-[13px] border-none outline-none bg-transparent"
+              onChange={(e) => handleFilterChange(group.key, { ...(activeFilters[group.key] || {}), from: e.target.value })}
+            />
+            <span className="text-gray-400 text-[13px]">-</span>
+            <input
+              type="date"
+              placeholder="Hasta"
+              value={activeFilters[group.key]?.to || ''}
+              className="flex-1 text-[13px] border-none outline-none bg-transparent"
+              onChange={(e) => handleFilterChange(group.key, { ...(activeFilters[group.key] || {}), to: e.target.value })}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Renderiza las acciones disponibles
+   */
+  const renderActions = () => {
+    if (!actions.length) return null;
+
+    return (
+      <div className="flex flex-col">
+        <div className="text-[13px] font-bold text-gray-700 uppercase tracking-wider mb-3">
+          Acciones
+        </div>
+        <div className="flex-1 flex flex-col justify-end">
+          <div className="flex flex-wrap gap-2 h-[42px]">
+            {actions.map((action, index) => (
+              <button
+                key={index}
+                onClick={action.onClick}
+                disabled={loading || action.disabled}
+                className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-[13px] font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                  action.variant === 'primary' 
+                    ? 'bg-slate-500 text-white hover:bg-slate-600 focus:ring-slate-500/20'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 focus:ring-slate-500/20'
+                } focus:outline-none focus:ring-2`}
+              >
+                {action.icon && (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
+                  </svg>
+                )}
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Renderiza los filtros activos
+   */
+  const renderActiveFilters = () => {
+    const hasActiveFilters = Object.values(activeFilters).some(value => value && value !== '');
+    
+    if (!hasActiveFilters) return null;
+
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-[13px] text-gray-500">Filtros:</span>
+        {Object.entries(activeFilters).map(([key, value]) => {
+          if (!value || value === '') return null;
+          
+          // Buscar la configuración del filtro para obtener el label
+          const filterGroup = filterGroups.find(group => group.key === key);
+          let displayValue = value;
+          
+          if (filterGroup && filterGroup.options) {
+            const option = filterGroup.options.find(opt => opt.value === value);
+            displayValue = option ? option.label : value;
+          }
+          
+          // Para búsqueda, mostrar el término truncado
+          if (key === searchConfig?.key) {
+            displayValue = `"${value.length > 15 ? `${value.substring(0, 15)}...` : value}"`;
+          }
+          
+          // Para rango de fechas, mostrar formato especial
+          if (typeof value === 'object' && (value.from || value.to)) {
+            const fromStr = value.from ? new Date(value.from).toLocaleDateString() : '';
+            const toStr = value.to ? new Date(value.to).toLocaleDateString() : '';
+            displayValue = `${fromStr} - ${toStr}`.replace(/^-\s/, '').replace(/\s-$/, '');
+            if (!displayValue.trim()) return null;
+          }
+
+          return (
+            <span 
+              key={key} 
+              className={`inline-flex items-center gap-1 px-2 py-1 text-[13px] font-medium rounded-md ${
+                key === searchConfig?.key 
+                  ? 'bg-blue-900/10 text-blue-800'
+                  : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {key !== searchConfig?.key && (
+                <div className="w-1 h-1 rounded-full bg-slate-500"></div>
+              )}
+              {displayValue}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
+  /**
+   * Calcula el número de columnas para el grid responsive
+   */
+  const getGridColumns = () => {
+    const totalGroups = filterGroups.length + (actions.length > 0 ? 1 : 0);
+    
+    if (totalGroups <= 3) return 'grid-cols-1 md:grid-cols-3';
+    if (totalGroups <= 4) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+    if (totalGroups <= 5) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5';
+    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6';
+  };
+
+  return (
+    <div className={`bg-white rounded-lg border border-gray-200 p-4 sm:p-6 ${className}`}>
+      <div className="space-y-6">
+        {/* Barra de búsqueda */}
+        {renderSearchBar()}
+
+        {/* Filtros y Acciones */}
+        {(filterGroups.length > 0 || actions.length > 0) && (
+          <div className={`grid gap-4 ${getGridColumns()}`}>
+            {/* Renderizar grupos de filtros */}
+            {filterGroups.map((group, index) => (
+              <div key={index}>
+                {group.type === 'buttons' 
+                  ? renderButtonGroup(group) 
+                  : group.type === 'dateRange'
+                  ? renderDateRangeGroup(group)
+                  : renderDropdownGroup(group)
+                }
+              </div>
+            ))}
+            
+            {/* Renderizar acciones */}
+            {renderActions()}
+          </div>
+        )}
+
+        {/* Información de resultados y filtros activos */}
+        <div className="flex flex-col gap-3 pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-[13px] text-gray-600">
+                <span className="font-bold">{totalItems}</span> {itemLabel}
+              </span>
+              {renderActiveFilters()}
+            </div>
+
+            {/* Botón limpiar filtros */}
+            {Object.values(activeFilters).some(value => value && value !== '') && (
+              <button
+                onClick={onClearFilters}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-100 text-slate-600 text-[13px] font-medium rounded-lg hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500/20 cursor-pointer transition-all min-w-[120px]"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+UniversalFilters.propTypes = {
+  searchConfig: PropTypes.shape({
+    key: PropTypes.string.isRequired,
+    placeholder: PropTypes.string,
+    variant: PropTypes.oneOf(['default', 'simple'])
+  }),
+  filterGroups: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      title: PropTypes.string.isRequired,
+      type: PropTypes.oneOf(['buttons', 'dropdown', 'dateRange']).isRequired,
+      options: PropTypes.arrayOf(
+        PropTypes.shape({
+          value: PropTypes.string.isRequired,
+          label: PropTypes.string.isRequired
+        })
+      ), // Removido .isRequired - no es obligatorio para dateRange
+      placeholder: PropTypes.string,
+      showIcon: PropTypes.bool,
+      iconComponent: PropTypes.node,
+      className: PropTypes.string
+    })
+  ),
+  actions: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      onClick: PropTypes.func.isRequired,
+      variant: PropTypes.oneOf(['primary', 'secondary']),
+      icon: PropTypes.string,
+      disabled: PropTypes.bool
+    })
+  ),
+  activeFilters: PropTypes.object,
+  onFilterChange: PropTypes.func.isRequired,
+  onClearFilters: PropTypes.func.isRequired,
+  totalItems: PropTypes.number,
+  itemLabel: PropTypes.string,
+  className: PropTypes.string,
+  loading: PropTypes.bool
+};
+
+export default UniversalFilters;

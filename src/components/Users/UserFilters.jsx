@@ -1,38 +1,38 @@
 import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { UniversalFilters, prepareKnowledgeFiltersConfig } from '../../Common';
+import { UniversalFilters, prepareUserFiltersConfig } from '../Common';
 
 /**
- * Componente de filtros para KnowledgeBase - REFACTORIZADO CON UNIVERSALFILTERS
+ * Componente de filtros para Usuarios - SIGUIENDO PATRÓN DE KNOWLEDGEFILTERS
  * Mantiene exactamente el mismo diseño visual usando el componente base reutilizable
  */
-const KnowledgeFilters = ({
+const UserFilters = ({
   searchTerm = '',
   onSearchChange,
-  selectedCategory = '',
-  onCategoryChange,
-  selectedEmbedding = '',
-  onEmbeddingChange,
-  categories = [],
+  selectedRole = '',
+  onRoleChange,
+  selectedDateRange = null,
+  onDateRangeChange,
+  roles = [],
   onCreateNew,
-  onBulkImport,
-  onRegenerateEmbeddings,
+  onExport,
+  onImport,
   totalItems = 0
 }) => {
   // Preparar configuración con datos dinámicos
   const filtersConfig = useMemo(() => {
-    return prepareKnowledgeFiltersConfig(categories, {
+    return prepareUserFiltersConfig(roles, {
       onCreateNew,
-      onRegenerateEmbeddings,
-      onBulkImport
+      onExport,
+      onImport
     });
-  }, [categories, onCreateNew, onRegenerateEmbeddings, onBulkImport]);
+  }, [roles, onCreateNew, onExport, onImport]);
 
   // Estado actual de filtros
   const activeFilters = {
     searchTerm,
-    selectedCategory,
-    selectedEmbedding
+    selectedRole,
+    selectedDateRange
   };
 
   // Manejar cambios de filtros
@@ -41,11 +41,11 @@ const KnowledgeFilters = ({
       case 'searchTerm':
         onSearchChange?.(value);
         break;
-      case 'selectedCategory':
-        onCategoryChange?.(value);
+      case 'selectedRole':
+        onRoleChange?.(value);
         break;
-      case 'selectedEmbedding':
-        onEmbeddingChange?.(value);
+      case 'selectedDateRange':
+        onDateRangeChange?.(value);
         break;
       default:
         break;
@@ -55,8 +55,8 @@ const KnowledgeFilters = ({
   // Limpiar todos los filtros
   const handleClearFilters = () => {
     onSearchChange?.('');
-    onCategoryChange?.('');
-    onEmbeddingChange?.('');
+    onRoleChange?.('');
+    onDateRangeChange?.(null);
   };
 
   return (
@@ -74,23 +74,18 @@ const KnowledgeFilters = ({
   );
 };
 
-KnowledgeFilters.propTypes = {
+UserFilters.propTypes = {
   searchTerm: PropTypes.string,
   onSearchChange: PropTypes.func,
-  selectedCategory: PropTypes.string,
-  onCategoryChange: PropTypes.func,
-  selectedEmbedding: PropTypes.string,
-  onEmbeddingChange: PropTypes.func,
-  categories: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired
-    })
-  ),
+  selectedRole: PropTypes.string,
+  onRoleChange: PropTypes.func,
+  selectedDateRange: PropTypes.object,
+  onDateRangeChange: PropTypes.func,
+  roles: PropTypes.array,
   onCreateNew: PropTypes.func,
-  onBulkImport: PropTypes.func,
-  onRegenerateEmbeddings: PropTypes.func,
+  onExport: PropTypes.func,
+  onImport: PropTypes.func,
   totalItems: PropTypes.number
 };
 
-export default KnowledgeFilters;
+export default UserFilters;

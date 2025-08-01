@@ -6,6 +6,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useChatbot } from '../../hooks/useChatbot';
 import { useDataView } from '../../hooks/useDataView';
+import { searchInFields } from '../../utils/searchUtils';
 import toast from 'react-hot-toast';
 
 // Componentes modulares
@@ -49,21 +50,21 @@ const Conversations = () => {
   const processedConversations = useMemo(() => {
     let filtered = [...(displayConversations || [])];
 
-    // Filtrar por búsqueda
+    // Filtrar por búsqueda (usando searchUtils para manejar acentos como Knowledge Base)
     if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(conversation => 
-        (conversation.question_text && conversation.question_text.toLowerCase().includes(searchLower)) ||
-        (conversation.answer_text && conversation.answer_text.toLowerCase().includes(searchLower)) ||
-        (conversation.user?.username && conversation.user.username.toLowerCase().includes(searchLower))
+        searchInFields(conversation, searchTerm, [
+          'question_text',
+          'answer_text',
+          'user.username'
+        ])
       );
     }
 
-    // Filtrar por usuario
+    // Filtrar por usuario (usando searchUtils para manejar acentos)
     if (selectedUser.trim()) {
-      const userLower = selectedUser.toLowerCase();
       filtered = filtered.filter(conversation => 
-        conversation.user?.username && conversation.user.username.toLowerCase().includes(userLower)
+        searchInFields(conversation, selectedUser, ['user.username'])
       );
     }
 

@@ -4,4 +4,24 @@
  */
  
 export { default as DataViewSwitcher } from './DataViewSwitcher';
-export { default as CustomDropdown } from './CustomDropdown'; 
+export { default as CustomDropdown } from './CustomDropdown';
+
+// Componentes de DataView
+export { 
+  TableView,
+  SortIcon,
+  Pagination
+} from './DataView';
+
+// Filtros universales
+export { 
+  UniversalFilters,
+  knowledgeFiltersConfig,
+  prepareKnowledgeFiltersConfig,
+  categoryFiltersConfig,
+  prepareCategoryFiltersConfig,
+  conversationFiltersConfig,
+  prepareConversationFiltersConfig,
+  userFiltersConfig,
+  prepareUserFiltersConfig
+} from './Filters'; 

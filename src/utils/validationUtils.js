@@ -295,3 +295,185 @@ export const sanitizeString = (input) => {
     .replace(/<[^>]*>/g, '') // Remover HTML tags
     .trim();
 };
+
+/**
+ * Valida formato de DNI peruano (8 dígitos)
+ * @param {string} dni - DNI a validar
+ * @returns {Object} { isValid, error }
+ */
+export const validateDNI = (dni) => {
+  if (!dni) {
+    return { isValid: false, error: 'DNI es obligatorio' };
+  }
+  
+  const dniRegex = /^\d{8}$/;
+  const isValid = dniRegex.test(dni);
+  
+  return {
+    isValid,
+    error: isValid ? null : 'DNI debe tener exactamente 8 dígitos'
+  };
+};
+
+/**
+ * Valida contraseña para usuarios con requisitos específicos
+ * @param {string} password - Contraseña a validar
+ * @param {Object} options - Opciones de validación
+ * @returns {Object} { isValid, error }
+ */
+export const validateUserPassword = (password, options = {}) => {
+  const {
+    minLength = 6,
+    requireUppercase = false,
+    requireLowercase = false,
+    requireNumbers = false,
+    requireSpecialChars = false
+  } = options;
+
+  if (!password) {
+    return { isValid: false, error: 'Contraseña es obligatoria' };
+  }
+
+  if (password.length < minLength) {
+    return { isValid: false, error: `Contraseña debe tener al menos ${minLength} caracteres` };
+  }
+
+  if (requireUppercase && !/[A-Z]/.test(password)) {
+    return { isValid: false, error: 'Contraseña debe contener al menos una mayúscula' };
+  }
+
+  if (requireLowercase && !/[a-z]/.test(password)) {
+    return { isValid: false, error: 'Contraseña debe contener al menos una minúscula' };
+  }
+
+  if (requireNumbers && !/\d/.test(password)) {
+    return { isValid: false, error: 'Contraseña debe contener al menos un número' };
+  }
+
+  if (requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return { isValid: false, error: 'Contraseña debe contener al menos un carácter especial' };
+  }
+
+  return { isValid: true, error: null };
+};
+
+/**
+ * Valida que las contraseñas coincidan
+ * @param {string} password - Contraseña original
+ * @param {string} confirmPassword - Confirmación de contraseña
+ * @returns {Object} { isValid, error }
+ */
+export const validatePasswordConfirmation = (password, confirmPassword) => {
+  if (!confirmPassword) {
+    return { isValid: false, error: 'Confirmación de contraseña es obligatoria' };
+  }
+
+  const isValid = password === confirmPassword;
+  
+  return {
+    isValid,
+    error: isValid ? null : 'Las contraseñas no coinciden'
+  };
+};
+
+/**
+ * Valida formato de nombre (solo letras y espacios)
+ * @param {string} name - Nombre a validar
+ * @param {string} fieldName - Nombre del campo
+ * @returns {Object} { isValid, error }
+ */
+export const validateName = (name, fieldName = 'Nombre') => {
+  if (!name) {
+    return { isValid: false, error: `${fieldName} es obligatorio` };
+  }
+
+  if (name.length < 2) {
+    return { isValid: false, error: `${fieldName} debe tener al menos 2 caracteres` };
+  }
+
+  if (name.length > 50) {
+    return { isValid: false, error: `${fieldName} no puede exceder 50 caracteres` };
+  }
+
+  const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+  const isValid = nameRegex.test(name);
+  
+  return {
+    isValid,
+    error: isValid ? null : `${fieldName} solo puede contener letras y espacios`
+  };
+};
+
+/**
+ * Valida formulario completo de usuario
+ * @param {Object} formData - Datos del formulario
+ * @param {string} formType - Tipo de formulario ('create', 'edit', 'user')
+ * @returns {Object} Objeto con errores por campo
+ */
+export const validateUserForm = (formData, formType = 'user') => {
+  const errors = {};
+
+  // Validación de DNI (username)
+  if (formType === 'create' || formData.username) {
+    const dniValidation = validateDNI(formData.username);
+    if (!dniValidation.isValid) {
+      errors.username = dniValidation.error;
+    }
+  }
+
+  // Validación de nombres
+  if (formData.first_name) {
+    const firstNameValidation = validateName(formData.first_name, 'Nombre');
+    if (!firstNameValidation.isValid) {
+      errors.first_name = firstNameValidation.error;
+    }
+  }
+
+  if (formData.last_name) {
+    const lastNameValidation = validateName(formData.last_name, 'Apellido');
+    if (!lastNameValidation.isValid) {
+      errors.last_name = lastNameValidation.error;
+    }
+  }
+
+  // Validación de email
+  if (formData.email) {
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      errors.email = emailValidation.error;
+    }
+  }
+
+  // Validación de contraseña (solo para creación)
+  if (formType === 'create') {
+    if (formData.password) {
+      const passwordValidation = validateUserPassword(formData.password, {
+        minLength: 6,
+        requireUppercase: false,
+        requireSpecialChars: false
+      });
+      if (!passwordValidation.isValid) {
+        errors.password = passwordValidation.error;
+      }
+    } else {
+      errors.password = 'Contraseña es obligatoria';
+    }
+
+    // Validación de confirmación de contraseña
+    if (formData.password && formData.confirmPassword) {
+      const confirmValidation = validatePasswordConfirmation(formData.password, formData.confirmPassword);
+      if (!confirmValidation.isValid) {
+        errors.confirmPassword = confirmValidation.error;
+      }
+    } else if (formData.password && !formData.confirmPassword) {
+      errors.confirmPassword = 'Confirmación de contraseña es obligatoria';
+    }
+  }
+
+  // Validación de grupos (opcional pero debe ser array si existe)
+  if (formData.groups && !Array.isArray(formData.groups)) {
+    errors.groups = 'Grupos debe ser una lista válida';
+  }
+
+  return errors;
+};

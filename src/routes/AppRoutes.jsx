@@ -14,6 +14,10 @@ const KnowledgeBase = lazy(() => import('../pages/Chatbot/KnowledgeBase'));
 const Categories = lazy(() => import('../pages/Chatbot/Categories'));
 const TestMode = lazy(() => import('../pages/Chatbot/TestMode'));
 
+// 👥 Páginas del módulo de Usuarios
+const Users = lazy(() => import('../pages/Users/Users'));
+const UserImport = lazy(() => import('../pages/Users/UserImport'));
+
 // Componente de carga
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-full">
@@ -128,7 +132,16 @@ const AppRoutes = () => {
         
         {/* Usuarios */}
         <Route path="usuarios" element={<Navigate to="/usuarios/gestion" replace />} />
-        <Route path="usuarios/gestion" element={<TemporaryPage title="Gestión de Usuarios" />} />
+        <Route path="usuarios/gestion" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <Users />
+          </Suspense>
+        } />
+        <Route path="usuarios/importar" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <UserImport />
+          </Suspense>
+        } />
         <Route path="usuarios/perfiles" element={<TemporaryPage title="Perfiles de Usuario" />} />
         
         {/* Notificaciones */}

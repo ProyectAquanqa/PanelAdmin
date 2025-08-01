@@ -69,22 +69,28 @@ const CategoryTableView = ({
         {/* Metadata */}
         <div className="flex flex-wrap items-center gap-2 text-[13px]">
           {/* ID */}
-          <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-            ID: {item.id}
+          <span className="text-[13px] font-mono text-gray-600">
+            ID: {String(item.id).padStart(3, '0')}
           </span>
           
-          {/* Estado */}
-          <span className="inline-flex items-center px-2 py-1 rounded-full border bg-slate-50 text-slate-600 border-slate-200">
-            <div className="w-1.5 h-1.5 rounded-full mr-1.5 bg-slate-500"></div>
-            Activo
-          </span>
-
           {/* Contador de preguntas */}
           {item.knowledge_count !== undefined && (
             <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
               {item.knowledge_count} {item.knowledge_count === 1 ? 'pregunta' : 'preguntas'}
             </span>
           )}
+          
+          {/* Estado */}
+          <span className={`inline-flex items-center px-2 py-1 rounded-full border ${
+            item.is_active 
+              ? 'bg-slate-50 text-slate-600 border-slate-200' 
+              : 'bg-gray-50 text-gray-600 border-gray-200'
+          }`}>
+            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+              item.is_active ? 'bg-slate-500' : 'bg-gray-400'
+            }`}></div>
+            {item.is_active ? 'Activo' : 'Inactivo'}
+          </span>
         </div>
 
         {/* Acciones */}
@@ -121,6 +127,13 @@ const CategoryTableView = ({
     
     return (
       <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+        {/* ID */}
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100">
+          <div className="text-[13px] font-mono text-gray-600 truncate">
+            {String(item.id).padStart(3, '0')}
+          </div>
+        </td>
+        
         {/* Nombre */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100">
           <div className="max-w-[120px] sm:max-w-[150px] md:max-w-[180px] lg:max-w-[220px]">
@@ -163,13 +176,6 @@ const CategoryTableView = ({
             )}
           </div>
         </td>
-        
-        {/* ID */}
-        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden sm:table-cell">
-          <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-[13px] font-medium bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
-            {item.id}
-          </span>
-        </td>
 
         {/* Contador de Preguntas */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden lg:table-cell">
@@ -189,9 +195,15 @@ const CategoryTableView = ({
         {/* Estado */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden xl:table-cell">
           <div className="flex items-center">
-            <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-[13px] font-medium border whitespace-nowrap bg-slate-50 text-slate-600 border-slate-200">
-              <div className="w-1.5 h-1.5 rounded-full mr-1.5 bg-slate-500"></div>
-              Activo
+            <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-[13px] font-medium border whitespace-nowrap ${
+              item.is_active 
+                ? 'bg-slate-50 text-slate-600 border-slate-200' 
+                : 'bg-gray-50 text-gray-600 border-gray-200'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                item.is_active ? 'bg-slate-500' : 'bg-gray-400'
+              }`}></div>
+              {item.is_active ? 'Activo' : 'Inactivo'}
             </span>
           </div>
         </td>
@@ -272,14 +284,14 @@ const CategoryTableView = ({
             <table className="w-full min-w-full divide-y divide-gray-300 table-auto">
               <thead className="bg-[#F2F3F5] border-b border-slate-300/60">
                 <tr>
+                  <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[80px] w-[100px]">
+                    ID
+                  </th>
                   <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[120px] sm:min-w-[150px] md:min-w-[180px] lg:min-w-[220px]">
                     Nombre
                   </th>
                   <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell min-w-[180px] lg:min-w-[280px] xl:min-w-[350px]">
                     Descripción
-                  </th>
-                  <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell min-w-[80px] w-[100px]">
-                    ID
                   </th>
                   <th 
                     className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell min-w-[120px] w-[140px] cursor-pointer hover:bg-gray-200/50 transition-colors"

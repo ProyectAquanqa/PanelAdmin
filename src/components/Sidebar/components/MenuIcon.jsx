@@ -10,17 +10,9 @@ import { HomeIcon } from "@heroicons/react/24/outline";
  * @param {boolean} props.isActive - True si el ícono está activo
  * @param {boolean} props.isHovered - True si el mouse está sobre el ícono
  */
-const MenuIcon = ({ 
-  icon, 
-  isActive = false, 
-  isHovered = false 
-}) => {
+const MenuIcon = ({ icon, isActive = false, isHovered = false }) => {
   const iconClasses = `w-5 h-5 transition-colors duration-200 ${
-    isActive 
-      ? 'text-white' 
-      : isHovered 
-        ? 'text-white' 
-        : 'text-slate-300'
+    isActive ? "text-white" : isHovered ? "text-white" : "text-slate-300"
   }`;
 
   // Si no hay ícono, usar HomeIcon como fallback
@@ -33,7 +25,7 @@ const MenuIcon = ({
 MenuIcon.propTypes = {
   icon: PropTypes.elementType,
   isActive: PropTypes.bool,
-  isHovered: PropTypes.bool
+  isHovered: PropTypes.bool,
 };
 
 export default React.memo(MenuIcon);
