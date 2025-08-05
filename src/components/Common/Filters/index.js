@@ -12,7 +12,9 @@ export {
 
 export { 
   categoryFiltersConfig, 
-  prepareCategoryFiltersConfig 
+  prepareCategoryFiltersConfig,
+  eventCategoryFiltersConfig,
+  prepareEventCategoryFiltersConfig
 } from './configs/categoryFiltersConfig';
 
 export { 

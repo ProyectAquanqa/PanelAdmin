@@ -55,7 +55,7 @@ export const useUserForm = (initialData = {}, options = {}) => {
     }
 
     return baseData;
-  }, [detectedFormType, initialData]);
+  }, [initialData, detectedFormType]);
 
   // Estado del formulario
   const [formData, setFormData] = useState(defaultFormData);
@@ -206,8 +206,22 @@ export const useUserForm = (initialData = {}, options = {}) => {
       // Preparar datos para envío
       const dataToSubmit = { ...formData };
       
+      console.log('🔐 Datos completos antes de preparar:', formData);
+      console.log('🔐 Tipo de formulario:', detectedFormType);
+      
       // Para formularios de creación, manejar validación de contraseñas
       if (detectedFormType === 'create') {
+        console.log('🔐 Password:', dataToSubmit.password);
+        console.log('🔐 Confirm Password:', dataToSubmit.confirmPassword);
+        
+        if (!dataToSubmit.password || dataToSubmit.password.trim() === '') {
+          setErrors(prev => ({ 
+            ...prev, 
+            password: 'La contraseña es requerida' 
+          }));
+          return { success: false };
+        }
+        
         if (dataToSubmit.password !== dataToSubmit.confirmPassword) {
           setErrors(prev => ({ 
             ...prev, 
@@ -218,6 +232,8 @@ export const useUserForm = (initialData = {}, options = {}) => {
         // Remover confirmPassword antes de enviar
         delete dataToSubmit.confirmPassword;
       }
+      
+      console.log('🔐 Datos a enviar al backend:', dataToSubmit);
 
       // Convertir grupos a array si es string
       if (dataToSubmit.groups && typeof dataToSubmit.groups === 'string') {

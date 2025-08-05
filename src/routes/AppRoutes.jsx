@@ -14,9 +14,14 @@ const KnowledgeBase = lazy(() => import('../pages/Chatbot/KnowledgeBase'));
 const Categories = lazy(() => import('../pages/Chatbot/Categories'));
 const TestMode = lazy(() => import('../pages/Chatbot/TestMode'));
 
+// 📅 Páginas del módulo de Eventos
+const EventosGestion = lazy(() => import('../pages/Eventos/EventosGestion'));
+const EventosCategorias = lazy(() => import('../pages/Eventos/EventosCategorias'));
+
 // 👥 Páginas del módulo de Usuarios
 const Users = lazy(() => import('../pages/Users/Users'));
 const UserImport = lazy(() => import('../pages/Users/UserImport'));
+const Perfiles = lazy(() => import('../pages/Perfiles/Perfiles'));
 
 // Componente de carga
 const LoadingFallback = () => (
@@ -91,11 +96,19 @@ const AppRoutes = () => {
           </Suspense>
         } />
         
-        {/* Eventos */}
+        {/* 📅 Módulo Eventos */}
         <Route path="eventos" element={<Navigate to="/eventos/gestion" replace />} />
-        <Route path="eventos/gestion" element={<TemporaryPage title="Gestión de Eventos" />} />
-        <Route path="eventos/categorias" element={<TemporaryPage title="Categorías de Eventos" />} />
-        <Route path="eventos/valores" element={<TemporaryPage title="Valores" />} />
+        <Route path="eventos/gestion" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <EventosGestion />
+          </Suspense>
+        } />
+        <Route path="eventos/categorias" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <EventosCategorias />
+          </Suspense>
+        } />
+        
         
         {/* 🤖 Módulo Chatbot - 4 submódulos según el prompt */}
         <Route path="chatbot" element={<Navigate to="/chatbot/dashboard" replace />} />
@@ -142,7 +155,11 @@ const AppRoutes = () => {
             <UserImport />
           </Suspense>
         } />
-        <Route path="usuarios/perfiles" element={<TemporaryPage title="Perfiles de Usuario" />} />
+        <Route path="usuarios/perfiles" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <Perfiles />
+          </Suspense>
+        } />
         
         {/* Notificaciones */}
         <Route path="notificaciones" element={<Navigate to="/notificaciones/historial" replace />} />

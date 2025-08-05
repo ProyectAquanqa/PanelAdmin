@@ -147,6 +147,21 @@ export const api = {
     events: '/events',
     notifications: '/notifications',
   },
+  external: {
+    dni: {
+      url: import.meta.env.VITE_DNI_API_URL || 'https://aplicativo.aquanqa.net/api/consulta-dni/',
+      token: import.meta.env.VITE_DNI_API_TOKEN || '',
+      timeout: 10000,
+      fieldMapping: {
+        request: 'idpropiedad_3638',
+        response: {
+          nombres: 'Nombres',
+          apellidoPaterno: 'A_Paterno',
+          apellidoMaterno: 'A_Materno'
+        }
+      }
+    }
+  }
 };
 
 /**

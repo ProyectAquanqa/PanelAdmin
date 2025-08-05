@@ -27,15 +27,22 @@ export const chatbotEndpoints = {
 };
 
 /**
+ * Endpoints externos
+ */
+export const externalEndpoints = {
+  dniConsultation: '/consulta-dni/',
+};
+
+/**
  * Endpoints de eventos
  */
 export const eventEndpoints = {
-  list: '/events/',
-  create: '/events/',
-  detail: (id) => `/events/${id}/`,
-  update: (id) => `/events/${id}/`,
-  delete: (id) => `/events/${id}/`,
-  categories: '/events/categories/',
+  list: '/eventos/',
+  create: '/eventos/',
+  detail: (id) => `/eventos/${id}/`,
+  update: (id) => `/eventos/${id}/`,
+  delete: (id) => `/eventos/${id}/`,
+  categories: '/categorias/',
 };
 
 /**

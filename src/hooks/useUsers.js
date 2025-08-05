@@ -84,6 +84,23 @@ export const useUsers = () => {
     }
   }, []);
 
+  // 👥 Función para obtener grupos disponibles
+  const fetchGroups = useCallback(async () => {
+    try {
+      const response = await userService.users.getAvailableGroups();
+      
+      if (response.status === 'success') {
+        setGroups(response.data);
+      } else {
+        setGroups(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar grupos:', error);
+      toast.error(`Error al cargar grupos: ${error.message}`);
+      setGroups([]);
+    }
+  }, []);
+
   // 👤 Funciones CRUD de usuarios
   const createUser = useCallback(async (userData) => {
     setLoading(prev => ({ ...prev, create: true }));
@@ -366,7 +383,8 @@ export const useUsers = () => {
   useEffect(() => {
     fetchUsers();
     fetchUserStats();
-  }, []);
+    fetchGroups();
+  }, [fetchUsers, fetchUserStats, fetchGroups]);
 
   // Retornar estado y funciones
   return {
@@ -380,6 +398,7 @@ export const useUsers = () => {
     // Funciones de datos
     fetchUsers,
     fetchUserStats,
+    fetchGroups,
     refreshUsers,
     
     // Funciones CRUD

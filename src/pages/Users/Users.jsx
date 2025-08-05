@@ -26,6 +26,7 @@ const Users = () => {
   const {
     users,
     userStats,
+    groups,
     loading,
     fetchUsers,
     createUser,
@@ -57,11 +58,9 @@ const Users = () => {
   const displayUsers = users || [];
 
   // Roles disponibles del backend AquanQ (auth.groups)
-  const availableRoles = useMemo(() => [
-    { id: 1, name: 'Admin' },
-    { id: 2, name: 'QA' },
-    { id: 3, name: 'Trabajador' }
-  ], []);
+  const availableRoles = useMemo(() => {
+    return groups || [];
+  }, [groups]);
 
   // Filtrado y procesamiento de usuarios
   const processedUsers = useMemo(() => {
@@ -299,7 +298,7 @@ const Users = () => {
           onSubmit={handleSubmit}
           editingUser={editingUser}
           loading={loading.create || loading.update}
-          availableGroups={availableRoles}
+          availableRoles={availableRoles}
           mode={modalMode}
         />
       )}

@@ -92,19 +92,14 @@ const apiCall = async (url, options = {}) => {
     // Si es error de autorización, intentar refrescar token
     if (error.message === 'UNAUTHORIZED' && token) {
       try {
-        console.log('🔄 Token expirado, intentando refrescar...');
         const newToken = await refreshTokenIfNeeded();
-        console.log('✅ Token refrescado exitosamente');
         
         // Reintentar con el nuevo token
         return await makeRequest(newToken);
       } catch (refreshError) {
-        console.error('❌ Error al refrescar token:', refreshError);
         throw new Error('Las credenciales de autenticación no se proveyeron.');
       }
     }
-    
-    console.error('User API Error:', error);
     throw error;
   }
 };
@@ -246,6 +241,14 @@ const userService = {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+    },
+
+    /**
+     * Obtiene todos los grupos disponibles para asignar a usuarios
+     * @returns {Promise} Lista de grupos
+     */
+    getAvailableGroups: async () => {
+      return await apiCall('/users/available_groups/');
     }
   },
 
@@ -372,51 +375,14 @@ const userService = {
     },
 
     /**
-     * Consulta datos de un DNI usando el servicio externo
+     * Consulta datos de un DNI usando el cliente especializado
      * @param {string} dni - DNI de 8 dígitos a consultar
      * @returns {Promise} Datos del DNI o error
      */
     consultarDni: async (dni) => {
-      // Debug: verificar token y usuario antes de hacer la llamada
-      const token = localStorage.getItem('access_token');
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      
-      console.log('🔐 Token disponible para DNI:', token ? 'Sí' : 'No');
-      console.log('👤 Usuario actual:', user.username || 'No disponible');
-      console.log('🏷️ Grupos del usuario:', user.groups || 'No disponible');
-      console.log('🔍 Consultando DNI:', dni);
-      
-      try {
-        return await apiCall('/users/consultar_dni/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ dni }),
-        });
-      } catch (error) {
-        console.error('❌ Error completo:', error);
-        
-        // Manejar errores específicos
-        if (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('credenciales')) {
-          throw new Error('No tienes permisos para consultar DNI. Contacta al administrador.');
-        }
-        
-        if (error.message.includes('403') || error.message.includes('Forbidden')) {
-          throw new Error('Acceso denegado. Necesitas permisos de Admin o QA.');
-        }
-        
-        if (error.message.includes('503') || error.message.includes('Service Unavailable')) {
-          throw new Error('Servicio de consulta DNI no disponible temporalmente.');
-        }
-        
-        if (error.message.includes('404') || error.message.includes('Not Found')) {
-          throw new Error('DNI no encontrado en la base de datos.');
-        }
-        
-        // Error genérico
-        throw error;
-      }
+      // Importación dinámica para evitar dependencias circulares
+      const { dniClient } = await import('../api/dniClient');
+      return await dniClient.consultarDni(dni);
     }
   }
 };

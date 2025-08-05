@@ -39,6 +39,9 @@ export const useSearch = (data = [], options = {}) => {
   
   // Estado de filtros activos
   const [activeFilters, setActiveFilters] = useState({});
+  
+  // Estados adicionales para otros filtros
+  const [filters, setFilters] = useState({});
 
   // Debounce del término de búsqueda
   useEffect(() => {
@@ -125,6 +128,14 @@ export const useSearch = (data = [], options = {}) => {
   // Función para actualizar rango de fechas
   const updateDateRange = useCallback((start, end) => {
     setDateRange({ start, end });
+  }, []);
+
+  // Función para actualizar filtros genéricos
+  const updateFilter = useCallback((key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
   }, []);
 
   // Función para limpiar todos los filtros
@@ -264,60 +275,62 @@ export const useSearch = (data = [], options = {}) => {
     selectedStatus,
     dateRange,
     isSearching: searchTerm !== debouncedSearchTerm
-  };
+      };
 
   return {
-    // Datos filtrados
-    filteredData,
-    
-    // Estados de búsqueda
-    searchTerm,
-    debouncedSearchTerm,
-    selectedCategory,
-    selectedEmbedding,
-    selectedStatus,
-    dateRange,
-    
-    // Funciones de actualización
-    updateSearchTerm,
-    updateCategory,
-    updateEmbeddingFilter,
-    updateStatusFilter,
-    updateDateRange,
-    
-    // Funciones de limpieza
-    clearSearch,
-    clearAllFilters,
-    clearFilter,
-    
-    // Funciones de utilidad
-    getSearchMatches,
-    matchesSearch,
-    getSearchSuggestions,
-    exportFilters,
-    importFilters,
-    
-    // Estadísticas
-    searchStats,
-    
-    // Estado actual
-    searchState,
-    
-    // Estados derivados
-    hasActiveSearch: searchStats.hasActiveSearch,
-    hasActiveFilters: searchStats.hasActiveFilters,
-    hasResults: searchStats.hasResults,
-    isSearching: searchTerm !== debouncedSearchTerm,
-    
-    // Configuración
-    config: {
-      searchFields,
-      debounceDelay,
-      minSearchLength,
-      caseSensitive,
-      enableHighlight
-    }
-  };
+      // Datos filtrados
+      filteredData,
+      
+      // Estados de búsqueda
+      searchTerm,
+      debouncedSearchTerm,
+      selectedCategory,
+      selectedEmbedding,
+      selectedStatus,
+      dateRange,
+      filters,
+      
+      // Funciones de actualización
+      updateSearchTerm,
+      updateCategory,
+      updateEmbeddingFilter,
+      updateStatusFilter,
+      updateDateRange,
+      updateFilter,
+      
+      // Funciones de limpieza
+      clearSearch,
+      clearAllFilters,
+      clearFilter,
+      
+      // Funciones de utilidad
+      getSearchMatches,
+      matchesSearch,
+      getSearchSuggestions,
+      exportFilters,
+      importFilters,
+      
+      // Estadísticas
+      searchStats,
+      
+      // Estado actual
+      searchState,
+      
+      // Estados derivados
+      hasActiveSearch: searchStats.hasActiveSearch,
+      hasActiveFilters: searchStats.hasActiveFilters,
+      hasResults: searchStats.hasResults,
+      isSearching: searchTerm !== debouncedSearchTerm,
+      
+      // Configuración
+      config: {
+        searchFields,
+        debounceDelay,
+        minSearchLength,
+        caseSensitive,
+        enableHighlight
+      }
+    };
 };
 
 export default useSearch;

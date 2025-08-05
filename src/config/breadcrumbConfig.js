@@ -23,7 +23,7 @@ export const breadcrumbRoutes = {
   '/eventos': { section: 'Eventos', subsection: 'Gestión de Eventos' },
   '/eventos/gestion': { section: 'Eventos', subsection: 'Gestión de Eventos' },
   '/eventos/categorias': { section: 'Eventos', subsection: 'Categorías' },
-  '/eventos/valores': { section: 'Eventos', subsection: 'Valores' },
+
   
   // USUARIOS - Todas las subcategorías
   '/usuarios': { section: 'Usuarios', subsection: 'Gestión de Usuarios' },
