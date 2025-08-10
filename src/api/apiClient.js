@@ -5,7 +5,8 @@
 
 import { api } from '../config/appConfig';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 /**
  * Configuración base para llamadas a la API con autenticación
@@ -28,7 +29,7 @@ export const apiCall = async (url, options = {}) => {
   };
 
   try {
-    const response = await fetch(`${BASE_URL}${url}`, config);
+    const response = await fetch(`${API_BASE}${url}`, config);
     
     if (!response.ok) {
       const error = await response.json();

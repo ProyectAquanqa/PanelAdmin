@@ -3,7 +3,8 @@
  * Basado en los endpoints de AquanQ UsuarioViewSet
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token
 const refreshTokenIfNeeded = async () => {
@@ -13,7 +14,7 @@ const refreshTokenIfNeeded = async () => {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${BASE_URL}/token/refresh/`, {
+    const response = await fetch(`${API_BASE}/web/auth/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -55,7 +56,7 @@ const apiCall = async (url, options = {}) => {
       ...options,
     };
 
-    const response = await fetch(`${BASE_URL}${url}`, config);
+    const response = await fetch(`${API_BASE}${url}`, config);
     
     if (!response.ok) {
       let error;
@@ -129,7 +130,7 @@ const userService = {
       if (filters.date_to) params.append('date_to', filters.date_to);
       if (filters.ordering) params.append('ordering', filters.ordering);
 
-      return await apiCall(`/users/?${params}`);
+      return await apiCall(`/web/users/?${params}`);
     },
     
     /**
@@ -138,7 +139,7 @@ const userService = {
      * @returns {Promise} Datos del usuario
      */
     get: async (id) => {
-      return await apiCall(`/users/${id}/`);
+      return await apiCall(`/web/users/${id}/`);
     },
     
     /**
@@ -147,7 +148,7 @@ const userService = {
      * @returns {Promise} Usuario creado
      */
     create: async (data) => {
-      return await apiCall('/users/', {
+      return await apiCall('/web/users/', {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -160,7 +161,7 @@ const userService = {
      * @returns {Promise} Usuario actualizado
      */
     update: async (id, data) => {
-      return await apiCall(`/users/${id}/`, {
+      return await apiCall(`/web/users/${id}/`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
@@ -173,7 +174,7 @@ const userService = {
      * @returns {Promise} Usuario actualizado
      */
     patch: async (id, data) => {
-      return await apiCall(`/users/${id}/`, {
+      return await apiCall(`/web/users/${id}/`, {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
@@ -196,7 +197,7 @@ const userService = {
      * @returns {Promise} Nuevo estado del usuario
      */
     toggleActiveStatus: async (id) => {
-      return await apiCall(`/users/${id}/toggle_active/`, {
+      return await apiCall(`/admin/users/${id}/toggle_active/`, {
         method: 'PATCH',
       });
     },
@@ -215,7 +216,7 @@ const userService = {
       }
       params.append('is_active', 'true');
       
-      return await apiCall(`/groups/?${params}`);
+      return await apiCall(`/admin/users/?${params}`);
     }
   },
 
@@ -227,7 +228,7 @@ const userService = {
      * @returns {Promise} Usuario registrado
      */
     register: async (data) => {
-      return await apiCall('/register/', {
+      return await apiCall('/web/auth/register/', {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -238,7 +239,7 @@ const userService = {
      * @returns {Promise} Datos del perfil
      */
     getProfile: async () => {
-      return await apiCall('/profile/');
+      return await apiCall('/web/auth/profile/');
     },
 
     /**
@@ -247,7 +248,7 @@ const userService = {
      * @returns {Promise} Perfil actualizado
      */
     updateProfile: async (data) => {
-      return await apiCall('/profile/', {
+      return await apiCall('/web/auth/profile/', {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
@@ -278,7 +279,7 @@ const userService = {
       const params = new URLSearchParams(cleanFilters);
       const token = localStorage.getItem('access_token');
       
-      const response = await fetch(`${BASE_URL}/users/?${params}`, {
+      const response = await fetch(`${API_BASE}/web/users/?${params}`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
         },
@@ -304,7 +305,7 @@ const userService = {
       
       const token = localStorage.getItem('access_token');
       
-      const response = await fetch(`${BASE_URL}/users/${userId}/`, {
+      const response = await fetch(`${API_BASE}/web/users/${userId}/`, {
         method: 'PATCH',
         headers: {
           ...(token && { Authorization: `Bearer ${token}` }),

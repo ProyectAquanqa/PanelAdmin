@@ -35,15 +35,31 @@ export const useChatbot = () => {
     setLoading(prev => ({ ...prev, conversations: true }));
     try {
       const response = await chatbotService.conversations.list(page, pagination.conversations.limit);
-      setConversations(response.results || response);
-      setPagination(prev => ({
-        ...prev,
-        conversations: {
-          ...prev.conversations,
-          current: page,
-          total: response.count || response.length || 0,
-        }
-      }));
+      if (response && response.status === 'success') {
+        const list = Array.isArray(response.data)
+          ? response.data
+          : (response.data?.results || []);
+        setConversations(list);
+        setPagination(prev => ({
+          ...prev,
+          conversations: {
+            ...prev.conversations,
+            current: page,
+            total: response.pagination?.count || list.length || 0,
+          }
+        }));
+      } else {
+        const list = response?.results || response || [];
+        setConversations(Array.isArray(list) ? list : []);
+        setPagination(prev => ({
+          ...prev,
+          conversations: {
+            ...prev.conversations,
+            current: page,
+            total: response?.count || (Array.isArray(list) ? list.length : 0),
+          }
+        }));
+      }
     } catch (error) {
       toast.error(`Error al cargar conversaciones: ${error.message}`);
     } finally {

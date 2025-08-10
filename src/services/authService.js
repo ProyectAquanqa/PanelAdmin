@@ -4,7 +4,8 @@
  * Endpoints basados en el backend real de AquanQ
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Configuración base para fetch
 const apiCall = async (url, options = {}) => {
@@ -17,7 +18,7 @@ const apiCall = async (url, options = {}) => {
   };
 
   try {
-    const response = await fetch(`${BASE_URL}${url}`, config);
+    const response = await fetch(`${API_BASE}${url}`, config);
     
     const contentType = response.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
@@ -51,7 +52,7 @@ const authService = {
   // 🔐 Iniciar sesión usando el endpoint real de AquanQ (/token/)
   login: async (credentials) => {
     try {
-      const response = await apiCall('/token/', {
+      const response = await apiCall('/web/auth/login/', {
         method: 'POST',
         body: JSON.stringify({
           username: credentials.username,
@@ -152,7 +153,7 @@ const authService = {
         throw new Error('No token available');
       }
       
-      const response = await apiCall('/profile/', {
+      const response = await apiCall('/web/auth/profile/', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -183,7 +184,7 @@ const authService = {
         throw new Error('No refresh token available');
       }
 
-      const response = await apiCall('/token/refresh/', {
+      const response = await apiCall('/web/auth/refresh/', {
         method: 'POST',
         body: JSON.stringify({
           refresh: refreshToken,

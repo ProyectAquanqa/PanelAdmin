@@ -3,7 +3,8 @@
  * Basado en Django Groups nativos con SimpleGroupViewSet
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token (reutilizada del userService)
 const refreshTokenIfNeeded = async () => {
@@ -13,7 +14,7 @@ const refreshTokenIfNeeded = async () => {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${BASE_URL}/token/refresh/`, {
+    const response = await fetch(`${API_BASE}/web/auth/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,7 +55,7 @@ const apiCall = async (url, options = {}) => {
       ...options,
     };
 
-    const response = await fetch(`${BASE_URL}${url}`, config);
+    const response = await fetch(`${API_BASE}${url}`, config);
     
     if (!response.ok) {
       let error;
@@ -113,7 +114,7 @@ const groupService = {
     if (filters.search) params.append('search', filters.search);
     if (filters.ordering) params.append('ordering', filters.ordering);
 
-    return await apiCall(`/groups/?${params}`);
+    return await apiCall(`/web/groups/?${params}`);
   },
 
   /**
@@ -122,7 +123,7 @@ const groupService = {
    * @returns {Promise} Datos del grupo
    */
   get: async (id) => {
-    return await apiCall(`/groups/${id}/`);
+    return await apiCall(`/web/groups/${id}/`);
   },
 
   /**
@@ -131,7 +132,7 @@ const groupService = {
    * @returns {Promise} Grupo creado
    */
   create: async (data) => {
-    return await apiCall('/groups/', {
+    return await apiCall('/web/groups/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -144,7 +145,7 @@ const groupService = {
    * @returns {Promise} Grupo actualizado
    */
   update: async (id, data) => {
-    return await apiCall(`/groups/${id}/`, {
+    return await apiCall(`/web/groups/${id}/`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -157,7 +158,7 @@ const groupService = {
    * @returns {Promise} Grupo actualizado
    */
   patch: async (id, data) => {
-    return await apiCall(`/groups/${id}/`, {
+    return await apiCall(`/web/groups/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -169,7 +170,7 @@ const groupService = {
    * @returns {Promise} Respuesta de la operación
    */
   delete: async (id) => {
-    return await apiCall(`/groups/${id}/`, {
+    return await apiCall(`/web/groups/${id}/`, {
       method: 'DELETE',
     });
   },
@@ -195,7 +196,7 @@ const groupService = {
   getGroupsDisponibles: async (tipoUsuario = null) => {
     // Con Django Groups nativos, obtenemos todos los grupos
     // El filtrado se hace en el frontend basado en convención de nombres
-    return await apiCall('/groups/');
+    return await apiCall('/web/groups/');
   },
 
   /**
@@ -204,7 +205,25 @@ const groupService = {
    * @returns {Promise} Estructura jerárquica de permisos
    */
   getPermissionsStructure: async () => {
-    return await apiCall('/groups/permissions_structure/');
+    // Devuelve estructura jerárquica de permisos para el selector
+    const resp = await apiCall('/admin/system/permissions/');
+    // Normalizar a array de apps con modelos y permisos
+    if (resp && resp.status === 'success') {
+      const apps = resp.data?.applications || [];
+      // Transformar PermissionManagementView (applications) a formato esperado por el formulario
+      return apps.map(a => ({
+        app_label: a.app_label,
+        name: a.app_name || a.app_label,
+        models: (a.models || []).map(m => ({
+          model: m.name || m.verbose_name || m.model,
+          permissions: (m.permissions || []).map(code => {
+            const [app_label, codename] = (code || '').split('.');
+            return { id: code, name: codename, codename, app_label };
+          })
+        }))
+      }));
+    }
+    return [];
   },
 
   /**
@@ -212,7 +231,7 @@ const groupService = {
    * @returns {Promise} Estructura jerárquica de permisos
    */
   getAvailablePermissions: async () => {
-    return await apiCall('/groups/permissions_structure/');
+    return await apiCall('/admin/system/permissions/');
   }
 };
 

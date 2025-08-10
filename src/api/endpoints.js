@@ -7,23 +7,24 @@
  * Endpoints de autenticación
  */
 export const authEndpoints = {
-  login: '/token/',
-  refresh: '/token/refresh/',
-  profile: '/profile/',
-  logout: '/logout/',
+  login: '/web/auth/login/',
+  refresh: '/web/auth/refresh/',
+  profile: '/web/auth/profile/',
+  logout: '/web/auth/logout/',
 };
 
 /**
  * Endpoints de chatbot
  */
 export const chatbotEndpoints = {
-  query: '/chatbot/query/',
-  conversations: '/chatbot/conversations/',
-  knowledge: '/chatbot/knowledge/',
-  categories: '/chatbot/categories/',
-  stats: '/chatbot/stats/',
-  recommendedQuestions: '/chatbot/recommended-questions/',
-  regenerateEmbeddings: '/chatbot/regenerate-embeddings/',
+  // Nota: query y recommendedQuestions usan capa mobile por diseño
+  query: '/mobile/chatbot/query/',
+  conversations: '/web/chatbot-conversations/',
+  knowledge: '/web/chatbot-knowledge/',
+  categories: '/web/chatbot-categories/',
+  stats: '/web/chatbot-knowledge/statistics/',
+  recommendedQuestions: '/mobile/chatbot/recommended-questions/',
+  regenerateEmbeddings: '/admin/maintenance/regenerate-embeddings/',
 };
 
 /**
@@ -37,35 +38,35 @@ export const externalEndpoints = {
  * Endpoints de eventos
  */
 export const eventEndpoints = {
-  list: '/eventos/',
-  create: '/eventos/',
-  detail: (id) => `/eventos/${id}/`,
-  update: (id) => `/eventos/${id}/`,
-  delete: (id) => `/eventos/${id}/`,
-  categories: '/categorias/',
+  list: '/web/eventos/',
+  create: '/web/eventos/',
+  detail: (id) => `/web/eventos/${id}/`,
+  update: (id) => `/web/eventos/${id}/`,
+  delete: (id) => `/web/eventos/${id}/`,
+  categories: '/web/categorias/',
 };
 
 /**
  * Endpoints de usuarios
  */
 export const userEndpoints = {
-  list: '/users/',
-  create: '/users/',
-  detail: (id) => `/users/${id}/`,
-  update: (id) => `/users/${id}/`,
-  delete: (id) => `/users/${id}/`,
-  profile: '/users/profile/',
+  list: '/web/users/',
+  create: '/web/users/',
+  detail: (id) => `/web/users/${id}/`,
+  update: (id) => `/web/users/${id}/`,
+  delete: (id) => `/web/users/${id}/`,
+  profile: '/web/auth/profile/',
 };
 
 /**
  * Endpoints de notificaciones
  */
 export const notificationEndpoints = {
-  list: '/notifications/',
-  create: '/notifications/',
-  markAsRead: (id) => `/notifications/${id}/read/`,
-  markAllAsRead: '/notifications/mark-all-read/',
-  delete: (id) => `/notifications/${id}/`,
+  list: '/web/notifications/',
+  create: '/web/notifications/',
+  markAsRead: (id) => `/web/notifications/${id}/read/`,
+  markAllAsRead: '/web/notifications/mark-all-read/',
+  delete: (id) => `/web/notifications/${id}/`,
 };
 
 /**

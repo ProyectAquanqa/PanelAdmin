@@ -3,7 +3,8 @@
  * Basado en los endpoints de AquanQ EventoViewSet
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token
 const refreshTokenIfNeeded = async () => {
@@ -13,7 +14,7 @@ const refreshTokenIfNeeded = async () => {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${BASE_URL}/token/refresh/`, {
+    const response = await fetch(`${API_BASE}/web/auth/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ export const getEventos = async (params = {}) => {
     });
     
     const queryString = queryParams.toString();
-    const url = `${BASE_URL}/eventos/${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_BASE}/web/eventos/${queryString ? `?${queryString}` : ''}`;
     
     const response = await apiCall(url);
     const data = await response.json();
@@ -126,7 +127,7 @@ export const getEventos = async (params = {}) => {
  */
 export const getEvento = async (id) => {
   try {
-    const response = await apiCall(`${BASE_URL}/eventos/${id}/`);
+    const response = await apiCall(`${API_BASE}/web/eventos/${id}/`);
     const data = await response.json();
     return data;
   } catch (error) {
@@ -142,7 +143,7 @@ export const getEvento = async (id) => {
  */
 export const createEvento = async (eventoData) => {
   try {
-    const response = await apiCall(`${BASE_URL}/eventos/`, {
+    const response = await apiCall(`${API_BASE}/web/eventos/`, {
       method: 'POST',
       body: eventoData instanceof FormData ? eventoData : JSON.stringify(eventoData),
     });
@@ -174,7 +175,7 @@ export const updateEvento = async (id, eventoData) => {
       }
     }
     
-    const response = await apiCall(`${BASE_URL}/eventos/${id}/`, {
+    const response = await apiCall(`${API_BASE}/web/eventos/${id}/`, {
       method: 'PUT',
       body: eventoData instanceof FormData ? eventoData : JSON.stringify(eventoData),
     });
@@ -195,7 +196,7 @@ export const updateEvento = async (id, eventoData) => {
  */
 export const patchEvento = async (id, eventoData) => {
   try {
-    const response = await apiCall(`${BASE_URL}/eventos/${id}/`, {
+    const response = await apiCall(`${API_BASE}/web/eventos/${id}/`, {
       method: 'PATCH',
       body: eventoData instanceof FormData ? eventoData : JSON.stringify(eventoData),
     });
@@ -215,7 +216,7 @@ export const patchEvento = async (id, eventoData) => {
  */
 export const deleteEvento = async (id) => {
   try {
-    await apiCall(`${BASE_URL}/eventos/${id}/`, {
+    await apiCall(`${API_BASE}/web/eventos/${id}/`, {
       method: 'DELETE',
     });
   } catch (error) {
@@ -240,7 +241,7 @@ export const getCategorias = async (params = {}) => {
     });
     
     const queryString = queryParams.toString();
-    const url = `${BASE_URL}/categorias/${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_BASE}/web/categorias/${queryString ? `?${queryString}` : ''}`;
     
     const response = await apiCall(url);
     const data = await response.json();
@@ -259,7 +260,7 @@ export const getCategorias = async (params = {}) => {
  */
 export const createCategoria = async (categoriaData) => {
   try {
-    const response = await apiCall(`${BASE_URL}/categorias/`, {
+    const response = await apiCall(`${API_BASE}/web/categorias/`, {
       method: 'POST',
       body: JSON.stringify(categoriaData),
     });
@@ -280,7 +281,7 @@ export const createCategoria = async (categoriaData) => {
  */
 export const updateCategoria = async (id, categoriaData) => {
   try {
-    const response = await apiCall(`${BASE_URL}/categorias/${id}/`, {
+    const response = await apiCall(`${API_BASE}/web/categorias/${id}/`, {
       method: 'PUT',
       body: JSON.stringify(categoriaData),
     });
@@ -300,7 +301,7 @@ export const updateCategoria = async (id, categoriaData) => {
  */
 export const deleteCategoria = async (id) => {
   try {
-    await apiCall(`${BASE_URL}/categorias/${id}/`, {
+    await apiCall(`${API_BASE}/web/categorias/${id}/`, {
       method: 'DELETE',
     });
   } catch (error) {

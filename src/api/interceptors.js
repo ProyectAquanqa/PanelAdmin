@@ -53,7 +53,9 @@ const refreshToken = async () => {
     throw new Error('No refresh token available');
   }
 
-  const response = await fetch('/api/token/refresh/', {
+  const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+  const apiBase = rawBase.replace(/\/(web|admin|mobile)\/?$/, '');
+  const response = await fetch(`${apiBase}/web/auth/refresh/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

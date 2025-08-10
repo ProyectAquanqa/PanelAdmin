@@ -148,120 +148,38 @@ const ProfileTableView = ({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {/* Header de tabla */}
       <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-900">
-            Listado de Perfiles
-          </h3>
-          <span className="text-sm text-gray-500">
-            {totalItems} {totalItems === 1 ? 'perfil' : 'perfiles'}
-          </span>
+          <h3 className="text-sm font-medium text-gray-900">Perfiles (Grupos)</h3>
+          <span className="text-sm text-gray-500">{totalItems} {totalItems === 1 ? 'perfil' : 'perfiles'}</span>
         </div>
       </div>
-
-      {/* Tabla de perfiles */}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Perfil
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tipo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acceso
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Usuarios
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuarios</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permisos</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((profile, index) => (
-              <tr 
-                key={profile.id || index} 
-                className="hover:bg-gray-50 transition-colors"
-              >
-                {/* Información del perfil */}
-                <td className="px-6 py-4">
-                  <div className="flex flex-col">
-                    <div className="text-sm font-medium text-gray-900">
-                      {profile.nombre || profile.name}
-                    </div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {profile.descripcion || 'Sin descripción'}
-                    </div>
-                  </div>
-                </td>
-
-                {/* Tipo de perfil */}
-                <td className="px-6 py-4">
-                  <ProfileTypeBadge profile={profile} />
-                </td>
-
-                {/* Tipo de acceso */}
-                <td className="px-6 py-4">
-                  <AccessTypeBadge tipoAcceso={profile.tipo_acceso} />
-                </td>
-
-                {/* Usuarios asignados */}
-                <td className="px-6 py-4">
-                  <span className="text-sm text-gray-900">
-                    {profile.usuarios_count || 0}
-                  </span>
-                </td>
-
-                {/* Estado */}
-                <td className="px-6 py-4">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                    profile.is_active 
-                      ? 'bg-green-100 text-green-800 border border-green-200' 
-                      : 'bg-red-100 text-red-800 border border-red-200'
-                  }`}>
-                    {profile.is_active ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-
-                {/* Acciones */}
+            {data.map((g) => (
+              <tr key={g.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{g.name || g.nombre}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{g.users_count ?? g.usuarios_count ?? 0}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{g.permissions_count ?? (g.permissions?.length || 0)}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => onView?.(profile)}
-                      className="text-gray-400 hover:text-blue-600 transition-colors"
-                      title="Ver detalles"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
+                    <button onClick={() => onView?.(g)} className="text-gray-400 hover:text-blue-600" title="Ver">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     </button>
-                    <button
-                      onClick={() => onEdit?.(profile)}
-                      className="text-gray-400 hover:text-yellow-600 transition-colors"
-                      title="Editar"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
+                    <button onClick={() => onEdit?.(g)} className="text-gray-400 hover:text-yellow-600" title="Editar">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>
-                    <button
-                      onClick={() => onDelete?.(profile)}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
-                      title="Eliminar"
-                      disabled={profile.usuarios_count > 0}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                    <button onClick={() => onDelete?.(g)} className="text-gray-400 hover:text-red-600" title="Eliminar" disabled={(g.users_count ?? 0) > 0}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                   </div>
                 </td>

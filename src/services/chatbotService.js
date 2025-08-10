@@ -3,7 +3,8 @@
  * Basado en los endpoints de AquanQ/aquanq_noticias/api_urls.py
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Configuración base para fetch
 const apiCall = async (url, options = {}) => {
@@ -19,7 +20,7 @@ const apiCall = async (url, options = {}) => {
   };
 
   try {
-    const response = await fetch(`${BASE_URL}${url}`, config);
+    const response = await fetch(`${API_BASE}${url}`, config);
     
     if (!response.ok) {
       let error;
@@ -50,7 +51,8 @@ const apiCall = async (url, options = {}) => {
 const chatbotService = {
   // 🤖 Consultar el chatbot
   query: async (question, sessionId = 'admin-panel') => {
-    return await apiCall('/chatbot/query/', {
+    // Para pruebas desde admin, se usa capa mobile (público)
+    return await apiCall('/mobile/chatbot/query/', {
       method: 'POST',
       body: JSON.stringify({ 
         question,
@@ -61,21 +63,21 @@ const chatbotService = {
 
   // 📊 Obtener estadísticas del chatbot (usando el endpoint correcto)
   getStats: async () => {
-    return await apiCall('/chatbot-knowledge/statistics/');
+    return await apiCall('/web/chatbot-knowledge/statistics/');
   },
 
   // 💬 Gestión de conversaciones
   conversations: {
     list: async (page = 1, limit = 10) => {
-      return await apiCall(`/chatbot-conversations/?page=${page}&limit=${limit}`);
+      return await apiCall(`/web/chatbot-conversations/?page=${page}&limit=${limit}`);
     },
     
     get: async (id) => {
-      return await apiCall(`/chatbot-conversations/${id}/`);
+      return await apiCall(`/web/chatbot-conversations/${id}/`);
     },
     
     delete: async (id) => {
-      return await apiCall(`/chatbot-conversations/${id}/`, {
+      return await apiCall(`/web/chatbot-conversations/${id}/`, {
         method: 'DELETE',
       });
     },
@@ -89,29 +91,29 @@ const chatbotService = {
         limit: limit.toString(),
         ...(search && { search }),
       });
-      return await apiCall(`/chatbot-knowledge/?${params}`);
+      return await apiCall(`/web/chatbot-knowledge/?${params}`);
     },
     
     get: async (id) => {
-      return await apiCall(`/chatbot-knowledge/${id}/`);
+      return await apiCall(`/web/chatbot-knowledge/${id}/`);
     },
     
     create: async (data) => {
-      return await apiCall('/chatbot-knowledge/', {
+      return await apiCall('/web/chatbot-knowledge/', {
         method: 'POST',
         body: JSON.stringify(data),
       });
     },
     
     update: async (id, data) => {
-      return await apiCall(`/chatbot-knowledge/${id}/`, {
+      return await apiCall(`/web/chatbot-knowledge/${id}/`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
     },
     
     delete: async (id) => {
-      return await apiCall(`/chatbot-knowledge/${id}/`, {
+      return await apiCall(`/web/chatbot-knowledge/${id}/`, {
         method: 'DELETE',
       });
     },
@@ -123,7 +125,7 @@ const chatbotService = {
       
       const token = localStorage.getItem('access_token'); // Usar access_token
       
-      const response = await fetch(`${BASE_URL}/chatbot-knowledge/bulk-import/`, {
+      const response = await fetch(`${API_BASE}/web/chatbot-knowledge/bulk_import/`, {
         method: 'POST',
         headers: {
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -148,25 +150,25 @@ const chatbotService = {
   // 📂 Gestión de categorías
   categories: {
     list: async () => {
-      return await apiCall('/chatbot-categories/');
+      return await apiCall('/web/chatbot-categories/');
     },
     
     create: async (data) => {
-      return await apiCall('/chatbot-categories/', {
+      return await apiCall('/web/chatbot-categories/', {
         method: 'POST',
         body: JSON.stringify(data),
       });
     },
     
     update: async (id, data) => {
-      return await apiCall(`/chatbot-categories/${id}/`, {
+      return await apiCall(`/web/chatbot-categories/${id}/`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
     },
     
     delete: async (id) => {
-      return await apiCall(`/chatbot-categories/${id}/`, {
+      return await apiCall(`/web/chatbot-categories/${id}/`, {
         method: 'DELETE',
       });
     },
@@ -174,12 +176,12 @@ const chatbotService = {
 
   // 📋 Preguntas recomendadas
   getRecommendedQuestions: async () => {
-    return await apiCall('/chatbot/recommended-questions/');
+    return await apiCall('/mobile/chatbot/recommended-questions/');
   },
 
   // 🔄 Regenerar embeddings (endpoint personalizado si existe)
   regenerateEmbeddings: async () => {
-    return await apiCall('/chatbot/regenerate-embeddings/', {
+    return await apiCall('/admin/maintenance/regenerate-embeddings/', {
       method: 'POST',
     });
   },
