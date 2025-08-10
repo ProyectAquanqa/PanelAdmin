@@ -163,6 +163,17 @@ export const createEvento = async (eventoData) => {
  */
 export const updateEvento = async (id, eventoData) => {
   try {
+    console.log('🔍 updateEvento - Datos enviados:', eventoData);
+    console.log('🔍 updateEvento - Es FormData:', eventoData instanceof FormData);
+    
+    // Si es FormData, mostrar contenido
+    if (eventoData instanceof FormData) {
+      console.log('📋 FormData content:');
+      for (let [key, value] of eventoData.entries()) {
+        console.log(`  ${key}: ${value} (${typeof value})`);
+      }
+    }
+    
     const response = await apiCall(`${BASE_URL}/eventos/${id}/`, {
       method: 'PUT',
       body: eventoData instanceof FormData ? eventoData : JSON.stringify(eventoData),

@@ -99,24 +99,44 @@ const EventoModal = ({
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     
-    const submitData = new FormData();
-    submitData.append('titulo', formData.titulo);
-    submitData.append('descripcion', formData.descripcion);
-    submitData.append('fecha', formData.fecha);
-    submitData.append('publicado', formData.publicado);
-    
-    if (formData.categoria_id) {
-      submitData.append('categoria_id', formData.categoria_id);
-    }
-    
+    // Si hay imagen, usar FormData; si no, usar JSON
     if (formData.imagen) {
-      submitData.append('imagen', formData.imagen);
+      const submitData = new FormData();
+      submitData.append('titulo', formData.titulo);
+      submitData.append('descripcion', formData.descripcion);
+      submitData.append('fecha', formData.fecha);
+      // FormData requiere string para boolean
+      submitData.append('publicado', formData.publicado ? 'true' : 'false');
+      
+      if (formData.categoria_id) {
+        submitData.append('categoria_id', formData.categoria_id);
+      }
+      
+      if (formData.imagen) {
+        submitData.append('imagen', formData.imagen);
+      }
+      
+      const result = await onSubmit(submitData);
+      if (result !== false) {
+        handleClose();
+      }
+    } else {
+      // Sin imagen, usar JSON (mantiene tipos correctos)
+      const jsonData = {
+        titulo: formData.titulo,
+        descripcion: formData.descripcion,
+        fecha: formData.fecha,
+        publicado: formData.publicado, // Boolean se mantiene como boolean
+        ...(formData.categoria_id && { categoria_id: formData.categoria_id })
+      };
+      
+      const result = await onSubmit(jsonData);
+      if (result !== false) {
+        handleClose();
+      }
     }
 
-    const result = await onSubmit(submitData);
-    if (result !== false) {
-      handleClose();
-    }
+
   };
 
   // Manejar cierre del modal

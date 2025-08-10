@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import userService from '../services/userService';
+import groupService from '../services/groupService';
 import toast from 'react-hot-toast';
 
 /**
@@ -32,6 +33,36 @@ export const useUsers = () => {
   });
 
   // 🔄 Funciones para obtener datos
+  
+  // Función para obtener grupos
+  const fetchGroups = useCallback(async () => {
+    try {
+      const result = await groupService.list(1, 100); // Obtener todos los grupos
+      console.log('🔍 Resultado groupService.list:', result); // Debug temporal
+      
+      // Manejar diferentes formatos de respuesta
+      let grupos = [];
+      if (Array.isArray(result)) {
+        grupos = result;
+      } else if (result && Array.isArray(result.data)) {
+        // Formato del GroupProfileViewSet: {success: true, data: [...], count: ...}
+        grupos = result.data;
+      } else if (result && Array.isArray(result.results)) {
+        // Formato DRF paginado: {results: [...], count: ...}
+        grupos = result.results;
+      } else {
+        console.warn('⚠️ Formato inesperado de grupos:', result);
+        grupos = [];
+      }
+      
+      setGroups(grupos);
+    } catch (error) {
+      console.error('❌ Error al obtener grupos:', error);
+      toast.error('Error al cargar grupos');
+      setGroups([]); // Asegurar que groups sea siempre un array
+    }
+  }, []);
+
   const fetchUsers = useCallback(async (page = 1, filters = {}) => {
     setLoading(prev => ({ ...prev, users: true }));
     try {
@@ -69,13 +100,20 @@ export const useUsers = () => {
   const fetchUserStats = useCallback(async () => {
     setLoading(prev => ({ ...prev, userStats: true }));
     try {
-      const response = await userService.users.getStatistics();
+      // Generar estadísticas básicas desde los datos de usuarios
+      const response = await userService.users.list(1, 1000); // Obtener todos los usuarios
+      const userData = response.status === 'success' ? response.data : response;
+      const users = userData.results || userData || [];
       
-      if (response.status === 'success') {
-        setUserStats(response.data);
-      } else {
-        setUserStats(response);
-      }
+      const stats = {
+        total: users.length,
+        active: users.filter(u => u.is_active).length,
+        inactive: users.filter(u => !u.is_active).length,
+        admins: users.filter(u => u.tipo_usuario === 'ADMIN').length,
+        workers: users.filter(u => u.tipo_usuario === 'TRABAJADOR').length,
+      };
+      
+      setUserStats(stats);
     } catch (error) {
       console.error('❌ Error en fetchUserStats:', error);
       toast.error(`Error al cargar estadísticas: ${error.message}`);
@@ -84,22 +122,7 @@ export const useUsers = () => {
     }
   }, []);
 
-  // 👥 Función para obtener grupos disponibles
-  const fetchGroups = useCallback(async () => {
-    try {
-      const response = await userService.users.getAvailableGroups();
-      
-      if (response.status === 'success') {
-        setGroups(response.data);
-      } else {
-        setGroups(response.data || []);
-      }
-    } catch (error) {
-      console.error('Error al cargar grupos:', error);
-      toast.error(`Error al cargar grupos: ${error.message}`);
-      setGroups([]);
-    }
-  }, []);
+
 
   // 👤 Funciones CRUD de usuarios
   const createUser = useCallback(async (userData) => {
@@ -414,6 +437,7 @@ export const useUsers = () => {
     // Funciones de utilidades
     exportUsers,
     bulkImportUsers,
+    bulkCreateUsers: bulkImportUsers, // Alias para compatibilidad
     uploadUserImage,
     validateUsername,
     

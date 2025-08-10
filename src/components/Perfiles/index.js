@@ -1,11 +1,12 @@
 /**
- * Índice de componentes de Perfiles
- * Exporta todos los componentes del módulo para fácil importación
+ * Exportaciones centralizadas para el módulo de Perfiles
+ * Sistema híbrido Django Groups + GroupProfile
  */
 
-export { default as PerfilModal } from './PerfilModal';
-export { default as PerfilTableView } from './PerfilTableView';
-export { default as PerfilFilters } from './PerfilFilters';
-
-// Re-exportar el servicio para conveniencia
-export { perfilesService } from '../../services/perfilesService';
+export { default as ProfileActions } from './ProfileActions';
+export { default as ProfileTableView } from './ProfileTableView';
+export { default as ProfileModal } from './ProfileModal';
+export { default as ProfileModalNew } from './ProfileModalNew';
+export { default as ProfileForm } from './ProfileForm'; // Old complex form
+export { default as ProfileFormNew } from './ProfileFormNew'; // New simplified form
+ 

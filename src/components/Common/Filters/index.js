@@ -26,3 +26,4 @@ export {
   userFiltersConfig, 
   prepareUserFiltersConfig 
 } from './configs/userFiltersConfig';
+

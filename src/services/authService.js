@@ -19,12 +19,28 @@ const apiCall = async (url, options = {}) => {
   try {
     const response = await fetch(`${BASE_URL}${url}`, config);
     
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || error.message || `HTTP ${response.status}`);
+      let message = `HTTP ${response.status}`;
+      try {
+        if (isJson) {
+          const error = await response.json();
+          message = error.detail || error.message || message;
+        } else {
+          const text = await response.text();
+          if (text && text.startsWith('<!DOCTYPE')) {
+            message = 'El servidor devolvió HTML. Revisa que la URL de la API sea correcta y que el endpoint exista.';
+          } else if (text) {
+            message = text;
+          }
+        }
+      } catch (_) {}
+      throw new Error(message);
     }
     
-    return await response.json();
+    return isJson ? await response.json() : await response.text();
   } catch (error) {
     console.error('Auth API Error:', error);
     throw error;

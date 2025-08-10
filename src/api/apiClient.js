@@ -8,15 +8,19 @@ import { api } from '../config/appConfig';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 /**
- * Configuración base para llamadas a la API
+ * Configuración base para llamadas a la API con autenticación
  * @param {string} url - URL del endpoint
  * @param {Object} options - Opciones de configuración
  * @returns {Promise} Respuesta de la API
  */
 export const apiCall = async (url, options = {}) => {
+  // Obtener token de autenticación
+  const token = localStorage.getItem('access_token');
+  
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
     timeout: api.timeout,

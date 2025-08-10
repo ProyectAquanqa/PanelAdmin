@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { userService } from '../../services/userService';
+import userService from '../../services/userService';
 
 const PerfilSelector = ({
   tipoUsuario,

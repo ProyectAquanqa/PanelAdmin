@@ -20,7 +20,7 @@ export const userFiltersConfig = {
       key: 'selectedRole',
       title: 'Rol',
       type: 'dropdown',
-      options: [], // Se llenará dinámicamente con los roles (grupos)
+      options: [], // Se llenará dinámicamente con los grupos
       placeholder: 'Seleccionar rol...',
       showIcon: true,
       iconPath: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
@@ -67,17 +67,24 @@ export const userFiltersConfig = {
 /**
  * Función helper para preparar la configuración con datos dinámicos
  */
-export const prepareUserFiltersConfig = (roles, handlers) => {
+export const prepareUserFiltersConfig = (groups = [], handlers) => {
   const config = { ...userFiltersConfig };
   
-  // Agregar roles dinámicamente (antes grupos)
+  // Validar que groups sea un array
+  const validGroups = Array.isArray(groups) ? groups : [];
+  
+  // Agregar grupos dinámicamente 
   config.filterGroups[0].options = [
-    { value: '', label: 'Todos los roles' },
-    ...roles.map(role => ({ 
-      value: role.name || role.id?.toString(), 
-      label: role.name || role.label 
+    { value: '', label: 'Todos los perfiles' },
+    ...validGroups.map(group => ({ 
+      value: group.id?.toString(), 
+      label: group.nombre || group.name 
     }))
   ];
+  
+  // Cambiar título de "Rol" a "Perfil"
+  config.filterGroups[0].title = 'Perfil';
+  config.filterGroups[0].placeholder = 'Seleccionar perfil...';
   
   // Asignar handlers dinámicamente - 3 ACCIONES
   config.actions[0].onClick = handlers.onCreateNew;

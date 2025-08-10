@@ -6,6 +6,9 @@
 export { default as DataViewSwitcher } from './DataViewSwitcher';
 export { default as CustomDropdown } from './CustomDropdown';
 
+// Componentes de Modal
+export { default as Modal } from './Modal/Modal';
+
 // Componentes de DataView
 export { 
   TableView,
@@ -23,5 +26,5 @@ export {
   conversationFiltersConfig,
   prepareConversationFiltersConfig,
   userFiltersConfig,
-  prepareUserFiltersConfig
-} from './Filters'; 
+  prepareUserFiltersConfig,
+} from './Filters';

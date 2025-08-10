@@ -105,13 +105,13 @@ const apiCall = async (url, options = {}) => {
 };
 
 const userService = {
-  // 👥 Gestión de usuarios CRUD
+  // 👥 Gestión de usuarios CRUD - Basado en UsuarioViewSet del backend
   users: {
     /**
      * Lista usuarios con filtros y paginación
      * @param {number} page - Página actual
      * @param {number} limit - Elementos por página
-     * @param {Object} filters - Filtros opcionales
+     * @param {Object} filters - Filtros opcionales basados en el backend
      * @returns {Promise} Lista de usuarios
      */
     list: async (page = 1, limit = 10, filters = {}) => {
@@ -120,11 +120,11 @@ const userService = {
         page_size: limit.toString(),
       });
 
-      // Agregar filtros si existen
-      if (filters.search) params.append('search', filters.search);
+      // Agregar filtros basados exactamente en el backend (users/views.py)
+      if (filters.search) params.append('search', filters.search); // Busca en username, first_name, last_name, email
       if (filters.is_active !== undefined) params.append('is_active', filters.is_active);
-      if (filters.is_staff !== undefined) params.append('is_staff', filters.is_staff);
-      if (filters.groups) params.append('groups__name', filters.groups);
+      if (filters.tipo_usuario) params.append('tipo_usuario', filters.tipo_usuario); // ADMIN o TRABAJADOR
+      if (filters.groups) params.append('groups', filters.groups); // ID del grupo
       if (filters.date_from) params.append('date_from', filters.date_from);
       if (filters.date_to) params.append('date_to', filters.date_to);
       if (filters.ordering) params.append('ordering', filters.ordering);
@@ -191,64 +191,31 @@ const userService = {
     },
 
     /**
-     * Cambia el estado activo/inactivo del usuario
+     * Cambia el estado activo/inactivo del usuario (endpoint correcto del backend)
      * @param {number} id - ID del usuario
      * @returns {Promise} Nuevo estado del usuario
      */
     toggleActiveStatus: async (id) => {
-      return await apiCall(`/users/${id}/toggle_active_status/`, {
-        method: 'POST',
+      return await apiCall(`/users/${id}/toggle_active/`, {
+        method: 'PATCH',
       });
     },
 
     /**
-     * Obtiene los permisos de un usuario
-     * @param {number} id - ID del usuario
-     * @returns {Promise} Permisos del usuario
+     * Obtiene grupos disponibles filtrados por tipo de usuario
+     * @param {string} tipoUsuario - 'ADMIN' o 'TRABAJADOR'
+     * @returns {Promise} Lista de grupos disponibles
      */
-    getPermissions: async (id) => {
-      return await apiCall(`/users/${id}/permissions/`);
-    },
-
-    /**
-     * Obtiene estadísticas generales de usuarios
-     * @returns {Promise} Estadísticas de usuarios
-     */
-    getStatistics: async () => {
-      return await apiCall('/users/statistics/');
-    },
-
-    /**
-     * Importación masiva de usuarios desde datos parseados
-     * @param {Array} usersData - Array de datos de usuarios a importar
-     * @returns {Promise} Resultado de la importación
-     */
-    bulkImport: async (usersData) => {
-      // Preparar datos para el backend
-      const payload = {
-        users: usersData.map(user => ({
-          username: user.username,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email || '',
-          is_active: user.is_active !== undefined ? user.is_active : true,
-          is_staff: user.is_staff !== undefined ? user.is_staff : false,
-          groups: Array.isArray(user.groups) ? user.groups : []
-        }))
-      };
-
-      return await apiCall('/users/bulk_import/', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-    },
-
-    /**
-     * Obtiene todos los grupos disponibles para asignar a usuarios
-     * @returns {Promise} Lista de grupos
-     */
-    getAvailableGroups: async () => {
-      return await apiCall('/users/available_groups/');
+    getGroupsDisponibles: async (tipoUsuario = null) => {
+      const params = new URLSearchParams();
+      if (tipoUsuario === 'ADMIN') {
+        params.append('is_admin_group', 'true');
+      } else if (tipoUsuario === 'TRABAJADOR') {
+        params.append('is_worker_group', 'true');
+      }
+      params.append('is_active', 'true');
+      
+      return await apiCall(`/groups/?${params}`);
     }
   },
 

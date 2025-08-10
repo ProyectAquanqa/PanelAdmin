@@ -6,7 +6,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Pagination, SortIcon } from '../Common';
-import LoadingStates from './LoadingStates';
+// import LoadingStates from './LoadingStates';
 
 const UserTableView = ({
   data = [],
@@ -26,6 +26,7 @@ const UserTableView = ({
   onDelete,
   onToggleStatus,
   onView,
+  onCreateNew,
   className = ''
 }) => {
   
@@ -91,21 +92,37 @@ const UserTableView = ({
             </span>
           </div>
           
-          {/* Roles */}
-          {user.groups && user.groups.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {user.groups.slice(0, 2).map((group, index) => (
-                <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-50 text-slate-600 border border-slate-200 text-[13px] font-medium">
-                  {typeof group === 'string' ? group : group.name}
+          {/* Información de Perfil y Tipo de Usuario */}
+          <div className="space-y-1">
+            {/* Tipo de usuario */}
+            {user.tipo_usuario && (
+              <div>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                  user.tipo_usuario === 'ADMIN' 
+                    ? 'bg-purple-100 text-purple-600 border border-purple-200' 
+                    : 'bg-blue-100 text-blue-600 border border-blue-200'
+                }`}>
+                  {user.tipo_usuario === 'ADMIN' ? '👑 Admin' : '👤 Trabajador'}
                 </span>
-              ))}
-              {user.groups.length > 2 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[13px] font-medium">
-                  +{user.groups.length - 2}
-                </span>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+            
+            {/* Grupos asignados */}
+            {user.groups && user.groups.length > 0 && (
+              <div className="text-[12px] text-slate-600">
+                📋 {user.groups.map(group => 
+                  typeof group === 'object' ? group.name || group.nombre : group
+                ).join(', ')}
+              </div>
+            )}
+            
+            {/* Empresa si existe */}
+            {user.empresa && (
+              <div className="text-[11px] text-slate-500">
+                🏢 {user.empresa}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Fecha de registro */}
@@ -228,24 +245,31 @@ const UserTableView = ({
           </div>
         </td>
 
-        {/* Rol - Desktop grande */}
+        {/* Perfil y Tipo - Desktop grande */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden xl:table-cell">
-          <div className="flex flex-wrap gap-1">
-            {user.groups && user.groups.length > 0 ? (
-              <>
-                {user.groups.slice(0, 1).map((group, index) => (
-                  <span key={index} className="inline-flex items-center px-2 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-200 text-[13px] font-medium">
-                    {typeof group === 'string' ? group : group.name}
-                  </span>
-                ))}
-                {user.groups.length > 1 && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[13px] font-medium">
-                    +{user.groups.length - 1}
-                  </span>
-                )}
-              </>
+          <div className="space-y-1">
+            {/* Tipo de usuario */}
+            {user.tipo_usuario ? (
+              <div>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                  user.tipo_usuario === 'ADMIN' 
+                    ? 'bg-purple-100 text-purple-600 border border-purple-200' 
+                    : 'bg-blue-100 text-blue-600 border border-blue-200'
+                }`}>
+                  {user.tipo_usuario === 'ADMIN' ? '👑 Admin' : '👤 Trabajador'}
+                </span>
+              </div>
             ) : (
-              <span className="text-[13px] text-gray-400 italic">Sin rol</span>
+              <span className="text-[13px] text-gray-400 italic">Sin tipo</span>
+            )}
+            
+            {/* Grupos asignados */}
+            {user.groups && user.groups.length > 0 && (
+              <div className="text-[11px] text-slate-600 truncate">
+                📋 {user.groups.map(group => 
+                  typeof group === 'object' ? group.name || group.nombre : group
+                ).join(', ')}
+              </div>
             )}
           </div>
         </td>
@@ -291,9 +315,38 @@ const UserTableView = ({
     );
   };
 
+  // Estado de carga
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8">
+        <div className="animate-pulse">
+          <div className="flex space-x-4">
+            <div className="rounded-full bg-slate-200 h-10 w-10"></div>
+            <div className="flex-1 space-y-2 py-1">
+              <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+              <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Estado vacío
   if (!loading && (!data || data.length === 0)) {
-    return <LoadingStates.EmptyState onAction={onEdit} />;
+    return (
+      <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+        <div className="text-gray-400 text-6xl mb-4">👥</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay usuarios registrados</h3>
+        <p className="text-gray-500 mb-4">Los usuarios aparecerán aquí cuando se registren en el sistema. Puedes agregar nuevos usuarios desde el panel de administración.</p>
+        <button
+          onClick={onCreateNew}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Crear Usuario
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -365,9 +418,9 @@ const UserTableView = ({
                     </div>
                   </th>
                   
-                  {/* Rol - Desktop grande */}
-                  <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell min-w-[100px] w-[120px]">
-                    Rol
+                  {/* Perfil - Desktop grande */}
+                  <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell min-w-[120px] w-[140px]">
+                    Perfil
                   </th>
                   
                   {/* Acciones - Siempre visible */}
@@ -418,6 +471,7 @@ UserTableView.propTypes = {
   onDelete: PropTypes.func,
   onToggleStatus: PropTypes.func,
   onView: PropTypes.func,
+  onCreateNew: PropTypes.func,
   className: PropTypes.string
 };
 

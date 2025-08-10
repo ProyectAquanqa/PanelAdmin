@@ -49,7 +49,7 @@ export const eventosFiltersConfig = {
         tablet: 'w-full lg:w-auto',
         desktop: 'w-auto'
       },
-      containerClass: 'min-w-0 flex-1 lg:flex-none lg:min-w-[200px]'
+      containerClass: 'min-w-0 flex-1 lg:flex-none lg:min-w-[200px] transition-all duration-300 ease-in-out sidebar-aware-filter'
     }
   ],
 

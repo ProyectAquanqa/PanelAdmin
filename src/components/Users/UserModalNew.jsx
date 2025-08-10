@@ -25,8 +25,8 @@ const UserModal = ({
   const [imagePreview, setImagePreview] = useState(null);
   const [loadingDni, setLoadingDni] = useState(false);
   const [fieldsFromDni, setFieldsFromDni] = useState(false);
-  const [perfilesDisponibles, setPerfilesDisponibles] = useState([]);
-  const [loadingPerfiles, setLoadingPerfiles] = useState(false);
+  const [groupsDisponibles, setGroupsDisponibles] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
   
   // Usar hook de formulario
   const {
@@ -50,29 +50,37 @@ const UserModal = ({
     setLoadingDni(false);
   }, [editingUser, mode]);
 
-  // Cargar perfiles disponibles cuando cambie el tipo de usuario
+  // Sin pre-selección automática de tipo_usuario (vista unificada)
+
+  // Cargar grupos disponibles cuando cambie el tipo de usuario
   useEffect(() => {
-    const loadPerfiles = async () => {
-      if (!formData.tipo_usuario) return;
+    const loadGroups = async () => {
+      if (!formData.tipo_usuario) {
+        setGroupsDisponibles([]);
+        return;
+      }
       
-      setLoadingPerfiles(true);
+      setLoadingGroups(true);
       try {
-        const result = await userService.getPerfilesDisponibles(formData.tipo_usuario);
-        if (result.success) {
-          setPerfilesDisponibles(result.data.data || []);
+        const response = await userService.users.getGroupsDisponibles(formData.tipo_usuario);
+        if (response.status === 'success') {
+          setGroupsDisponibles(response.data.results || response.data || []);
+        } else if (response.results) {
+          // Formato directo del backend sin wrapper
+          setGroupsDisponibles(response.results);
         } else {
-          toast.error('Error al cargar perfiles disponibles');
-          setPerfilesDisponibles([]);
+          toast.error('Error al cargar grupos disponibles');
+          setGroupsDisponibles([]);
         }
       } catch (error) {
-        toast.error('Error al cargar perfiles');
-        setPerfilesDisponibles([]);
+        toast.error('Error al cargar grupos: ' + error.message);
+        setGroupsDisponibles([]);
       } finally {
-        setLoadingPerfiles(false);
+        setLoadingGroups(false);
       }
     };
 
-    loadPerfiles();
+    loadGroups();
   }, [formData.tipo_usuario]);
 
   // Manejar envío del formulario
@@ -99,19 +107,7 @@ const UserModal = ({
     onClose();
   };
 
-  // Manejar selección de grupos múltiples
-  const handleGroupChange = (e) => {
-    const { value } = e.target;
-    const currentGroups = formData.groups || [];
-    
-    if (currentGroups.includes(value)) {
-      // Remover grupo
-      setFieldValue('groups', currentGroups.filter(g => g !== value));
-    } else {
-      // Agregar grupo
-      setFieldValue('groups', [...currentGroups, value]);
-    }
-  };
+
 
   // Autocompletar datos desde DNI usando el servicio real
   const handleDniBlur = async (dni) => {
@@ -453,39 +449,155 @@ const UserModal = ({
                     </div>
                   )}
 
-                  {/* Grupos y Permisos */}
+
+
+                  {/* Sistema de Grupos - Nuevo sistema basado en backend */}
                   <div className="space-y-5">
-                    <h4 className="text-[14px] font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">Roles y Permisos</h4>
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                      {availableRoles && availableRoles.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                            {availableRoles.map((role) => (
-                              <label key={role.id || role.name} className="flex items-center space-x-3 cursor-pointer group">
-                                <input
-                                  type="checkbox"
-                                  checked={(formData.groups || []).includes(role.name)}
-                                  onChange={() => {
-                                    if (!isViewMode) {
-                                      const event = { target: { value: role.name } };
-                                      handleGroupChange(event);
-                                    }
-                                  }}
+                    <h4 className="text-[14px] font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">Sistema de Perfiles</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Tipo de Usuario */}
+                      <div className="space-y-2">
+                        <label htmlFor="tipo_usuario" className="block text-[13px] font-semibold text-gray-700">
+                          Tipo de Usuario <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          {...getSelectProps('tipo_usuario')}
                                   disabled={isViewMode}
-                                  className="w-4 h-4 text-slate-600 border-2 border-gray-300 rounded focus:ring-slate-500 focus:ring-2"
-                                />
-                                <span className="text-[13px] text-gray-700 group-hover:text-gray-900 font-medium">{role.name}</span>
-                              </label>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-6">
-                            <svg className="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                            </svg>
-                            <p className="text-[13px] text-gray-500">No hay roles disponibles</p>
-                            <p className="text-[11px] text-gray-400 mt-1">Los roles se cargan desde el backend</p>
-                          </div>
+                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
+                            errors.tipo_usuario ? 'border-red-500 bg-red-50' : 'bg-white'
+                          } ${isViewMode ? 'bg-gray-50' : ''}`}
+                        >
+                          <option value="">Seleccionar tipo</option>
+                          <option value="ADMIN">Administrativo</option>
+                          <option value="TRABAJADOR">Trabajador</option>
+                        </select>
+                        {errors.tipo_usuario && (
+                          <p className="text-[12px] text-red-600">{errors.tipo_usuario}</p>
                         )}
+                      </div>
+
+                      {/* Grupo (perfil) */}
+                      <div className="space-y-2">
+                        <label htmlFor="groups" className="block text-[13px] font-semibold text-gray-700">
+                          Perfil <span className="text-red-500">*</span>
+                              </label>
+                        <select
+                          {...getSelectProps('groups_ids')}
+                          disabled={isViewMode || !formData.tipo_usuario || loadingGroups}
+                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
+                            errors.groups ? 'border-red-500 bg-red-50' : 'bg-white'
+                          } ${(isViewMode || !formData.tipo_usuario) ? 'bg-gray-50' : ''}`}
+                        >
+                          <option value="">
+                            {loadingGroups ? 'Cargando perfiles...' : 
+                             !formData.tipo_usuario ? 'Selecciona tipo de usuario primero' : 
+                             'Seleccionar perfil'}
+                          </option>
+                          {groupsDisponibles.map(group => (
+                            <option key={group.id} value={group.id}>
+                              {group.nombre || group.name}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.groups_ids && (
+                          <p className="text-[12px] text-red-600">{errors.groups_ids}</p>
+                        )}
+                      </div>
+                          </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Empresa */}
+                      <div className="space-y-2">
+                        <label htmlFor="empresa" className="block text-[13px] font-semibold text-gray-700">
+                          Empresa
+                        </label>
+                        <input
+                          {...getInputProps('empresa')}
+                          type="text"
+                          placeholder="Nombre de la empresa"
+                          disabled={isViewMode}
+                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
+                            errors.empresa ? 'border-red-500 bg-red-50' : 'bg-white'
+                          } ${isViewMode ? 'bg-gray-50' : ''}`}
+                        />
+                        {errors.empresa && (
+                          <p className="text-[12px] text-red-600">{errors.empresa}</p>
+                        )}
+                          </div>
+
+                      {/* Departamento */}
+                      <div className="space-y-2">
+                        <label htmlFor="departamento" className="block text-[13px] font-semibold text-gray-700">
+                          Departamento
+                        </label>
+                        <input
+                          {...getInputProps('departamento')}
+                          type="text"
+                          placeholder="Departamento"
+                          disabled={isViewMode}
+                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
+                            errors.departamento ? 'border-red-500 bg-red-50' : 'bg-white'
+                          } ${isViewMode ? 'bg-gray-50' : ''}`}
+                        />
+                        {errors.departamento && (
+                          <p className="text-[12px] text-red-600">{errors.departamento}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Código de Empleado */}
+                    <div className="space-y-2">
+                      <label htmlFor="codigo_empleado" className="block text-[13px] font-semibold text-gray-700">
+                        Código de Empleado
+                      </label>
+                      <input
+                        {...getInputProps('codigo_empleado')}
+                        type="text"
+                        placeholder="Código único del empleado"
+                        disabled={isViewMode}
+                        className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
+                          errors.codigo_empleado ? 'border-red-500 bg-red-50' : 'bg-white'
+                        } ${isViewMode ? 'bg-gray-50' : ''}`}
+                      />
+                      {errors.codigo_empleado && (
+                        <p className="text-[12px] text-red-600">{errors.codigo_empleado}</p>
+                      )}
+                    </div>
+
+                    {/* Accesos Web y Móvil */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between py-2">
+                        <div className="flex-1">
+                          <span className="text-[12px] font-medium text-slate-700">Acceso Web</span>
+                          <p className="text-[10px] text-slate-500">Puede acceder vía interfaz web</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            {...getCheckboxProps('acceso_web_activo')}
+                            type="checkbox"
+                            disabled={isViewMode}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between py-2">
+                        <div className="flex-1">
+                          <span className="text-[12px] font-medium text-slate-700">Acceso Móvil</span>
+                          <p className="text-[10px] text-slate-500">Puede acceder vía app móvil</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            {...getCheckboxProps('acceso_movil_activo')}
+                            type="checkbox"
+                            disabled={isViewMode}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-600"></div>
+                        </label>
+                      </div>
                     </div>
                   </div>
 
@@ -512,8 +624,8 @@ const UserModal = ({
                             <span className="text-slate-800">#{editingUser.id}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-600 font-medium">Grupos:</span>
-                            <span className="text-slate-800">{editingUser.groups_count || 0}</span>
+                            <span className="text-slate-600 font-medium">Tipo:</span>
+                            <span className="text-slate-800">{editingUser.tipo_usuario === 'ADMIN' ? 'Administrativo' : 'Trabajador'}</span>
                           </div>
                         </div>
                       </div>

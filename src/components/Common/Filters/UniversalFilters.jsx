@@ -5,7 +5,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { CustomDropdown } from '../';
+import DateRangeFilter from './DateRangeFilter';
+import CustomDropdown from '../CustomDropdown';
 
 /**
  * Componente base reutilizable para todos los filtros del sistema
