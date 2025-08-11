@@ -22,8 +22,7 @@ const EventosCategorias = lazy(() => import('../pages/Eventos/EventosCategorias'
 const Users = lazy(() => import('../pages/Users/Users'));
 const UserManagement = lazy(() => import('../pages/Users/UserManagement'));
 
-const UserImport = lazy(() => import('../pages/Users/UserImport'));
-const UserImportManagement = lazy(() => import('../pages/Users/UserImportManagement'));
+
 
 // 🔐 Páginas del módulo de Perfiles
 const ProfileManagement = lazy(() => import('../pages/Perfiles/ProfileManagement'));
@@ -157,16 +156,7 @@ const AppRoutes = () => {
             <UserManagement />
           </Suspense>
         } />
-        <Route path="usuarios/importacion" element={
-          <Suspense fallback={<LoadingFallback />}>
-            <UserImportManagement />
-          </Suspense>
-        } />
-        <Route path="usuarios/importar" element={
-          <Suspense fallback={<LoadingFallback />}>
-            <UserImport />
-          </Suspense>
-        } />
+
         <Route path="usuarios/perfiles" element={
           <Suspense fallback={<LoadingFallback />}>
             <ProfileManagementNew />

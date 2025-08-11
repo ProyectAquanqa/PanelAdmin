@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDataView } from '../../hooks/useDataView';
 import { searchInFields } from '../../utils/searchUtils';
 import ProfileActions from '../../components/Perfiles/ProfileActions';
-import ProfileTableView from '../../components/Perfiles/ProfileTableView';
+import { DataViewSwitcher } from '../../components/Common';
 import ProfileFormNew from '../../components/Perfiles/ProfileFormNew';
 import useProfiles from '../../hooks/useProfiles';
 
@@ -36,7 +36,7 @@ const ProfileManagementNew = () => {
 
   // Estados de filtros (solo para vista de listado)
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState(''); // admin, worker, todos
+  const [selectedGroup, setSelectedGroup] = useState(''); // nombre del grupo específico
 
   const { currentPage, setCurrentPage } = useDataView();
 
@@ -54,19 +54,25 @@ const ProfileManagementNew = () => {
     // Filtro por búsqueda
     if (searchTerm.trim()) {
       filtered = searchInFields(filtered, searchTerm, [
-        'nombre', 'name', 'descripcion'
+        'name', 'permissions.name', 'permissions.codename'
       ]);
     }
 
-    // Filtro por tipo de perfil
-    if (selectedType === 'admin') {
-      filtered = filtered.filter(profile => profile.is_admin_group);
-    } else if (selectedType === 'worker') {
-      filtered = filtered.filter(profile => profile.is_worker_group);
+    // Filtro por grupo específico
+    if (selectedGroup && selectedGroup !== '') {
+      filtered = filtered.filter(profile => profile.name === selectedGroup);
     }
 
     return filtered;
-  }, [profiles, searchTerm, selectedType, currentView]);
+  }, [profiles, searchTerm, selectedGroup, currentView]);
+
+  // Preparar datos para ProfileTableView (sin adaptación, mantiene estructura original)
+  const profilesForTable = useMemo(() => {
+    return filteredProfiles.map(profile => ({
+      ...profile,
+      _original: profile // Mantener referencia original para compatibilidad
+    }));
+  }, [filteredProfiles]);
 
   // === HANDLERS PARA VISTA DE LISTADO ===
 
@@ -75,18 +81,29 @@ const ProfileManagementNew = () => {
     setCurrentView('create');
   }, []);
 
-  const handleEdit = useCallback((profile) => {
-    setEditingProfile(profile);
+  const handleEdit = useCallback((adaptedProfile) => {
+    // Extraer el perfil original del objeto adaptado
+    const originalProfile = adaptedProfile._original || adaptedProfile;
+    setEditingProfile(originalProfile);
     setCurrentView('edit');
   }, []);
 
-  const handleView = useCallback((profile) => {
-    setEditingProfile(profile);
+  const handleView = useCallback((adaptedProfile) => {
+    // Extraer el perfil original del objeto adaptado
+    const originalProfile = adaptedProfile._original || adaptedProfile;
+    setEditingProfile(originalProfile);
     setCurrentView('view');
   }, []);
 
-  const handleDelete = useCallback(async (profile) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar el perfil "${profile.nombre || profile.name}"?`)) {
+  const handleDelete = useCallback(async (adaptedProfileOrId) => {
+    // Manejar tanto objetos adaptados como IDs directos
+    const profile = typeof adaptedProfileOrId === 'object' 
+      ? (adaptedProfileOrId._original || adaptedProfileOrId)
+      : { id: adaptedProfileOrId };
+    
+    const profileName = profile.nombre || profile.name || profile.question || `ID ${profile.id}`;
+    
+    if (window.confirm(`¿Estás seguro de que quieres eliminar el perfil "${profileName}"?`)) {
       try {
         await deleteProfile(profile.id);
       } catch (error) {
@@ -128,6 +145,8 @@ const ProfileManagementNew = () => {
     }
   }, [currentView, editingProfile, createProfile, updateProfile]);
 
+
+
   // === RENDERIZADO ===
 
   // Vista de Formulario (Crear/Editar/Ver)
@@ -154,24 +173,22 @@ const ProfileManagementNew = () => {
         <ProfileActions
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          selectedType={selectedType}
-          onTypeChange={setSelectedType}
+          selectedGroup={selectedGroup}
+          onGroupChange={setSelectedGroup}
+          groups={profiles} // Pasar todos los grupos para las opciones del filtro
           onCreateNew={handleCreateNew}
           onExport={handleExport}
           onImport={() => console.log('Importar perfiles (por implementar)')} // TODO: Implementar import
-          totalItems={filteredProfiles.length}
+          totalItems={profilesForTable.length}
           loading={loading.profiles}
         />
 
-        {/* Tabla de perfiles */}
-        <ProfileTableView
-          data={filteredProfiles}
-          totalItems={filteredProfiles.length}
-          loading={loading.profiles}
+        {/* Tabla de perfiles usando DataViewSwitcher estándar */}
+        <DataViewSwitcher
+          data={profilesForTable}
           onEdit={handleEdit}
-          onView={handleView}
           onDelete={handleDelete}
-          onCreateNew={handleCreateNew}
+          itemType="profile"
         />
       </div>
     </div>

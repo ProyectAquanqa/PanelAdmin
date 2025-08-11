@@ -54,17 +54,37 @@ const useProfiles = () => {
 
   // Función para crear perfil
   const createProfile = useCallback(async (profileData) => {
+    if (!profileData || !profileData.name) {
+      console.error('❌ Nombre del grupo requerido');
+      toast.error('El nombre del grupo es requerido');
+      return false;
+    }
+
     setLoading(prev => ({ ...prev, create: true }));
     try {
-      await groupService.create(profileData);
-      toast.success('Perfil creado exitosamente');
+      console.log('📝 Creando grupo:', profileData);
+      
+      const result = await groupService.create({
+        name: profileData.name,
+        permissions: profileData.permissions || []
+      });
+      
+      console.log('✅ Grupo creado exitosamente:', result);
+      toast.success('Grupo creado exitosamente');
       
       // Recargar lista de perfiles
       await fetchProfiles();
+      return true;
     } catch (error) {
-      console.error('❌ Error al crear perfil:', error);
-      toast.error('Error al crear perfil');
-      throw error;
+      console.error('❌ Error al crear grupo:', error);
+      
+      // Manejar errores específicos del backend
+      if (error.message && error.message.includes('already exists')) {
+        toast.error('Ya existe un grupo con ese nombre');
+      } else {
+        toast.error('Error al crear grupo');
+      }
+      return false;
     } finally {
       setLoading(prev => ({ ...prev, create: false }));
     }

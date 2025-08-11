@@ -1,13 +1,15 @@
 /**
  * Página de Gestión de Usuarios
- * Implementa el patrón modular siguiendo KnowledgeBase
+ * Actualizada para el sistema de permisos dinámicos de AquanQ
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUsers } from "../../hooks/useUsers";
 import { useDataView } from "../../hooks/useDataView";
+import { usePermissions } from "../../hooks/usePermissions";
 import { searchInFields } from "../../utils/searchUtils";
+import { PermissionGate, AccessDenied } from "../../components/Common";
 import toast from "react-hot-toast";
 
 // Componentes modulares
@@ -20,10 +22,11 @@ import {
 
 /**
  * Página principal de gestión de usuarios
- * Siguiendo el patrón de KnowledgeBase
+ * Compatible con el sistema de permisos dinámicos
  */
 const UserManagement = () => {
   const navigate = useNavigate();
+  const { users: userPermissions, isAdmin, isContentManager, isAuthenticated } = usePermissions();
   
   const {
     users,
@@ -43,9 +46,10 @@ const UserManagement = () => {
   const [formMode, setFormMode] = useState('create'); // 'create' | 'edit'
   const [editingUser, setEditingUser] = useState(null);
 
-  // Estados de filtros (simplificados)
+  // Estados de filtros para sistema de permisos dinámicos
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState(''); // Cambio de selectedRole a selectedGroup
+  const [showStatistics, setShowStatistics] = useState(false);
   
   // Vista unificada - sin pestañas (todos los usuarios en una sola vista)
 
@@ -73,17 +77,17 @@ const UserManagement = () => {
       ]);
     }
 
-    // Filtro por perfil/grupo (único filtro adicional necesario)
-    if (selectedRole) {
+    // Filtro por grupo dinámico 
+    if (selectedGroup) {
       filtered = filtered.filter(user => 
         user.groups && user.groups.some(group => 
-          group.id?.toString() === selectedRole
+          group.id?.toString() === selectedGroup || group.name === selectedGroup
         )
       );
     }
 
     return filtered;
-  }, [users, searchTerm, selectedRole]);
+  }, [users, searchTerm, selectedGroup]);
 
   // Handlers del modal
   const handleCreateNew = useCallback(() => {
@@ -163,9 +167,44 @@ const UserManagement = () => {
     }
   }, [exportUsers]);
 
-  const handleImport = useCallback(() => {
-    navigate('/usuarios/importacion');
-  }, [navigate]);
+  const handleImport = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      // Aquí iría la lógica de importación cuando se implemente
+      toast.success('Función de importación próximamente');
+    } catch (error) {
+      console.error('Error al importar usuarios:', error);
+      toast.error('Error al importar usuarios');
+    }
+  }, []);
+
+  // Verificar permisos para mostrar estadísticas
+  const handleToggleStatistics = useCallback(() => {
+    if (userPermissions.canViewStats) {
+      setShowStatistics(!showStatistics);
+    } else {
+      toast.error('No tienes permisos para ver estadísticas');
+    }
+  }, [userPermissions.canViewStats, showStatistics]);
+
+  // Verificar acceso: si no está autenticado, bloquear; si lo está, permitir y delegar al backend
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full bg-slate-50">
+        <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <AccessDenied 
+            title="Acceso Denegado"
+            message="No has iniciado sesión."
+            showContactInfo={true}
+          />
+        </div>
+      </div>
+    );
+  }
+
+
 
   // Mostrar loading siguiendo patrón KnowledgeBase
   if (loading.users && users.length === 0) {
@@ -182,34 +221,29 @@ const UserManagement = () => {
     <div className="w-full bg-slate-50">
       <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        {/* Encabezado */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {showInlineForm ? (formMode === 'edit' ? 'Editar Usuario' : 'Crear Usuario') : 'Gestión de Usuarios'}
-            </h1>
-            {!showInlineForm && (
-              <p className="text-sm text-gray-600 mt-1">Administra todos los usuarios del sistema. Los permisos se gestionan mediante perfiles.</p>
-            )}
-          </div>
-          {/* Botón Volver se gestiona en UserActions en modo formulario */}
-        </div>
 
-        {/* Filtros y acciones siguiendo patrón KnowledgeBase */}
-        <UserActions
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          selectedRole={selectedRole}
-          onRoleChange={setSelectedRole}
-          onCreateNew={handleCreateNew}
-          onExport={handleExport}
-          onImport={handleImport}
-          groups={groups}
-          totalItems={filteredUsers.length}
-          isFormMode={showInlineForm}
-          onBack={handleCloseInline}
-          formTitle={formMode === 'edit' ? 'Editando usuario' : 'Nuevo usuario'}
-        />
+
+        {/* Filtros y acciones con permisos dinámicos (permitimos cargar UI; backend hará enforcement real) */}
+        <PermissionGate
+          condition={() => true}
+          fallback={<AccessDenied message="No tienes permisos para ver esta sección" />}
+        >
+          <UserActions
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedGroup={selectedGroup}
+            onGroupChange={setSelectedGroup}
+            onCreateNew={handleCreateNew}
+            onExport={handleExport}
+            onImport={handleImport}
+            groups={groups}
+            totalItems={filteredUsers.length}
+            isFormMode={showInlineForm}
+            onBack={handleCloseInline}
+            formTitle={formMode === 'edit' ? 'Editando usuario' : 'Nuevo usuario'}
+            userPermissions={userPermissions}
+          />
+        </PermissionGate>
 
         {!showInlineForm ? (
           <UserTableView

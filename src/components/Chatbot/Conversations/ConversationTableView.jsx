@@ -35,26 +35,25 @@ const ConversationTableView = ({
     });
   };
 
-  const getUserInitials = (username) => {
-    if (!username) return 'A';
-    return username.charAt(0).toUpperCase();
+  const getUserInitials = (user) => {
+    if (!user || !user.username) return 'A';
+    if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+    return user.username.charAt(0).toUpperCase();
+  };
+
+  const getUserDisplayName = (conversation) => {
+    // El backend ya envía user_full_name calculado correctamente
+    return conversation.user_full_name || 'Usuario Anónimo';
   };
 
   const getStatusBadge = (conversation) => {
-    // Determinar estado basado en si hay respuesta y si fue exitosa
+    // Determinar estado basado en si hay respuesta
     const hasAnswer = conversation.answer_text && conversation.answer_text.trim();
-    const isMatched = conversation.matched_knowledge;
     
-    if (hasAnswer && isMatched) {
+    if (hasAnswer) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
           Completada
-        </span>
-      );
-    } else if (hasAnswer) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          Respondida
         </span>
       );
     } else {
@@ -84,11 +83,11 @@ const ConversationTableView = ({
       render: (conversation) => (
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-            {getUserInitials(conversation.user?.username)}
+            {getUserInitials(conversation.user)}
           </div>
           <div>
             <p className="text-sm font-medium text-gray-900">
-              {conversation.user?.username || 'Usuario Anónimo'}
+              {getUserDisplayName(conversation)}
             </p>
             <p className="text-xs text-gray-500">
               {formatDate(conversation.created_at)}
@@ -118,11 +117,6 @@ const ConversationTableView = ({
           <p className="text-sm text-gray-600 line-clamp-2">
             {conversation.answer_text || 'Sin respuesta'}
           </p>
-          {conversation.matched_knowledge && (
-            <p className="text-xs text-indigo-600 mt-1">
-              Conocimiento: #{conversation.matched_knowledge}
-            </p>
-          )}
         </div>
       )
     },

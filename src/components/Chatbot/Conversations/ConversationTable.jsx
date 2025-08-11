@@ -33,9 +33,19 @@ const ConversationTable = ({
     });
   };
 
-  const getUserInitials = (username) => {
-    if (!username) return 'A';
-    return username.charAt(0).toUpperCase();
+  const getUserInitials = (user) => {
+    if (!user || !user.username) return 'A';
+    if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+    return user.username.charAt(0).toUpperCase();
+  };
+
+  const getUserDisplayName = (conversation) => {
+    // El backend ya envía user_full_name calculado correctamente
+    return conversation.user_full_name || 'Usuario Anónimo';
+  };
+
+  const getUserEmail = (conversation) => {
+    return conversation.user_email || 'Sin email registrado';
   };
 
   const getStatusBadge = (conversation) => {
@@ -100,9 +110,6 @@ const ConversationTable = ({
               <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[300px]">
                 Conversación
               </th>
-              <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell min-w-[120px]">
-                Conocimiento
-              </th>
               <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell min-w-[100px]">
                 Estado
               </th>
@@ -128,10 +135,10 @@ const ConversationTable = ({
                 <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100">
                   <div className="min-w-0">
                     <div className="text-[13px] font-medium text-gray-900 truncate">
-                      {conversation.user?.username || 'Usuario Anónimo'}
+                      {getUserDisplayName(conversation)}
                     </div>
                     <div className="text-[11px] text-gray-500">
-                      {conversation.user?.email || 'Sin email'}
+                      {getUserEmail(conversation)}
                     </div>
                   </div>
                 </td>
@@ -149,23 +156,6 @@ const ConversationTable = ({
                         {conversation.answer_text || 'Sin respuesta'}
                       </p>
                     </div>
-                  </div>
-                </td>
-
-                {/* Conocimiento */}
-                <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden lg:table-cell">
-                  <div className="flex items-center">
-                    {conversation.matched_knowledge ? (
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-600 border border-blue-200 whitespace-nowrap">
-                        <div className="w-1.5 h-1.5 rounded-full mr-1.5 bg-blue-500"></div>
-                        ID: {conversation.matched_knowledge}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-[12px] font-medium bg-gray-50 text-gray-600 border border-gray-200 whitespace-nowrap">
-                        <div className="w-1.5 h-1.5 rounded-full mr-1.5 bg-gray-400"></div>
-                        Sin coincidencia
-                      </span>
-                    )}
                   </div>
                 </td>
 
@@ -221,10 +211,10 @@ const ConversationTable = ({
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-medium text-gray-900 truncate">
-                  {conversation.user?.username || 'Usuario Anónimo'}
+                  {getUserDisplayName(conversation)}
                 </div>
                 <div className="text-[11px] text-gray-500">
-                  {formatDate(conversation.created_at)}
+                  {getUserEmail(conversation)} • {formatDate(conversation.created_at)}
                 </div>
               </div>
               <div className="flex items-center space-x-1">
@@ -266,15 +256,10 @@ const ConversationTable = ({
               </p>
             </div>
 
-            {/* Footer con estado y conocimiento */}
+            {/* Footer con estado */}
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <div className="flex items-center space-x-2">
                 {getStatusBadge(conversation)}
-                {conversation.matched_knowledge && (
-                  <span className="text-[11px] text-blue-600 font-medium">
-                    ID: {conversation.matched_knowledge}
-                  </span>
-                )}
               </div>
               {conversation.session_id && (
                 <div className="text-[10px] font-mono text-gray-400 truncate max-w-[80px]">

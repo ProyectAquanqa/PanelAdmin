@@ -35,7 +35,6 @@ const Conversations = () => {
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedDateRange, setSelectedDateRange] = useState('');
-  const [selectedMatchType, setSelectedMatchType] = useState('');
   const [expandedRows, setExpandedRows] = useState(new Set());
 
   // Cargar conversaciones al montar
@@ -45,6 +44,134 @@ const Conversations = () => {
 
   // Usar solo datos reales del backend
   const displayConversations = conversations || [];
+
+  // Obtener usuarios únicos para el filtro dinámico (usando datos del backend)
+  const uniqueUsers = useMemo(() => {
+    const userMap = new Map();
+    displayConversations.forEach(conversation => {
+      if (conversation.user_username) {
+        const userId = conversation.user?.id || conversation.user_username;
+        userMap.set(userId, {
+          id: userId,
+          username: conversation.user_username,
+          email: conversation.user_email || '',
+          full_name: conversation.user_full_name || conversation.user_username
+        });
+      }
+    });
+    return Array.from(userMap.values()).sort((a, b) => a.username.localeCompare(b.username));
+  }, [displayConversations]);
+
+  // Handler de exportar - definido antes para evitar problemas de hoisting
+  const handleExport = useCallback(() => {
+    try {
+      const dataToExport = displayConversations.map(conversation => ({
+        id: conversation.id,
+        usuario: getUserDisplayName(conversation),
+        pregunta: conversation.question_text || '',
+        respuesta: conversation.answer_text || '',
+        fecha_creacion: conversation.created_at || ''
+      }));
+
+      const csvContent = [
+        ['ID', 'Usuario', 'Pregunta', 'Respuesta', 'Fecha Creación'],
+        ...dataToExport.map(item => [
+          item.id,
+          `"${item.usuario}"`,
+          `"${item.pregunta}"`,
+          `"${item.respuesta}"`,
+          item.fecha_creacion
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `conversaciones_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`${dataToExport.length} conversaciones exportadas exitosamente`);
+    } catch (error) {
+      toast.error('Error al exportar conversaciones');
+      console.error('Export error:', error);
+    }
+  }, [displayConversations]);
+
+  // Función helper para getUserDisplayName (usando datos del backend)
+  const getUserDisplayName = (conversation) => {
+    // El backend ya envía user_full_name calculado correctamente
+    if (conversation.user_full_name) return conversation.user_full_name;
+    if (conversation.user?.username) return conversation.user.username;
+    return 'Usuario Anónimo';
+  };
+
+  // Configuración dinámica de filtros
+  const dynamicFiltersConfig = useMemo(() => {
+    const userOptions = [
+      { value: '', label: 'Todos los usuarios' },
+      ...uniqueUsers.map(user => ({
+        value: user.username,
+        label: user.full_name !== user.username ? `${user.full_name} (${user.username})` : user.username
+      }))
+    ];
+
+    return {
+      searchConfig: {
+        key: 'searchTerm',
+        placeholder: 'Buscar conversaciones, usuarios, preguntas o respuestas...',
+        variant: 'simple'
+      },
+      filterGroups: [
+        {
+          key: 'selectedUser',
+          title: 'Usuario',
+          type: 'dropdown',
+          options: userOptions,
+          placeholder: 'Seleccionar usuario...',
+          showIcon: true,
+          iconPath: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+        },
+        {
+          key: 'selectedStatus',
+          title: 'Estado',
+          type: 'buttons',
+          options: [
+            { value: '', label: 'Todas' },
+            { value: 'exitosa', label: 'Exitosas' },
+            { value: 'fallida', label: 'Fallidas' }
+          ]
+        },
+        {
+          key: 'selectedDateRange',
+          title: 'Fecha',
+          type: 'dropdown',
+          options: [
+            { value: '', label: 'Todas las fechas' },
+            { value: 'today', label: 'Hoy' },
+            { value: 'yesterday', label: 'Ayer' },
+            { value: 'week', label: 'Última semana' },
+            { value: 'month', label: 'Último mes' }
+          ],
+          placeholder: 'Seleccionar fecha...',
+          showIcon: true,
+          iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+        }
+      ],
+      actions: [
+        {
+          label: 'Exportar',
+          variant: 'primary',
+          icon: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+          onClick: handleExport
+        }
+      ],
+      itemLabel: 'conversaciones encontradas'
+    };
+  }, [uniqueUsers, handleExport]);
 
   // Filtrado y ordenamiento de conversaciones
   const processedConversations = useMemo(() => {
@@ -56,15 +183,16 @@ const Conversations = () => {
         searchInFields(conversation, searchTerm, [
           'question_text',
           'answer_text',
-          'user.username'
+          'user_username',
+          'user_full_name'
         ])
       );
     }
 
-    // Filtrar por usuario (usando searchUtils para manejar acentos)
+    // Filtrar por usuario
     if (selectedUser.trim()) {
       filtered = filtered.filter(conversation => 
-        searchInFields(conversation, selectedUser, ['user.username'])
+        conversation.user_username === selectedUser
       );
     }
 
@@ -113,22 +241,11 @@ const Conversations = () => {
       }
     }
 
-    // Filtrar por tipo de coincidencia
-    if (selectedMatchType === 'with_knowledge') {
-      filtered = filtered.filter(conversation => 
-        conversation.matched_knowledge && conversation.matched_knowledge !== null
-      );
-    } else if (selectedMatchType === 'no_knowledge') {
-      filtered = filtered.filter(conversation => 
-        !conversation.matched_knowledge || conversation.matched_knowledge === null
-      );
-    }
-
     // Ordenar por más recientes primero (por defecto)
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     return filtered;
-  }, [displayConversations, searchTerm, selectedUser, selectedStatus, selectedDateRange, selectedMatchType]);
+  }, [displayConversations, searchTerm, selectedUser, selectedStatus, selectedDateRange]);
 
   // Hook personalizado para manejo de vista de datos
   const {
@@ -159,49 +276,6 @@ const Conversations = () => {
     }
   }, [deleteConversation]);
 
-  // Eliminar handleRefresh - la tabla debería ser dinámica
-
-  // Handler de exportar
-  const handleExport = useCallback(() => {
-    try {
-      const dataToExport = processedConversations.map(conversation => ({
-        id: conversation.id,
-        usuario: conversation.user?.username || 'Usuario Anónimo',
-        pregunta: conversation.question_text || '',
-        respuesta: conversation.answer_text || '',
-        conocimiento_id: conversation.matched_knowledge || '',
-        fecha_creacion: conversation.created_at || ''
-      }));
-
-      const csvContent = [
-        ['ID', 'Usuario', 'Pregunta', 'Respuesta', 'ID Conocimiento', 'Fecha Creación'],
-        ...dataToExport.map(item => [
-          item.id,
-          `"${item.usuario}"`,
-          `"${item.pregunta}"`,
-          `"${item.respuesta}"`,
-          item.conocimiento_id,
-          item.fecha_creacion
-        ])
-      ].map(row => row.join(',')).join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `conversaciones_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success(`${dataToExport.length} conversaciones exportadas exitosamente`);
-    } catch (error) {
-      toast.error('Error al exportar conversaciones');
-      console.error('Export error:', error);
-    }
-  }, [processedConversations]);
-
   const handleCloseModal = useCallback(() => {
     setShowModal(false);
     setViewingConversation(null);
@@ -219,16 +293,13 @@ const Conversations = () => {
     });
   }, []);
 
-  // Debug removido para código limpio en producción
-
   // Estados de carga
   if (loading.conversations && !displayConversations?.length) {
     return <LoadingStates.ConversationsLoading />;
   }
 
   return (
-    <div className="bg-gray-50">
-      {/* Content */}
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Filtros con todas las funciones */}
@@ -241,10 +312,9 @@ const Conversations = () => {
             onStatusChange={setSelectedStatus}
             selectedDateRange={selectedDateRange}
             onDateRangeChange={setSelectedDateRange}
-            selectedMatchType={selectedMatchType}
-            onMatchTypeChange={setSelectedMatchType}
             totalItems={processedConversations.length}
             onExport={handleExport}
+            uniqueUsers={uniqueUsers}
           />
 
           {/* Conversations Table */}
@@ -277,4 +347,4 @@ const Conversations = () => {
   );
 };
 
-export default Conversations; 
+export default Conversations;

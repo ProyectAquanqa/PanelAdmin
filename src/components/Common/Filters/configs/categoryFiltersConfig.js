@@ -139,7 +139,7 @@ export const prepareEventCategoryFiltersConfig = (handlers = {}) => {
   if (config.actions) {
     config.actions = config.actions.map(action => ({
       ...action,
-      onClick: handlers[action.label === 'Crear Categoría' ? 'onCreateNew' : 'onExport'] || (() => {})
+      onClick: handlers[action.label === 'Crear' ? 'onCreateNew' : 'onExport'] || (() => {})
     }));
   }
   

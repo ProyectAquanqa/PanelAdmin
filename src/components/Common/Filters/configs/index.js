@@ -14,3 +14,7 @@ export {
   eventosFiltersConfig,
   prepareEventosFiltersConfig
 } from './eventosFiltersConfig';
+export { 
+  profileFiltersConfig,
+  prepareProfileFiltersConfig
+} from './profileFiltersConfig';

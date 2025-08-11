@@ -1,6 +1,7 @@
 /**
  * Servicio para comunicación con la API de Usuarios
- * Basado en los endpoints de AquanQ UsuarioViewSet
+ * Actualizado para el sistema de permisos dinámicos de AquanQ
+ * Compatible con grupos: Trabajador, Editor de Contenido, Administrador de Contenido, Gestor de Chatbot
  */
 
 const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
@@ -121,14 +122,15 @@ const userService = {
         page_size: limit.toString(),
       });
 
-      // Agregar filtros basados exactamente en el backend (users/views.py)
+      // Agregar filtros del nuevo sistema de permisos dinámicos
       if (filters.search) params.append('search', filters.search); // Busca en username, first_name, last_name, email
       if (filters.is_active !== undefined) params.append('is_active', filters.is_active);
-      if (filters.tipo_usuario) params.append('tipo_usuario', filters.tipo_usuario); // ADMIN o TRABAJADOR
-      if (filters.groups) params.append('groups', filters.groups); // ID del grupo
+      if (filters.groups) params.append('groups', filters.groups); // ID o nombre del grupo
+      if (filters.group_name) params.append('group_name', filters.group_name); // Filtrar por nombre específico del grupo
       if (filters.date_from) params.append('date_from', filters.date_from);
       if (filters.date_to) params.append('date_to', filters.date_to);
       if (filters.ordering) params.append('ordering', filters.ordering);
+      if (filters.has_permissions) params.append('has_permissions', filters.has_permissions);
 
       return await apiCall(`/web/users/?${params}`);
     },
@@ -203,20 +205,132 @@ const userService = {
     },
 
     /**
-     * Obtiene grupos disponibles filtrados por tipo de usuario
-     * @param {string} tipoUsuario - 'ADMIN' o 'TRABAJADOR'
-     * @returns {Promise} Lista de grupos disponibles
+     * Obtiene estadísticas de usuarios para el dashboard
+     * @returns {Promise} Estadísticas de usuarios por grupo
      */
-    getGroupsDisponibles: async (tipoUsuario = null) => {
-      const params = new URLSearchParams();
-      if (tipoUsuario === 'ADMIN') {
-        params.append('is_admin_group', 'true');
-      } else if (tipoUsuario === 'TRABAJADOR') {
-        params.append('is_worker_group', 'true');
-      }
-      params.append('is_active', 'true');
+    getStatistics: async () => {
+      return await apiCall('/web/users/statistics/');
+    },
+
+    /**
+     * Exporta usuarios con permisos avanzados
+     * @param {Object} filters - Filtros para la exportación
+     * @returns {Promise<Blob>} Archivo CSV con datos completos
+     */
+    exportWithPermissions: async (filters = {}) => {
+      const params = new URLSearchParams({
+        format: 'csv',
+        include_permissions: 'true',
+        include_groups: 'true',
+        ...filters
+      });
       
-      return await apiCall(`/admin/users/?${params}`);
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE}/web/users/?${params}`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al exportar datos de usuarios');
+      }
+      
+      return await response.blob();
+    }
+  },
+
+  // 👥 Gestión de grupos y permisos dinámicos
+  groups: {
+    /**
+     * Lista todos los grupos disponibles del sistema dinámico
+     * @returns {Promise} Lista de grupos con permisos
+     */
+    list: async () => {
+      return await apiCall('/web/groups/');
+    },
+
+    /**
+     * Obtiene información detallada de un grupo específico
+     * @param {number} id - ID del grupo
+     * @returns {Promise} Detalles del grupo con permisos
+     */
+    get: async (id) => {
+      return await apiCall(`/web/groups/${id}/`);
+    },
+
+    /**
+     * Asigna un usuario a un grupo específico
+     * @param {number} userId - ID del usuario
+     * @param {number} groupId - ID del grupo
+     * @returns {Promise} Usuario actualizado
+     */
+    assignUserToGroup: async (userId, groupId) => {
+      return await apiCall(`/web/users/${userId}/assign_group/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ group_id: groupId }),
+      });
+    },
+
+    /**
+     * Remueve un usuario de un grupo específico
+     * @param {number} userId - ID del usuario
+     * @param {number} groupId - ID del grupo
+     * @returns {Promise} Usuario actualizado
+     */
+    removeUserFromGroup: async (userId, groupId) => {
+      return await apiCall(`/web/users/${userId}/remove_group/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ group_id: groupId }),
+      });
+    },
+
+    /**
+     * Obtiene grupos disponibles según el contexto
+     * Los trabajadores van a "Trabajador", administradores pueden ir a cualquier grupo
+     * @returns {Promise} Lista de grupos disponibles con descripciones
+     */
+    getAvailable: async () => {
+      return await apiCall('/web/groups/available/');
+    }
+  },
+
+  // 🔐 Permisos específicos
+  permissions: {
+    /**
+     * Lista todos los permisos disponibles en el sistema
+     * @returns {Promise} Lista de permisos organizados por módulo
+     */
+    list: async () => {
+      return await apiCall('/web/permissions/');
+    },
+
+    /**
+     * Obtiene permisos específicos de un usuario
+     * @param {number} userId - ID del usuario
+     * @returns {Promise} Lista de permisos del usuario
+     */
+    getUserPermissions: async (userId) => {
+      return await apiCall(`/web/users/${userId}/permissions/`);
+    },
+
+    /**
+     * Verifica si un usuario tiene un permiso específico
+     * @param {number} userId - ID del usuario
+     * @param {string} permission - Permiso a verificar (ej: 'eventos.add_evento')
+     * @returns {Promise<boolean>} True si tiene el permiso
+     */
+    checkUserPermission: async (userId, permission) => {
+      try {
+        const response = await apiCall(`/web/users/${userId}/check_permission/`, {
+          method: 'POST',
+          body: JSON.stringify({ permission }),
+        });
+        return response.has_permission || false;
+      } catch (error) {
+        console.error('Error verificando permiso:', error);
+        return false;
+      }
     }
   },
 

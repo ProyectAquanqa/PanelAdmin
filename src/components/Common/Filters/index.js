@@ -27,3 +27,8 @@ export {
   prepareUserFiltersConfig 
 } from './configs/userFiltersConfig';
 
+export { 
+  profileFiltersConfig, 
+  prepareProfileFiltersConfig 
+} from './configs/profileFiltersConfig';
+

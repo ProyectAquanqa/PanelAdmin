@@ -27,4 +27,15 @@ export {
   prepareConversationFiltersConfig,
   userFiltersConfig,
   prepareUserFiltersConfig,
+  profileFiltersConfig,
+  prepareProfileFiltersConfig,
 } from './Filters';
+
+// Componentes de permisos (Sistema dinámico)
+export { 
+  default as PermissionGate,
+  AdminOnly,
+  ContentManagerOnly,
+  ChatbotManagerOnly,
+  AccessDenied
+} from './PermissionGate';

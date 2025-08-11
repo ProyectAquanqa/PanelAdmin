@@ -49,7 +49,7 @@ const apiCall = async (url, options = {}) => {
 };
 
 const authService = {
-  // 🔐 Iniciar sesión usando el endpoint real de AquanQ (/token/)
+  // 🔐 Iniciar sesión usando el sistema de permisos dinámicos (/api/web/auth/login/)
   login: async (credentials) => {
     try {
       const response = await apiCall('/web/auth/login/', {
@@ -60,25 +60,65 @@ const authService = {
         }),
       });
 
-      // Guardar tokens (AquanQ usa JWT con access y refresh)
-      if (response.access && response.refresh) {
+      console.log('🔑 Respuesta de login:', response);
+
+      // Verificar estructura de respuesta del nuevo sistema dinámico
+      if (response.status === 'success' && response.data) {
+        const { access, refresh, user } = response.data;
+        
+        // Guardar tokens JWT
+        if (access && refresh) {
+          localStorage.setItem('access_token', access);
+          localStorage.setItem('refresh_token', refresh);
+          localStorage.setItem('isAuthenticated', 'true');
+          
+          console.log('💾 Tokens guardados');
+        }
+        
+        // Guardar datos del usuario con permisos y grupos
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+          
+          // Log de debug para el sistema de permisos
+          console.log('👤 Usuario:', user.username);
+          console.log('👥 Grupos:', user.groups || []);
+          console.log('🔑 Permisos:', user.permissions || []);
+        }
+        
+        return response;
+      }
+      
+      // Formato legacy (compatibilidad temporal)
+      else if (response.access && response.refresh) {
         localStorage.setItem('access_token', response.access);
         localStorage.setItem('refresh_token', response.refresh);
         localStorage.setItem('isAuthenticated', 'true');
         
-        // Guardar datos del usuario si están en la respuesta
         if (response.user) {
           localStorage.setItem('user', JSON.stringify(response.user));
         }
+        
+        console.warn('⚠️ Usando formato legacy de login - actualizar backend');
+        return response;
       }
-
-      return response;
+      
+      // Error: respuesta inesperada
+      else {
+        throw new Error('Respuesta de login inválida del servidor');
+      }
+      
     } catch (error) {
-      // Manejar errores específicos de autenticación
-      if (error.message.includes('Unable to log in') || 
-          error.message.includes('credentials') ||
+      console.error('❌ Error de login:', error);
+      
+      // Manejar errores específicos del nuevo sistema
+      if (error.message.includes('permission_denied')) {
+        throw new Error('Acceso denegado. No tienes permisos para acceder al panel.');
+      }
+      
+      if (error.message.includes('credentials') || 
           error.message.includes('invalid') ||
-          error.message.includes('incorrect')) {
+          error.message.includes('incorrect') ||
+          error.message.includes('Unable to log in')) {
         throw new Error('Credenciales inválidas. Verifica tu usuario y contraseña.');
       }
       
@@ -90,17 +130,24 @@ const authService = {
     }
   },
 
-  // 🚪 Cerrar sesión (AquanQ no tiene endpoint logout específico, solo limpiamos localmente)
+  // 🚪 Cerrar sesión y limpiar datos del sistema de permisos dinámicos
   logout: async () => {
     try {
-      // AquanQ usa JWT que no requiere invalidación en el servidor
-      // Solo limpiamos los datos locales
+      console.log('🚪 Cerrando sesión...');
+      
+      // Limpiar tokens JWT
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('user');
+      
+      // Limpiar datos del sistema de permisos dinámicos
+      localStorage.removeItem('user_permissions');
+      localStorage.removeItem('user_groups');
+      
+      console.log('✅ Sesión cerrada y datos limpiados');
     } catch (error) {
-      console.warn('Error al cerrar sesión:', error);
+      console.warn('⚠️ Error al cerrar sesión:', error);
     }
   },
 
@@ -132,17 +179,19 @@ const authService = {
     }
   },
 
-  // 👤 Obtener datos del usuario actual desde /profile/
+  // 👤 Obtener datos del usuario actual con permisos y grupos actualizados
   getCurrentUser: async (fromStorage = true) => {
     // Si fromStorage es true, intentar obtener de localStorage primero
     if (fromStorage) {
       try {
         const userStr = localStorage.getItem('user');
         if (userStr) {
-          return JSON.parse(userStr);
+          const userData = JSON.parse(userStr);
+          console.log('👤 Usuario desde storage:', userData.username);
+          return userData;
         }
       } catch (error) {
-        console.error('Error parsing user data from storage:', error);
+        console.error('❌ Error parsing user data from storage:', error);
       }
     }
     
@@ -153,6 +202,8 @@ const authService = {
         throw new Error('No token available');
       }
       
+      console.log('🔄 Obteniendo datos del usuario desde servidor...');
+      
       const response = await apiCall('/web/auth/profile/', {
         method: 'GET',
         headers: {
@@ -160,12 +211,37 @@ const authService = {
         },
       });
       
+      // Manejar respuesta del nuevo sistema dinámico
+      let userData;
+      if (response.status === 'success' && response.data) {
+        userData = response.data;
+      } else {
+        // Formato legacy
+        userData = response;
+      }
+      
+      // Asegurar que los permisos y grupos estén presentes
+      userData.permissions = userData.permissions || [];
+      userData.groups = userData.groups || [];
+      
+      console.log('✅ Datos del usuario actualizados:');
+      console.log('👤 Usuario:', userData.username);
+      console.log('👥 Grupos:', userData.groups);
+      console.log('🔑 Permisos:', userData.permissions?.length || 0, 'permisos');
+      
       // Guardar en localStorage para próximas consultas
-      localStorage.setItem('user', JSON.stringify(response));
-      return response;
+      localStorage.setItem('user', JSON.stringify(userData));
+      return userData;
       
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('❌ Error fetching user profile:', error);
+      
+      // Si es error 401, limpiar sesión
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        console.log('🔄 Token expirado, cerrando sesión...');
+        await authService.logout();
+      }
+      
       return null;
     }
   },

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import authService from '../services/authService';
+import { setUserPermissions, clearUserPermissions } from '../services/permissionService';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
@@ -18,8 +19,20 @@ export const AuthProvider = ({ children }) => {
         
         if (isAuth) {
           // Obtener datos del usuario desde localStorage primero
-          const userData = await authService.getCurrentUser(true);
-          setUser(userData);
+          let userData = await authService.getCurrentUser(true);
+
+          // Si no existe en storage, obtener del servidor
+          if (!userData) {
+            userData = await authService.getCurrentUser(false);
+          }
+
+          if (userData) {
+            setUser(userData);
+            // Asegurar que los permisos estén sincronizados
+            if (userData.permissions && userData.groups) {
+              setUserPermissions(userData.permissions, userData.groups);
+            }
+          }
         }
       } catch (error) {
         console.error('Error al inicializar autenticación:', error);
@@ -60,6 +73,17 @@ export const AuthProvider = ({ children }) => {
         }
       }
       
+      // Guardar permisos y grupos en localStorage para el sistema dinámico
+      if (userData) {
+        const permissions = userData.permissions || [];
+        const groups = userData.groups || [];
+        setUserPermissions(permissions, groups);
+        
+        console.log('👤 Usuario autenticado:', userData.username);
+        console.log('🔑 Permisos:', permissions);
+        console.log('👥 Grupos:', groups);
+      }
+      
       // Actualizar estado
       setUser(userData);
       setIsAuthenticated(true);
@@ -76,16 +100,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🚪 Función de logout
+  // 🚪 Función de logout actualizada para sistema de permisos dinámicos
   const logout = async () => {
     try {
       setLoading(true);
       await authService.logout();
       setUser(null);
       setIsAuthenticated(false);
+      clearUserPermissions(); // Limpiar permisos del sistema dinámico
       toast.success('Sesión cerrada correctamente');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
+      // Asegurar limpieza local aunque falle el servidor
+      setUser(null);
+      setIsAuthenticated(false);
+      clearUserPermissions();
       toast.error('Error al cerrar sesión');
     } finally {
       setLoading(false);

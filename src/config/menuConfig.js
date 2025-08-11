@@ -68,7 +68,6 @@ export const userNotificationItems = [
     submenu: [
       { title: 'Gestión de Usuarios', path: '/usuarios/gestion' },
       { title: 'Perfiles', path: '/usuarios/perfiles' },
-      { title: 'Importación', path: '/usuarios/importacion' },
     ],
   },
   {

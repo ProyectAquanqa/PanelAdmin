@@ -105,16 +105,61 @@ const groupService = {
    * @returns {Promise} Lista de grupos
    */
   list: async (page = 1, limit = 10, filters = {}) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      page_size: limit.toString(),
-    });
+    try {
+      // Primero obtener lista básica de grupos
+      const basicGroups = await apiCall('/web/groups/');
+      console.log('🔍 Grupos básicos recibidos:', basicGroups);
+      
+      // Extraer el array de datos según el formato de respuesta
+      let groups = [];
+      if (Array.isArray(basicGroups)) {
+        groups = basicGroups;
+      } else if (basicGroups && Array.isArray(basicGroups.data)) {
+        groups = basicGroups.data;
+      } else {
+        console.warn('⚠️ Formato inesperado de grupos:', basicGroups);
+        return [];
+      }
 
-    // Filtros básicos para Django Groups nativos
-    if (filters.search) params.append('search', filters.search);
-    if (filters.ordering) params.append('ordering', filters.ordering);
+      // Para cada grupo, obtener sus permisos completos
+      const groupsWithPermissions = await Promise.all(
+        groups.map(async (group) => {
+          try {
+            const fullGroup = await apiCall(`/web/groups/${group.id}/`);
+            console.log(`🔍 Permisos para grupo ${group.name}:`, fullGroup);
+            
+            // Extraer datos según formato de respuesta
+            let groupData = fullGroup;
+            if (fullGroup && fullGroup.data) {
+              groupData = fullGroup.data;
+            }
+            
+            return {
+              id: group.id,
+              name: group.name,
+              users_count: group.users_count || 0,
+              permissions: groupData.permissions || []
+            };
+          } catch (error) {
+            console.error(`❌ Error obteniendo permisos para grupo ${group.id}:`, error);
+            // Retornar grupo sin permisos si falla
+            return {
+              id: group.id,
+              name: group.name,
+              users_count: group.users_count || 0,
+              permissions: []
+            };
+          }
+        })
+      );
 
-    return await apiCall(`/web/groups/?${params}`);
+      console.log('✅ Grupos finales con permisos:', groupsWithPermissions);
+      return groupsWithPermissions;
+      
+    } catch (error) {
+      console.error('❌ Error en groupService.list:', error);
+      throw error;
+    }
   },
 
   /**
@@ -149,6 +194,14 @@ const groupService = {
       method: 'PUT',
       body: JSON.stringify(data),
     });
+  },
+
+  /**
+   * Obtiene permisos disponibles para asignar a grupos
+   * @returns {Promise} Permisos organizados por app
+   */
+  getAvailablePermissions: async () => {
+    return await apiCall('/web/admin/permissions/');
   },
 
   /**

@@ -400,10 +400,12 @@ UniversalFilters.propTypes = {
   actions: PropTypes.arrayOf(
     PropTypes.shape({
       label: PropTypes.string.isRequired,
-      onClick: PropTypes.func.isRequired,
+      onClick: PropTypes.func, // No required para file inputs
+      onChange: PropTypes.func, // Para file inputs
       variant: PropTypes.oneOf(['primary', 'secondary']),
       icon: PropTypes.string,
-      disabled: PropTypes.bool
+      disabled: PropTypes.bool,
+      isFileInput: PropTypes.bool // Indicador para file inputs
     })
   ),
   activeFilters: PropTypes.object,

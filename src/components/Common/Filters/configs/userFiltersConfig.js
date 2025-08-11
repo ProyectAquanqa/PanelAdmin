@@ -89,7 +89,7 @@ export const prepareUserFiltersConfig = (groups = [], handlers) => {
   // Asignar handlers dinámicamente - 3 ACCIONES
   config.actions[0].onClick = handlers.onCreateNew;
   config.actions[1].onClick = handlers.onExport;
-  config.actions[2].onClick = handlers.onImport;
+  config.actions[2].onChange = handlers.onImport; // onImport es para file input
   
   return config;
 };

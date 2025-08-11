@@ -9,6 +9,7 @@ import { useDataView } from '../../hooks/useDataView';
 import TableView from './DataView/TableView';
 import CategoriaTableView from '../Eventos/CategoriaTableView';
 import EventoTableView from '../Eventos/EventoTableView';
+import ProfileTableView from '../Perfiles/ProfileTableView';
 import Pagination from './DataView/Pagination';
 // import { EventoItem } from '../Eventos'; // Comentado para evitar dependencias circulares
 
@@ -70,6 +71,8 @@ const DataViewSwitcher = ({
       TableComponent = CategoriaTableView;
     } else if (itemType === 'evento') {
       TableComponent = EventoTableView;
+    } else if (itemType === 'profile') {
+      TableComponent = ProfileTableView;
     }
     
     return (

@@ -25,26 +25,29 @@ const ConversationModal = ({
     });
   };
 
-  const getUserInitials = (username) => {
-    if (!username) return 'A';
-    return username.charAt(0).toUpperCase();
+  const getUserInitials = (user) => {
+    if (!user || !user.username) return 'A';
+    if (user.first_name) return user.first_name.charAt(0).toUpperCase();
+    return user.username.charAt(0).toUpperCase();
+  };
+
+  const getUserDisplayName = (conversation) => {
+    // El backend ya envía user_full_name calculado correctamente
+    return conversation.user_full_name || 'Usuario Anónimo';
+  };
+
+  const getUserEmail = (conversation) => {
+    return conversation.user_email || 'Sin email registrado';
   };
 
   const getStatusInfo = () => {
     const hasAnswer = conversation.answer_text && conversation.answer_text.trim();
-    const isMatched = conversation.matched_knowledge;
     
-    if (hasAnswer && isMatched) {
+    if (hasAnswer) {
       return {
         status: 'Completada',
         color: 'green',
-        description: 'Conversación completada exitosamente con coincidencia en la base de conocimientos'
-      };
-    } else if (hasAnswer) {
-      return {
-        status: 'Respondida',
-        color: 'yellow',
-        description: 'Conversación respondida pero sin coincidencia específica'
+        description: 'Conversación completada exitosamente'
       };
     } else {
       return {
@@ -98,11 +101,16 @@ const ConversationModal = ({
                   <h4 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider mb-3">Usuario</h4>
                   <div className="space-y-2">
                     <p className="text-[13px] font-medium text-gray-900">
-                      {conversation.user?.username || 'Usuario Anónimo'}
+                      {getUserDisplayName(conversation)}
                     </p>
                     <p className="text-[13px] text-gray-500">
-                      {conversation.user?.email || 'Sin email registrado'}
+                      {getUserEmail(conversation)}
                     </p>
+                    {conversation.user_username && getUserDisplayName(conversation) !== conversation.user_username && (
+                      <p className="text-[12px] text-gray-400">
+                        @{conversation.user_username}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -169,14 +177,6 @@ const ConversationModal = ({
                   <div>
                     <span className="text-gray-500 block mb-1">ID de Conversación</span>
                     <span className="font-mono text-gray-700">#{conversation.id || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 block mb-1">Conocimiento</span>
-                    {conversation.matched_knowledge ? (
-                      <span className="font-mono text-gray-700">#{conversation.matched_knowledge}</span>
-                    ) : (
-                      <span className="text-gray-500 italic">Sin coincidencia</span>
-                    )}
                   </div>
                   <div>
                     <span className="text-gray-500 block mb-1">Fecha de creación</span>

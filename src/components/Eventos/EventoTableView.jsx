@@ -61,9 +61,9 @@ const EventoTableView = ({
         {/* Metadata */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
           {/* Categoría */}
-          {item.categoria_nombre ? (
+          {item.categoria?.nombre ? (
             <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
-              {item.categoria_nombre}
+              {item.categoria.nombre}
             </span>
           ) : (
             <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
@@ -86,9 +86,9 @@ const EventoTableView = ({
 
 
           {/* Autor */}
-          {item.autor_nombre && (
+          {item.autor?.full_name && (
             <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-              Por: {item.autor_nombre}
+              Por: {item.autor.full_name}
             </span>
           )}
 
@@ -194,9 +194,9 @@ const EventoTableView = ({
         {/* Categoría */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden lg:table-cell">
           <div className="flex items-center">
-            {item.categoria_nombre ? (
+            {item.categoria?.nombre ? (
               <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-[12px] font-medium bg-blue-100/50 text-blue-600 border border-blue-200/50 whitespace-nowrap">
-                {item.categoria_nombre}
+                {item.categoria.nombre}
               </span>
             ) : (
               <span className="text-[12px] text-gray-400 italic">Sin categoría</span>
@@ -207,9 +207,9 @@ const EventoTableView = ({
         {/* Autor */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden xl:table-cell">
           <div className="flex items-center">
-            {item.autor_nombre ? (
+            {item.autor?.full_name ? (
               <span className="text-[12px] text-gray-600 font-medium whitespace-nowrap">
-                {item.autor_nombre}
+                {item.autor.full_name}
               </span>
             ) : (
               <span className="text-[12px] text-gray-400 italic">-</span>
