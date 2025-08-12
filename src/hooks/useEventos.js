@@ -213,6 +213,7 @@ export const useEventos = () => {
     error,
     pagination,
     loadEventos,
+    fetchEventos: loadEventos, // Alias for consistency with other hooks
     crearEvento,
     actualizarEvento,
     actualizarEventoParcial,

@@ -64,9 +64,16 @@ export const userEndpoints = {
 export const notificationEndpoints = {
   list: '/web/notifications/',
   create: '/web/notifications/',
-  markAsRead: (id) => `/web/notifications/${id}/read/`,
-  markAllAsRead: '/web/notifications/mark-all-read/',
+  detail: (id) => `/web/notifications/${id}/`,
+  update: (id) => `/web/notifications/${id}/`,
   delete: (id) => `/web/notifications/${id}/`,
+  sendBroadcast: '/web/notifications/send_broadcast/',
+  sendBulk: '/web/notifications/send_bulk_notification/',
+  statistics: '/web/notifications/statistics/',
+  
+  // Device tokens
+  devices: '/web/device-tokens/',
+  deviceDetail: (id) => `/web/device-tokens/${id}/`,
 };
 
 /**

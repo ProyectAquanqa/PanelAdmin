@@ -8,7 +8,7 @@ import PropTypes from 'prop-types';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 import { useBreadcrumbs } from '../../hooks/useBreadcrumbs';
-import { useNotifications } from '../../hooks/useNotifications';
+import useNotifications from '../../hooks/useNotifications';
 import { useTheme } from '../../hooks/useTheme';
 import SearchBar from './SearchBar';
 import ThemeToggle from './ThemeToggle';
@@ -24,38 +24,28 @@ const Header = ({ onMenuClick }) => {
   const { breadcrumbs, shouldShow: shouldShowBreadcrumbs } = useBreadcrumbs();
   const { isDarkMode, toggleTheme } = useTheme();
   
-  // Notificaciones de ejemplo (en una app real vendrían de una API)
-  const initialNotifications = [
-    {
-      id: 1,
-      title: 'Nuevo evento creado',
-      message: 'El evento "Reunión Anual" ha sido creado exitosamente.',
-      time: '5 min',
-      read: false,
-    },
-    {
-      id: 2,
-      title: 'Usuario registrado',
-      message: 'Un nuevo usuario se ha registrado en el sistema.',
-      time: '1 hora',
-      read: true,
-    },
-    {
-      id: 3,
-      title: 'Actualización completada',
-      message: 'La base de conocimiento del chatbot ha sido actualizada.',
-      time: '2 horas',
-      read: true,
-    },
-  ];
+  // Hook de notificaciones
+  const { notifications, fetchNotifications } = useNotifications();
+  
+  // Cargar notificaciones al montar el componente
+  React.useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+  
+  // Estados locales para el dropdown de notificaciones
+  const [showNotifications, setShowNotifications] = useState(false);
+  
+  // Calcular notificaciones no leídas (handle undefined leido gracefully)
+  const unreadCount = notifications.filter(notification => notification.leido !== true).length;
+  
+  // Funciones para manejar el dropdown de notificaciones
+  const toggleNotifications = useCallback(() => {
+    setShowNotifications(prev => !prev);
+  }, []);
 
-  const {
-    notifications,
-    unreadCount,
-    showNotifications,
-    toggleNotifications,
-    closeNotifications
-  } = useNotifications(initialNotifications);
+  const closeNotifications = useCallback(() => {
+    setShowNotifications(false);
+  }, []);
 
   const [showUserMenu, setShowUserMenu] = useState(false);
 

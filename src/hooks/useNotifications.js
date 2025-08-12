@@ -1,213 +1,459 @@
-/**
- * Hook para manejar notificaciones del header
- * Gestiona estado de notificaciones, dropdown y acciones
- */
-
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
+import notificationsService from '../services/notificationsService';
+import toast from 'react-hot-toast';
 
 /**
- * Hook para manejar sistema de notificaciones
- * @param {Array} initialNotifications - Notificaciones iniciales
- * @returns {Object} Estado y funciones para manejar notificaciones
+ * Hook personalizado para gestión de notificaciones
+ * Sigue el patrón establecido en useChatbot
  */
-export const useNotifications = (initialNotifications = []) => {
-  // Estado de notificaciones
-  const [notifications, setNotifications] = useState(initialNotifications);
+const useNotifications = () => {
+  // Estados principales
+  const [notifications, setNotifications] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [statistics, setStatistics] = useState({});
   
-  // Estado del dropdown
-  const [showNotifications, setShowNotifications] = useState(false);
+  // Estados de carga
+  const [loading, setLoading] = useState({
+    notifications: false,
+    devices: false,
+    statistics: false,
+    action: false,
+    error: null
+  });
 
-  // Contador de notificaciones no leídas (memoizado)
-  const unreadCount = useMemo(() => {
-    return notifications.filter(notification => !notification.read).length;
-  }, [notifications]);
+  // Estado de paginación
+  const [pagination, setPagination] = useState({
+    notifications: {
+      page: 1,
+      pageSize: 20,
+      total: 0,
+      totalPages: 0
+    },
+    devices: {
+      page: 1,
+      pageSize: 20,
+      total: 0,
+      totalPages: 0
+    }
+  });
 
-  // Notificaciones no leídas (memoizadas)
-  const unreadNotifications = useMemo(() => {
-    return notifications.filter(notification => !notification.read);
-  }, [notifications]);
-
-  // Notificaciones leídas (memoizadas)
-  const readNotifications = useMemo(() => {
-    return notifications.filter(notification => notification.read);
-  }, [notifications]);
-
-  // Notificaciones recientes (últimas 5)
-  const recentNotifications = useMemo(() => {
-    return notifications
-      .sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time))
-      .slice(0, 5);
-  }, [notifications]);
-
-  // Toggle del dropdown de notificaciones
-  const toggleNotifications = useCallback(() => {
-    setShowNotifications(prev => !prev);
+  /**
+   * Actualizar estado de carga
+   */
+  const updateLoading = useCallback((key, value, error = null) => {
+    setLoading(prev => ({
+      ...prev,
+      [key]: value,
+      error: error
+    }));
   }, []);
 
-  // Cerrar dropdown de notificaciones
-  const closeNotifications = useCallback(() => {
-    setShowNotifications(false);
-  }, []);
+  // ============================================================================
+  // NOTIFICACIONES
+  // ============================================================================
 
-  // Abrir dropdown de notificaciones
-  const openNotifications = useCallback(() => {
-    setShowNotifications(true);
-  }, []);
-
-  // Marcar una notificación como leída
-  const markAsRead = useCallback((notificationId) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: true }
-          : notification
-      )
-    );
-  }, []);
-
-  // Marcar una notificación como no leída
-  const markAsUnread = useCallback((notificationId) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: false }
-          : notification
-      )
-    );
-  }, []);
-
-  // Marcar todas las notificaciones como leídas
-  const markAllAsRead = useCallback(() => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, read: true }))
-    );
-  }, []);
-
-  // Eliminar una notificación
-  const removeNotification = useCallback((notificationId) => {
-    setNotifications(prev => 
-      prev.filter(notification => notification.id !== notificationId)
-    );
-  }, []);
-
-  // Limpiar todas las notificaciones
-  const clearAllNotifications = useCallback(() => {
-    setNotifications([]);
-  }, []);
-
-  // Limpiar solo las notificaciones leídas
-  const clearReadNotifications = useCallback(() => {
-    setNotifications(prev => prev.filter(notification => !notification.read));
-  }, []);
-
-  // Agregar una nueva notificación
-  const addNotification = useCallback((notification) => {
-    const newNotification = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      read: false,
-      ...notification
-    };
+  /**
+   * Obtener todas las notificaciones
+   */
+  const fetchNotifications = useCallback(async (params = {}) => {
+    updateLoading('notifications', true);
     
-    setNotifications(prev => [newNotification, ...prev]);
-  }, []);
+    try {
+      const result = await notificationsService.getNotifications(params);
+      
+      if (result.status === 'success') {
+        setNotifications(result.data.results || result.data);
+        
+        // Actualizar paginación si hay información disponible
+        if (result.data.count !== undefined) {
+          setPagination(prev => ({
+            ...prev,
+            notifications: {
+              ...prev.notifications,
+              total: result.data.count,
+              totalPages: Math.ceil(result.data.count / (params.pageSize || 20)),
+              page: params.page || 1
+            }
+          }));
+        }
+        
+        updateLoading('notifications', false);
+        return true;
+      } else {
+        updateLoading('notifications', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('notifications', false, 'Error cargando notificaciones');
+      toast.error('Error cargando notificaciones');
+      return false;
+    }
+  }, [updateLoading]);
 
-  // Actualizar una notificación existente
-  const updateNotification = useCallback((notificationId, updates) => {
+  /**
+   * Crear nueva notificación
+   */
+  const createNotification = useCallback(async (notificationData) => {
+    updateLoading('action', true);
+    
+    try {
+      // Validar datos
+      const validation = notificationsService.validateNotificationData(notificationData);
+      if (!validation.isValid) {
+        const firstError = Object.values(validation.errors)[0];
+        toast.error(firstError);
+        updateLoading('action', false);
+        return false;
+      }
+
+      // Formatear datos
+      const formattedData = notificationsService.formatNotificationData(notificationData);
+      
+      const result = await notificationsService.createNotification(formattedData);
+      
+      if (result.status === 'success') {
+        // Agregar nueva notificación al estado
+        setNotifications(prev => [result.data, ...prev]);
+        
+        updateLoading('action', false);
+        toast.success(result.message);
+        return true;
+      } else {
+        updateLoading('action', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('action', false, 'Error creando notificación');
+      toast.error('Error creando notificación');
+      return false;
+    }
+  }, [updateLoading]);
+
+  /**
+   * Actualizar notificación existente
+   */
+  const updateNotification = useCallback(async (id, notificationData) => {
+    updateLoading('action', true);
+    
+    try {
+      // Validar datos
+      const validation = notificationsService.validateNotificationData(notificationData);
+      if (!validation.isValid) {
+        const firstError = Object.values(validation.errors)[0];
+        toast.error(firstError);
+        updateLoading('action', false);
+        return false;
+      }
+
+      // Formatear datos
+      const formattedData = notificationsService.formatNotificationData(notificationData);
+      
+      const result = await notificationsService.updateNotification(id, formattedData);
+      
+      if (result.status === 'success') {
+        // Actualizar notificación en el estado
     setNotifications(prev => 
       prev.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, ...updates }
-          : notification
-      )
-    );
-  }, []);
+            notification.id === id ? result.data : notification
+          )
+        );
+        
+        updateLoading('action', false);
+        toast.success(result.message);
+        return true;
+      } else {
+        updateLoading('action', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('action', false, 'Error actualizando notificación');
+      toast.error('Error actualizando notificación');
+      return false;
+    }
+  }, [updateLoading]);
 
-  // Obtener notificación por ID
-  const getNotificationById = useCallback((notificationId) => {
-    return notifications.find(notification => notification.id === notificationId);
-  }, [notifications]);
-
-  // Filtrar notificaciones por tipo
-  const getNotificationsByType = useCallback((type) => {
-    return notifications.filter(notification => notification.type === type);
-  }, [notifications]);
-
-  // Obtener notificaciones de las últimas X horas
-  const getRecentNotifications = useCallback((hours = 24) => {
-    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
+  /**
+   * Eliminar notificación
+   */
+  const deleteNotification = useCallback(async (id) => {
+    updateLoading('action', true);
     
-    return notifications.filter(notification => {
-      const notificationTime = new Date(notification.timestamp || notification.time);
-      return notificationTime > cutoffTime;
-    });
-  }, [notifications]);
+    try {
+      const result = await notificationsService.deleteNotification(id);
+      
+      if (result.status === 'success') {
+        // Remover notificación del estado
+        setNotifications(prev => prev.filter(notification => notification.id !== id));
+        
+        updateLoading('action', false);
+        toast.success(result.message);
+        return true;
+      } else {
+        updateLoading('action', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('action', false, 'Error eliminando notificación');
+      toast.error('Error eliminando notificación');
+      return false;
+    }
+  }, [updateLoading]);
 
-  // Estadísticas de notificaciones
-  const stats = useMemo(() => {
-    const typeStats = notifications.reduce((acc, notification) => {
-      const type = notification.type || 'general';
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {});
+  /**
+   * Enviar notificación broadcast
+   */
+  const sendBroadcast = useCallback(async (broadcastData) => {
+    updateLoading('action', true);
+    
+    try {
+      const result = await notificationsService.sendBroadcast(broadcastData);
+      
+      if (result.status === 'success') {
+        // Opcional: Refrescar lista de notificaciones
+        await fetchNotifications();
+        
+        updateLoading('action', false);
+        toast.success(result.message);
+        return true;
+      } else {
+        updateLoading('action', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('action', false, 'Error enviando broadcast');
+      toast.error('Error enviando broadcast');
+      return false;
+    }
+  }, [updateLoading, fetchNotifications]);
 
-    return {
-      total: notifications.length,
-      unread: unreadCount,
-      read: notifications.length - unreadCount,
-      byType: typeStats,
-      hasUnread: unreadCount > 0
-    };
-  }, [notifications, unreadCount]);
+  /**
+   * Envío masivo de notificaciones
+   */
+  const sendBulkNotifications = useCallback(async (bulkData) => {
+    updateLoading('action', true);
+    
+    try {
+      const result = await notificationsService.sendBulkNotifications(bulkData);
+      
+      if (result.status === 'success') {
+        // Opcional: Refrescar lista de notificaciones
+        await fetchNotifications();
+        
+        updateLoading('action', false);
+        toast.success(result.message);
+        return result.data;
+      } else {
+        updateLoading('action', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('action', false, 'Error enviando notificaciones');
+      toast.error('Error enviando notificaciones');
+      return false;
+    }
+  }, [updateLoading, fetchNotifications]);
 
-  // Configuración de notificaciones
-  const config = useMemo(() => ({
-    maxVisible: 5,
-    autoMarkAsRead: false,
-    showTimestamp: true,
-    groupByType: false,
-    enableSound: false
-  }), []);
+  // ============================================================================
+  // DISPOSITIVOS
+  // ============================================================================
+
+  /**
+   * Obtener todos los dispositivos
+   */
+  const fetchDevices = useCallback(async (params = {}) => {
+    updateLoading('devices', true);
+    
+    try {
+      const result = await notificationsService.getDevices(params);
+      
+      if (result.status === 'success') {
+        setDevices(result.data.results || result.data);
+        
+        // Actualizar paginación si hay información disponible
+        if (result.data.count !== undefined) {
+          setPagination(prev => ({
+            ...prev,
+            devices: {
+              ...prev.devices,
+              total: result.data.count,
+              totalPages: Math.ceil(result.data.count / (params.pageSize || 20)),
+              page: params.page || 1
+            }
+          }));
+        }
+        
+        updateLoading('devices', false);
+        return true;
+      } else {
+        updateLoading('devices', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('devices', false, 'Error cargando dispositivos');
+      toast.error('Error cargando dispositivos');
+      return false;
+    }
+  }, [updateLoading]);
+
+  /**
+   * Crear/registrar nuevo dispositivo
+   */
+  const createDevice = useCallback(async (deviceData) => {
+    updateLoading('action', true);
+    
+    try {
+      const result = await notificationsService.createDevice(deviceData);
+      
+      if (result.status === 'success') {
+        // Agregar nuevo dispositivo al estado
+        setDevices(prev => [result.data, ...prev]);
+        
+        updateLoading('action', false);
+        toast.success(result.message);
+        return true;
+      } else {
+        updateLoading('action', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('action', false, 'Error registrando dispositivo');
+      toast.error('Error registrando dispositivo');
+      return false;
+    }
+  }, [updateLoading]);
+
+  /**
+   * Actualizar dispositivo
+   */
+  const updateDevice = useCallback(async (id, deviceData) => {
+    updateLoading('action', true);
+    
+    try {
+      const result = await notificationsService.updateDevice(id, deviceData);
+      
+      if (result.status === 'success') {
+        // Actualizar dispositivo en el estado
+        setDevices(prev =>
+          prev.map(device =>
+            device.id === id ? result.data : device
+          )
+        );
+        
+        updateLoading('action', false);
+        toast.success(result.message);
+        return true;
+      } else {
+        updateLoading('action', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('action', false, 'Error actualizando dispositivo');
+      toast.error('Error actualizando dispositivo');
+      return false;
+    }
+  }, [updateLoading]);
+
+  /**
+   * Eliminar dispositivo
+   */
+  const deleteDevice = useCallback(async (id) => {
+    updateLoading('action', true);
+    
+    try {
+      const result = await notificationsService.deleteDevice(id);
+      
+      if (result.status === 'success') {
+        // Remover dispositivo del estado
+        setDevices(prev => prev.filter(device => device.id !== id));
+        
+        updateLoading('action', false);
+        toast.success(result.message);
+        return true;
+      } else {
+        updateLoading('action', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('action', false, 'Error eliminando dispositivo');
+      toast.error('Error eliminando dispositivo');
+      return false;
+    }
+  }, [updateLoading]);
+
+  // ============================================================================
+  // ESTADÍSTICAS
+  // ============================================================================
+
+  /**
+   * Obtener estadísticas de notificaciones
+   */
+  const fetchStatistics = useCallback(async () => {
+    updateLoading('statistics', true);
+    
+    try {
+      const result = await notificationsService.getStatistics();
+      
+      if (result.status === 'success') {
+        setStatistics(result.data);
+        updateLoading('statistics', false);
+        return true;
+      } else {
+        updateLoading('statistics', false, result.message);
+        toast.error(result.message);
+        return false;
+      }
+    } catch (error) {
+      updateLoading('statistics', false, 'Error cargando estadísticas');
+      toast.error('Error cargando estadísticas');
+      return false;
+    }
+  }, [updateLoading]);
+
+  // ============================================================================
+  // RETORNO DEL HOOK
+  // ============================================================================
 
   return {
-    // Estado principal
+    // Estados
     notifications,
-    showNotifications,
+    devices,
+    statistics,
+    loading,
+    pagination,
     
-    // Contadores y filtros
-    unreadCount,
-    unreadNotifications,
-    readNotifications,
-    recentNotifications,
-    
-    // Funciones de control del dropdown
-    toggleNotifications,
-    closeNotifications,
-    openNotifications,
-    
-    // Funciones de gestión de notificaciones
-    markAsRead,
-    markAsUnread,
-    markAllAsRead,
-    removeNotification,
-    clearAllNotifications,
-    clearReadNotifications,
-    addNotification,
+    // Funciones de notificaciones
+    fetchNotifications,
+    createNotification,
     updateNotification,
+    deleteNotification,
+    sendBroadcast,
+    sendBulkNotifications,
     
-    // Funciones de consulta
-    getNotificationById,
-    getNotificationsByType,
-    getRecentNotifications,
+    // Funciones de dispositivos  
+    fetchDevices,
+    createDevice,
+    updateDevice,
+    deleteDevice,
     
-    // Estadísticas y configuración
-    stats,
-    config,
+    // Funciones de estadísticas
+    fetchStatistics,
     
-    // Estados derivados
-    hasNotifications: notifications.length > 0,
-    hasUnreadNotifications: unreadCount > 0,
-    isEmpty: notifications.length === 0
+    // Utilidades
+    clearError: () => updateLoading('error', null),
+    resetPagination: () => setPagination({
+      notifications: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
+      devices: { page: 1, pageSize: 20, total: 0, totalPages: 0 }
+    })
   };
 };
 

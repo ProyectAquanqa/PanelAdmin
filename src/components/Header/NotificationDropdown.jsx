@@ -7,6 +7,22 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 /**
+ * Formatea una fecha a tiempo relativo
+ */
+const formatTimeAgo = (dateString) => {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+  
+  if (diffInMinutes < 1) return 'Ahora';
+  if (diffInMinutes < 60) return `${diffInMinutes} min`;
+  if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} h`;
+  return `${Math.floor(diffInMinutes / 1440)} d`;
+};
+
+/**
  * Componente de elemento de notificación
  */
 const NotificationItem = React.memo(({ notification }) => {
@@ -14,19 +30,19 @@ const NotificationItem = React.memo(({ notification }) => {
     <li 
       className={`p-3 border-b border-neutral-200 dark:border-neutral-700 last:border-b-0
                 hover:bg-neutral-50 dark:hover:bg-neutral-750 cursor-pointer transition-colors
-                ${notification.read ? '' : 'bg-[#2D728F]/10 dark:bg-[#2D728F]/20'}`}
+                ${notification.leido === true ? '' : 'bg-[#2D728F]/10 dark:bg-[#2D728F]/20'}`}
     >
       <div className="flex flex-col">
         <div className="flex justify-between">
-          <span className={`font-medium ${notification.read ? 'text-neutral-800 dark:text-neutral-200' : 'text-[#2D728F] dark:text-[#83b7cc]'}`}>
-            {notification.title}
+          <span className={`font-medium ${notification.leido === true ? 'text-neutral-800 dark:text-neutral-200' : 'text-[#2D728F] dark:text-[#83b7cc]'}`}>
+            {notification.titulo}
           </span>
           <span className="text-xs text-neutral-500 dark:text-neutral-400">
-            {notification.time}
+            {formatTimeAgo(notification.fecha_creacion || notification.created_at)}
           </span>
         </div>
         <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
-          {notification.message}
+          {notification.mensaje}
         </p>
       </div>
     </li>
@@ -82,10 +98,11 @@ const NotificationDropdown = ({
 NotificationDropdown.propTypes = {
   notifications: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    title: PropTypes.string.isRequired,
-    message: PropTypes.string.isRequired,
-    time: PropTypes.string.isRequired,
-    read: PropTypes.bool.isRequired,
+    titulo: PropTypes.string.isRequired,
+    mensaje: PropTypes.string.isRequired,
+    fecha_creacion: PropTypes.string,
+    created_at: PropTypes.string,
+    leido: PropTypes.bool,
   })).isRequired,
   unreadCount: PropTypes.number.isRequired,
   showNotifications: PropTypes.bool.isRequired,

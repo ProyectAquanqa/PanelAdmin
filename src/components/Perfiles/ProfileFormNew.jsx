@@ -794,15 +794,15 @@ const ProfileFormNew = ({
                 <span>Grabar</span>
         </button>
             </div>
-          </div>
+      </div>
 
           {/* Campo de nombre dentro del header */}
           <div className="space-y-2">
             <label htmlFor="name" className="block text-[13px] font-semibold text-gray-700">
               Nombre del Perfil <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
+              </label>
+              <input
+                type="text"
               id="name"
               name="name"
               value={formData.name}
@@ -818,8 +818,8 @@ const ProfileFormNew = ({
             <p className="text-[13px] text-gray-500">
               Este será el nombre del grupo en Django
             </p>
+            </div>
           </div>
-        </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -841,8 +841,8 @@ const ProfileFormNew = ({
                   {formData.permissions.length} permisos activos
                 </span>
               </div>
-            </div>
           </div>
+        </div>
           
           {loadingPermissions ? (
             <div className="flex justify-center items-center py-20">
@@ -896,7 +896,7 @@ const ProfileFormNew = ({
           background: #94a3b8;
         }
       `}</style>
-      </div>
+          </div>
     </div>
   );
 };

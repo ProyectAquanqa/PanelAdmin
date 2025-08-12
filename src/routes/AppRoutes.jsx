@@ -28,6 +28,9 @@ const UserManagement = lazy(() => import('../pages/Users/UserManagement'));
 const ProfileManagement = lazy(() => import('../pages/Perfiles/ProfileManagement'));
 const ProfileManagementNew = lazy(() => import('../pages/Perfiles/ProfileManagementNew'));
 
+// 📱 Páginas del módulo de Notificaciones
+const NotificationManagement = lazy(() => import('../pages/Notifications/NotificationManagement'));
+
 
 // Componente de carga
 const LoadingFallback = () => (
@@ -164,9 +167,13 @@ const AppRoutes = () => {
         } />
 
         
-        {/* Notificaciones */}
+        {/* 📱 Rutas del módulo de Notificaciones */}
         <Route path="notificaciones" element={<Navigate to="/notificaciones/historial" replace />} />
-        <Route path="notificaciones/historial" element={<TemporaryPage title="Historial de Notificaciones" />} />
+        <Route path="notificaciones/historial" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <NotificationManagement />
+          </Suspense>
+        } />
         <Route path="notificaciones/dispositivos" element={<TemporaryPage title="Dispositivos Registrados" />} />
         
         {/* Documentación */}
