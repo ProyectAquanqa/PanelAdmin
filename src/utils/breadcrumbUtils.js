@@ -97,7 +97,7 @@ export const getSectionBasePath = (sectionName) => {
     'Eventos': '/eventos',
     'Usuarios': '/usuarios',
     'Notificaciones': '/notificaciones',
-    'Documentación': '/documentacion',
+    'Almuerzos': '/almuerzos',
     'Configuración': '/configuracion',
     'Permisos': '/permisos',
     'Mi Perfil': '/perfil'

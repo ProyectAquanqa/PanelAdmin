@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:api": "cross-env VITE_API_BASE_URL=http://localhost:8000/api vite",
+    "dev:api": "cross-env VITE_API_BASE_URL=http://172.16.11.29:8000/api vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

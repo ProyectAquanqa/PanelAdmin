@@ -31,6 +31,9 @@ const ProfileManagementNew = lazy(() => import('../pages/Perfiles/ProfileManagem
 // 📱 Páginas del módulo de Notificaciones
 const NotificationManagement = lazy(() => import('../pages/Notifications/NotificationManagement'));
 
+// 🍽️ Páginas del módulo de Almuerzos
+const AlmuerzosGestion = lazy(() => import('../pages/Almuerzos/AlmuerzosGestion'));
+
 
 // Componente de carga
 const LoadingFallback = () => (
@@ -176,8 +179,12 @@ const AppRoutes = () => {
         } />
         <Route path="notificaciones/dispositivos" element={<TemporaryPage title="Dispositivos Registrados" />} />
         
-        {/* Documentación */}
-        <Route path="documentacion" element={<TemporaryPage title="Documentación" />} />
+        {/* Almuerzos */}
+        <Route path="almuerzos" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <AlmuerzosGestion />
+          </Suspense>
+        } />
         
         {/* Configuración */}
         <Route path="configuracion" element={<Navigate to="/configuracion/general" replace />} />

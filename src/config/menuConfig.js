@@ -10,7 +10,7 @@ import {
   UserGroupIcon,
   BellIcon,
   Cog6ToothIcon,
-  DocumentTextIcon,
+  ClipboardDocumentListIcon,
   ShieldCheckIcon
 } from "@heroicons/react/24/outline";
 
@@ -80,9 +80,9 @@ export const userNotificationItems = [
     ],
   },
   {
-    title: 'Documentación',
-    icon: DocumentTextIcon,
-    path: '/documentacion',
+    title: 'Almuerzos',
+    icon: ClipboardDocumentListIcon,
+    path: '/almuerzos',
   },
 ];
 

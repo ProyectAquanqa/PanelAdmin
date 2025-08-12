@@ -3,7 +3,7 @@
  * Basado en Django Groups nativos con SimpleGroupViewSet
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://172.16.11.29:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token (reutilizada del userService)
