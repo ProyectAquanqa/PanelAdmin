@@ -8,12 +8,9 @@ import PropTypes from 'prop-types';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 import { useBreadcrumbs } from '../../hooks/useBreadcrumbs';
-import useNotifications from '../../hooks/useNotifications';
 import { useTheme } from '../../hooks/useTheme';
 import SearchBar from './SearchBar';
 import ThemeToggle from './ThemeToggle';
-import NotificationButton from './NotificationButton';
-import NotificationDropdown from './NotificationDropdown';
 import UserMenu from './UserMenu';
 
 const Header = ({ onMenuClick }) => {
@@ -24,28 +21,7 @@ const Header = ({ onMenuClick }) => {
   const { breadcrumbs, shouldShow: shouldShowBreadcrumbs } = useBreadcrumbs();
   const { isDarkMode, toggleTheme } = useTheme();
   
-  // Hook de notificaciones
-  const { notifications, fetchNotifications } = useNotifications();
-  
-  // Cargar notificaciones al montar el componente
-  React.useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
-  
-  // Estados locales para el dropdown de notificaciones
-  const [showNotifications, setShowNotifications] = useState(false);
-  
-  // Calcular notificaciones no leídas (handle undefined leido gracefully)
-  const unreadCount = notifications.filter(notification => notification.leido !== true).length;
-  
-  // Funciones para manejar el dropdown de notificaciones
-  const toggleNotifications = useCallback(() => {
-    setShowNotifications(prev => !prev);
-  }, []);
 
-  const closeNotifications = useCallback(() => {
-    setShowNotifications(false);
-  }, []);
 
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -114,20 +90,7 @@ const Header = ({ onMenuClick }) => {
           onToggle={toggleTheme}
         />
 
-        {/* Notificaciones usando componentes separados */}
-        <div className="relative">
-          <NotificationButton
-            unreadCount={unreadCount}
-            onClick={toggleNotifications}
-          />
-          
-          <NotificationDropdown
-            notifications={notifications}
-            unreadCount={unreadCount}
-            showNotifications={showNotifications}
-            onClose={closeNotifications}
-          />
-        </div>
+
 
         {/* Perfil de usuario con menú desplegable */}
         <div className="relative">

@@ -1,4 +1,5 @@
 import { apiClient } from '../api';
+import endpoints from '../api/endpoints';
 
 /**
  * Servicio para gestión de notificaciones
@@ -6,8 +7,8 @@ import { apiClient } from '../api';
  */
 class NotificationsService {
   constructor() {
-    this.baseURL = '/web/notifications';
-    this.devicesURL = '/web/device-tokens';
+    this.baseURL = endpoints.notifications.list;
+    this.devicesURL = endpoints.notifications.devices;
   }
 
   // ============================================================================
@@ -22,9 +23,7 @@ class NotificationsService {
       const response = await apiClient.get(this.baseURL, {
         params: {
           search: params.search || '',
-          destinatario: params.destinatario || '',
           evento: params.evento || '',
-          tipo: params.tipo || '',
           ordering: params.ordering || '-created_at',
           page: params.page || 1,
           page_size: params.pageSize || 20,
@@ -34,7 +33,7 @@ class NotificationsService {
       
       return {
         status: 'success',
-        data: response.data
+        data: response
       };
     } catch (error) {
       console.error('❌ Error obteniendo notificaciones:', error);
@@ -47,11 +46,11 @@ class NotificationsService {
    */
   async getNotification(id) {
     try {
-      const response = await apiClient.get(`${this.baseURL}/${id}/`);
+      const response = await apiClient.get(endpoints.notifications.detail(id));
       
       return {
         status: 'success',
-        data: response.data
+        data: response
       };
     } catch (error) {
       console.error('❌ Error obteniendo notificación:', error);
@@ -64,11 +63,21 @@ class NotificationsService {
    */
   async createNotification(notificationData) {
     try {
-      const response = await apiClient.post(this.baseURL, notificationData);
+      // Transformar datos para el backend
+      const transformedData = {
+        titulo: notificationData.titulo,
+        mensaje: notificationData.mensaje,
+        tipo: notificationData.tipo,
+        destinatario_id: notificationData.destinatario,
+        evento_id: notificationData.evento,
+        datos: notificationData.datos
+      };
+
+      const response = await apiClient.post(this.baseURL, transformedData);
       
       return {
         status: 'success',
-        data: response.data,
+        data: response,
         message: 'Notificación creada exitosamente'
       };
     } catch (error) {
@@ -82,11 +91,21 @@ class NotificationsService {
    */
   async updateNotification(id, notificationData) {
     try {
-      const response = await apiClient.put(`${this.baseURL}/${id}/`, notificationData);
+      // Transformar datos para el backend
+      const transformedData = {
+        titulo: notificationData.titulo,
+        mensaje: notificationData.mensaje,
+        tipo: notificationData.tipo,
+        destinatario_id: notificationData.destinatario,
+        evento_id: notificationData.evento,
+        datos: notificationData.datos
+      };
+
+      const response = await apiClient.put(endpoints.notifications.update(id), transformedData);
       
       return {
         status: 'success',
-        data: response.data,
+        data: response,
         message: 'Notificación actualizada exitosamente'
       };
     } catch (error) {
@@ -100,7 +119,7 @@ class NotificationsService {
    */
   async deleteNotification(id) {
     try {
-      await apiClient.delete(`${this.baseURL}/${id}/`);
+      await apiClient.delete(endpoints.notifications.delete(id));
       
       return {
         status: 'success',
@@ -117,11 +136,11 @@ class NotificationsService {
    */
   async sendBroadcast(broadcastData) {
     try {
-      const response = await apiClient.post(`${this.baseURL}/send_broadcast/`, broadcastData);
+      const response = await apiClient.post(endpoints.notifications.sendBroadcast, broadcastData);
       
       return {
         status: 'success',
-        data: response.data,
+        data: response,
         message: 'Notificación broadcast enviada exitosamente'
       };
     } catch (error) {
@@ -135,11 +154,11 @@ class NotificationsService {
    */
   async sendBulkNotifications(bulkData) {
     try {
-      const response = await apiClient.post(`${this.baseURL}/send_bulk_notification/`, bulkData);
+      const response = await apiClient.post(endpoints.notifications.sendBulk, bulkData);
       
       return {
         status: 'success',
-        data: response.data,
+        data: response,
         message: 'Notificaciones enviadas exitosamente'
       };
     } catch (error) {
@@ -153,11 +172,11 @@ class NotificationsService {
    */
   async getStatistics() {
     try {
-      const response = await apiClient.get(`${this.baseURL}/statistics/`);
+      const response = await apiClient.get(endpoints.notifications.statistics);
       
       return {
         status: 'success',
-        data: response.data
+        data: response
       };
     } catch (error) {
       console.error('❌ Error obteniendo estadísticas:', error);
@@ -188,7 +207,7 @@ class NotificationsService {
       
       return {
         status: 'success',
-        data: response.data
+        data: response
       };
     } catch (error) {
       console.error('❌ Error obteniendo dispositivos:', error);
@@ -201,11 +220,11 @@ class NotificationsService {
    */
   async getDevice(id) {
     try {
-      const response = await apiClient.get(`${this.devicesURL}/${id}/`);
+      const response = await apiClient.get(endpoints.notifications.deviceDetail(id));
       
       return {
         status: 'success',
-        data: response.data
+        data: response
       };
     } catch (error) {
       console.error('❌ Error obteniendo dispositivo:', error);
@@ -222,7 +241,7 @@ class NotificationsService {
       
       return {
         status: 'success',
-        data: response.data,
+        data: response,
         message: 'Dispositivo registrado exitosamente'
       };
     } catch (error) {
@@ -236,11 +255,11 @@ class NotificationsService {
    */
   async updateDevice(id, deviceData) {
     try {
-      const response = await apiClient.put(`${this.devicesURL}/${id}/`, deviceData);
+      const response = await apiClient.put(endpoints.notifications.deviceDetail(id), deviceData);
       
       return {
         status: 'success',
-        data: response.data,
+        data: response,
         message: 'Dispositivo actualizado exitosamente'
       };
     } catch (error) {
@@ -254,7 +273,7 @@ class NotificationsService {
    */
   async deleteDevice(id) {
     try {
-      await apiClient.delete(`${this.devicesURL}/${id}/`);
+      await apiClient.delete(endpoints.notifications.deviceDetail(id));
       
       return {
         status: 'success',
@@ -366,6 +385,24 @@ class NotificationsService {
     });
 
     return data;
+  }
+
+  // ============================================================================
+  // LÓGICA DE NEGOCIO (Solo lectura)
+  // ============================================================================
+
+  /**
+   * Determinar si una notificación es automática (generada por evento)
+   */
+  isAutomatic(notification) {
+    return !!notification.evento;
+  }
+
+  /**
+   * Determinar si una notificación ya fue leída
+   */
+  isRead(notification) {
+    return !!notification.leida || !!notification.leido;
   }
 }
 

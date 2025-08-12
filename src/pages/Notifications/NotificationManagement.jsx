@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import useNotifications from "../../hooks/useNotifications";
 import { useUsers } from "../../hooks/useUsers";
 import { useEventos } from "../../hooks/useEventos";
-import { useSearch } from "../../hooks/useSearch";
 import {
   NotificationActions,
   NotificationList,
   NotificationModal,
+  NotificationDetailModal,
   LoadingStates,
 } from "../../components/Notifications";
+import { normalizeText } from "../../utils/searchUtils";
 import toast from "react-hot-toast";
 
 /**
@@ -33,28 +34,34 @@ const NotificationManagement = () => {
   // Estados locales
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
 
-  // Hook de búsqueda con filtros específicos para notificaciones
-  const {
-    filteredData: filteredNotifications,
-    searchTerm,
-    filters,
-    updateSearchTerm,
-    updateFilter,
-  } = useSearch(notifications, {
-    searchFields: ["titulo", "mensaje", "destinatario.username", "destinatario.first_name", "destinatario.last_name"],
-    customFilters: {
-      tipo: (item, value) => {
-        if (!value) return true;
-        return item.tipo === value;
-      },
-      destinatario: (item, value) => {
-        if (!value) return true;
-        if (value === 'broadcast') return !item.destinatario;
-        return item.destinatario?.id?.toString() === value;
+  // Estados de filtros locales (solo búsqueda)
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Función de filtrado personalizada para notificaciones (solo búsqueda con normalización)
+  const filteredNotifications = useMemo(() => {
+    if (!notifications || !Array.isArray(notifications)) return [];
+
+    return notifications.filter(notification => {
+      // Filtro de búsqueda con normalización de strings (ignora tildes)
+      if (searchTerm) {
+        const searchNormalized = normalizeText(searchTerm);
+        const tituloNormalized = normalizeText(notification.titulo || '');
+        const mensajeNormalized = normalizeText(notification.mensaje || '');
+        
+        const matchesTitulo = tituloNormalized.includes(searchNormalized);
+        const matchesMensaje = mensajeNormalized.includes(searchNormalized);
+        
+        if (!matchesTitulo && !matchesMensaje) {
+          return false;
+        }
       }
-    }
-  });
+
+      return true;
+    });
+  }, [notifications, searchTerm]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -151,14 +158,21 @@ const NotificationManagement = () => {
     setEditingItem(null);
   }, []);
 
-  // Handlers de filtros
-  const handleTipoChange = useCallback((value) => {
-    updateFilter('tipo', value);
-  }, [updateFilter]);
+  // Handler de búsqueda
+  const handleSearchChange = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
 
-  const handleDestinatarioChange = useCallback((value) => {
-    updateFilter('destinatario', value);
-  }, [updateFilter]);
+  // Handlers para modal de detalles
+  const handleViewDetails = useCallback((notification) => {
+    setSelectedNotification(notification);
+    setShowDetailModal(true);
+  }, []);
+
+  const handleCloseDetailModal = useCallback(() => {
+    setShowDetailModal(false);
+    setSelectedNotification(null);
+  }, []);
 
   // Estado de carga general
   if (loading.notifications && !notifications?.length) {
@@ -176,16 +190,8 @@ const NotificationManagement = () => {
       <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <NotificationActions
           searchTerm={searchTerm}
-          onSearchChange={updateSearchTerm}
-          selectedTipo={filters.tipo || ''}
-          onTipoChange={handleTipoChange}
-          selectedDestinatario={filters.destinatario || ''}
-          onDestinatarioChange={handleDestinatarioChange}
-          usuarios={users}
+          onSearchChange={handleSearchChange}
           totalItems={filteredNotifications.length}
-          onCreateNew={handleCreateNew}
-          onSendBroadcast={handleSendBroadcast}
-          onSendBulk={handleSendBulk}
         />
 
         <NotificationList
@@ -193,22 +199,17 @@ const NotificationManagement = () => {
           loading={loading.notifications}
           error={loading.error}
           totalItems={filteredNotifications.length}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onCreateFirst={handleCreateNew}
+          onViewDetails={handleViewDetails}
           onRetry={() => fetchNotifications()}
         />
       </div>
 
-      {/* Modal de Crear/Editar Notificación */}
-      <NotificationModal
-        show={showCreateModal}
-        onClose={handleCloseModal}
-        onSubmit={handleSubmit}
-        editingItem={editingItem}
-        usuarios={users}
-        eventos={eventos}
-        loading={loading.action}
+      {/* Modal de detalles */}
+      <NotificationDetailModal
+        show={showDetailModal}
+        onClose={handleCloseDetailModal}
+        notification={selectedNotification}
+        loading={false}
       />
     </div>
   );

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Modal, CustomDropdown } from '../Common';
+import { BellIcon } from '@heroicons/react/24/solid';
+import { CustomDropdown } from '../Common';
 import LoadingStates from './LoadingStates';
+import notificationsService from '../../services/notificationsService';
 
 /**
  * Modal para crear/editar notificaciones
@@ -82,35 +84,11 @@ const NotificationModal = ({
     }));
   };
 
-  // Validar formulario
+  // Validar formulario usando el servicio
   const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.titulo.trim()) {
-      newErrors.titulo = 'El título es requerido';
-    } else if (formData.titulo.length > 255) {
-      newErrors.titulo = 'El título no puede exceder 255 caracteres';
-    }
-
-    if (!formData.mensaje.trim()) {
-      newErrors.mensaje = 'El mensaje es requerido';
-    }
-
-    if (formData.tipo === 'individual' && !formData.destinatario) {
-      newErrors.destinatario = 'El destinatario es requerido para notificaciones individuales';
-    }
-
-    // Validar JSON de datos si se proporciona
-    if (formData.datos.trim()) {
-      try {
-        JSON.parse(formData.datos);
-      } catch (e) {
-        newErrors.datos = 'El formato JSON no es válido';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const validation = notificationsService.validateNotificationData(formData);
+    setErrors(validation.errors);
+    return validation.isValid;
   };
 
   // Manejar envío del formulario
@@ -137,200 +115,207 @@ const NotificationModal = ({
     }
   };
 
-  // Título del modal
-  const modalTitle = isEditMode ? 'Editar Notificación' : 'Crear Nueva Notificación';
+  if (!show) return null;
 
   return (
-    <Modal show={show} onClose={onClose} title={modalTitle} size="lg">
-      {loading ? (
-        <LoadingStates.NotificationModalLoading />
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Título */}
-          <div>
-            <label htmlFor="titulo" className="block text-[13px] font-semibold text-gray-700 mb-2">
-              Título <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="titulo"
-              name="titulo"
-              value={formData.titulo}
-              onChange={handleChange}
-              className={`w-full px-4 py-3 border rounded-lg text-[13px] focus:outline-none focus:ring-2 transition-all ${
-                errors.titulo 
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
-                  : 'border-gray-200 focus:border-[#2D728F] focus:ring-[#2D728F]/20'
-              }`}
-              placeholder="Título de la notificación"
-              maxLength={255}
-            />
-            {errors.titulo && (
-              <p className="text-[13px] text-red-600 mt-1">{errors.titulo}</p>
-            )}
-          </div>
-
-          {/* Mensaje */}
-          <div>
-            <label htmlFor="mensaje" className="block text-[13px] font-semibold text-gray-700 mb-2">
-              Mensaje <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              id="mensaje"
-              name="mensaje"
-              value={formData.mensaje}
-              onChange={handleChange}
-              rows={4}
-              className={`w-full px-4 py-3 border rounded-lg text-[13px] focus:outline-none focus:ring-2 transition-all resize-none ${
-                errors.mensaje 
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
-                  : 'border-gray-200 focus:border-[#2D728F] focus:ring-[#2D728F]/20'
-              }`}
-              placeholder="Contenido del mensaje..."
-            />
-            {errors.mensaje && (
-              <p className="text-[13px] text-red-600 mt-1">{errors.mensaje}</p>
-            )}
-          </div>
-
-          {/* Tipo y Destinatario */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Tipo */}
-            <div>
-              <label className="block text-[13px] font-semibold text-gray-700 mb-2">
-                Tipo <span className="text-red-500">*</span>
-              </label>
-              <CustomDropdown
-                value={formData.tipo}
-                onChange={handleTipoChange}
-                options={[
-                  { value: 'individual', label: 'Individual' },
-                  { value: 'broadcast', label: 'Broadcast (Todos)' },
-                  { value: 'evento', label: 'Relacionado a Evento' },
-                  { value: 'general', label: 'General' }
-                ]}
-                placeholder="Seleccionar tipo..."
-                className="h-[48px]"
-                showIcon={true}
-                iconComponent={
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5v-12a1 1 0 011-2h3a1 1 0 011 2v12z" />
-                  </svg>
-                }
-                optionTextSize="text-[13px]"
-              />
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-[1px] z-50 flex items-center justify-center p-4 opacity-100 transition-opacity duration-300">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform scale-100 transition-transform duration-300">
+        {/* Header Profesional con gradiente slate */}
+        <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-6 py-5 rounded-t-xl flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {/* Icono de campanita */}
+              <div className="w-8 h-8 bg-gradient-to-r from-slate-600 to-slate-700 rounded-lg flex items-center justify-center">
+                <BellIcon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-[13px] font-bold text-gray-900 uppercase tracking-wider">
+                  {isEditMode ? 'Editar Notificación' : 'Crear Nueva Notificación'}
+                </h3>
+                <p className="text-[13px] text-gray-500 mt-1">
+                  {isEditMode ? 'Modifica la información de la notificación' : 'Completa los campos para crear la notificación'}
+                </p>
+              </div>
             </div>
-
-            {/* Destinatario */}
-            <div>
-              <label className="block text-[13px] font-semibold text-gray-700 mb-2">
-                Destinatario {formData.tipo === 'individual' && <span className="text-red-500">*</span>}
-              </label>
-              <CustomDropdown
-                value={formData.destinatario}
-                onChange={(value) => setFormData(prev => ({ ...prev, destinatario: value }))}
-                options={[
-                  { value: '', label: formData.tipo === 'broadcast' ? 'Todos los usuarios' : 'Seleccionar usuario...' },
-                  ...usuarios.map(usuario => ({
-                    value: usuario.id.toString(),
-                    label: `${usuario.first_name} ${usuario.last_name}`.trim() || usuario.username
-                  }))
-                ]}
-                placeholder="Seleccionar destinatario..."
-                className="h-[48px]"
-                disabled={formData.tipo === 'broadcast'}
-                showIcon={true}
-                iconComponent={
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                }
-                optionTextSize="text-[13px]"
-              />
-              {errors.destinatario && (
-                <p className="text-[13px] text-red-600 mt-1">{errors.destinatario}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Evento (opcional) */}
-          {formData.tipo === 'evento' && (
-            <div>
-              <label className="block text-[13px] font-semibold text-gray-700 mb-2">
-                Evento Relacionado
-              </label>
-              <CustomDropdown
-                value={formData.evento}
-                onChange={(value) => setFormData(prev => ({ ...prev, evento: value }))}
-                options={[
-                  { value: '', label: 'Seleccionar evento...' },
-                  ...eventos.map(evento => ({
-                    value: evento.id.toString(),
-                    label: evento.titulo
-                  }))
-                ]}
-                placeholder="Seleccionar evento..."
-                className="h-[48px]"
-                showIcon={true}
-                iconComponent={
-                  <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4m-6 12H6a2 2 0 01-2-2v-7h16v7a2 2 0 01-2 2z" />
-                  </svg>
-                }
-                optionTextSize="text-[13px]"
-              />
-            </div>
-          )}
-
-          {/* Datos adicionales (JSON) */}
-          <div>
-            <label htmlFor="datos" className="block text-[13px] font-semibold text-gray-700 mb-2">
-              Datos Adicionales (JSON)
-              <span className="text-gray-500 font-normal ml-1">(Opcional)</span>
-            </label>
-            <textarea
-              id="datos"
-              name="datos"
-              value={formData.datos}
-              onChange={handleChange}
-              rows={3}
-              className={`w-full px-4 py-3 border rounded-lg text-[13px] focus:outline-none focus:ring-2 transition-all resize-none font-mono ${
-                errors.datos 
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
-                  : 'border-gray-200 focus:border-[#2D728F] focus:ring-[#2D728F]/20'
-              }`}
-              placeholder='{"key": "value", "otro": "dato"}'
-            />
-            {errors.datos && (
-              <p className="text-[13px] text-red-600 mt-1">{errors.datos}</p>
-            )}
-            <p className="text-[12px] text-gray-500 mt-1">
-              Formato JSON válido para datos adicionales de la notificación
-            </p>
-          </div>
-
-          {/* Botones */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 text-[13px] text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
+              className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-200 rounded-lg p-2 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Contenido Principal con scroll controlado */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          {loading ? (
+            <LoadingStates.NotificationModalLoading />
+          ) : (
+            <form id="notification-form" onSubmit={handleSubmit} className="space-y-6">
+              {/* Título */}
+              <div className="space-y-2">
+                <label htmlFor="titulo" className="block text-[13px] font-semibold text-gray-700">
+                  Título <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="titulo"
+                  name="titulo"
+                  value={formData.titulo}
+                  onChange={handleChange}
+                  className={`block w-full px-4 py-3 border rounded-lg text-[13px] focus:outline-none focus:ring-2 transition-all duration-200 placeholder:text-gray-400 ${
+                    errors.titulo 
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                      : 'border-gray-200 focus:border-slate-600 focus:ring-slate-600/20'
+                  }`}
+                  placeholder="Título de la notificación"
+                  maxLength={255}
+                />
+                {errors.titulo && (
+                  <p className="text-[13px] text-red-600">{errors.titulo}</p>
+                )}
+              </div>
+
+              {/* Mensaje */}
+              <div className="space-y-2">
+                <label htmlFor="mensaje" className="block text-[13px] font-semibold text-gray-700">
+                  Mensaje <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="mensaje"
+                  name="mensaje"
+                  value={formData.mensaje}
+                  onChange={handleChange}
+                  rows={4}
+                  className={`block w-full px-4 py-3 border rounded-lg text-[13px] focus:outline-none focus:ring-2 transition-all duration-200 resize-none placeholder:text-gray-400 ${
+                    errors.mensaje 
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                      : 'border-gray-200 focus:border-slate-600 focus:ring-slate-600/20'
+                  }`}
+                  placeholder="Contenido del mensaje..."
+                />
+                {errors.mensaje && (
+                  <p className="text-[13px] text-red-600">{errors.mensaje}</p>
+                )}
+              </div>
+
+              {/* Grid para campos pequeños */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Tipo */}
+                <div className="space-y-2">
+                  <label className="block text-[13px] font-semibold text-gray-700">
+                    Tipo <span className="text-red-500">*</span>
+                  </label>
+                  <CustomDropdown
+                    value={formData.tipo}
+                    onChange={handleTipoChange}
+                    options={[
+                      { value: 'individual', label: 'Individual' },
+                      { value: 'broadcast', label: 'Broadcast' }
+                    ]}
+                    placeholder="Seleccionar tipo..."
+                  />
+                </div>
+
+                {/* Destinatario */}
+                <div className="space-y-2">
+                  <label className="block text-[13px] font-semibold text-gray-700">
+                    Destinatario {formData.tipo === 'individual' && <span className="text-red-500">*</span>}
+                  </label>
+                  <CustomDropdown
+                    value={formData.destinatario}
+                    onChange={(value) => setFormData(prev => ({ ...prev, destinatario: value }))}
+                    options={[
+                      { value: '', label: formData.tipo === 'broadcast' ? 'Todos los usuarios' : 'Seleccionar usuario...' },
+                      ...usuarios.map(usuario => ({
+                        value: usuario.id.toString(),
+                        label: `${usuario.first_name} ${usuario.last_name}`.trim() || usuario.username
+                      }))
+                    ]}
+                    placeholder="Seleccionar destinatario..."
+                    disabled={formData.tipo === 'broadcast'}
+                  />
+                  {errors.destinatario && (
+                    <p className="text-[13px] text-red-600">{errors.destinatario}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Evento (opcional) */}
+              <div className="space-y-2">
+                <label className="block text-[13px] font-semibold text-gray-700">
+                  Evento Relacionado <span className="text-gray-500 font-normal">(Opcional)</span>
+                </label>
+                <CustomDropdown
+                  value={formData.evento}
+                  onChange={(value) => setFormData(prev => ({ ...prev, evento: value }))}
+                  options={[
+                    { value: '', label: 'Sin evento relacionado' },
+                    ...eventos.map(evento => ({
+                      value: evento.id.toString(),
+                      label: evento.titulo
+                    }))
+                  ]}
+                  placeholder="Seleccionar evento..."
+                />
+              </div>
+
+              {/* Datos adicionales (JSON) */}
+              <div className="space-y-2">
+                <label htmlFor="datos" className="block text-[13px] font-semibold text-gray-700">
+                  Datos Adicionales (JSON) <span className="text-gray-500 font-normal">(Opcional)</span>
+                </label>
+                <textarea
+                  id="datos"
+                  name="datos"
+                  value={formData.datos}
+                  onChange={handleChange}
+                  rows={3}
+                  className={`block w-full px-4 py-3 border rounded-lg text-[13px] focus:outline-none focus:ring-2 transition-all duration-200 resize-none font-mono placeholder:text-gray-400 ${
+                    errors.datos 
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                      : 'border-gray-200 focus:border-slate-600 focus:ring-slate-600/20'
+                  }`}
+                  placeholder='{"key": "value", "otro": "dato"}'
+                />
+                {errors.datos && (
+                  <p className="text-[13px] text-red-600">{errors.datos}</p>
+                )}
+                <p className="text-[12px] text-gray-500">
+                  Formato JSON válido para datos adicionales de la notificación
+                </p>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Footer con botones - Estilo knowledge base */}
+        <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-xl flex-shrink-0">
+          <div className="flex items-center justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 text-[13px] font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all duration-200"
               disabled={loading}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-6 py-3 text-[13px] text-white bg-[#2D728F] rounded-lg hover:bg-[#2D728F]/90 focus:outline-none focus:ring-2 focus:ring-[#2D728F]/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              form="notification-form"
+              className="px-5 py-2.5 text-[13px] font-medium text-white bg-slate-600 hover:bg-slate-700 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm flex items-center gap-2"
               disabled={loading}
             >
               {loading && <LoadingStates.ButtonLoading size="small" />}
               {isEditMode ? 'Actualizar' : 'Crear'} Notificación
             </button>
           </div>
-        </form>
-      )}
-    </Modal>
+        </div>
+      </div>
+    </div>
   );
 };
 
