@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useEventos } from "../../hooks/useEventos";
 import { useCategorias } from "../../hooks/useCategorias";
-import { useSearch } from "../../hooks/useSearch";
+import { searchInFields } from "../../utils/searchUtils";
 import {
   EventoList,
+  EventoDetailModal,
   LoadingStates,
 } from "../../components/Eventos";
 import EventoModal from "../../components/Eventos/EventoModal";
@@ -33,6 +34,16 @@ const EventosGestion = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalErrors, setModalErrors] = useState({});
+  
+  // Estados para modal de detalles
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [viewingEvento, setViewingEvento] = useState(null);
+  
+  // Estados de filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedDateRange, setSelectedDateRange] = useState({ start: '', end: '' });
 
   // Estados del modal de confirmación
   const [confirmModal, setConfirmModal] = useState({
@@ -42,18 +53,68 @@ const EventosGestion = () => {
     onConfirm: null,
   });
 
-  // Usar hook de búsqueda y filtros
-  const {
-    filteredData: filteredEventos,
-    searchTerm,
-    selectedCategory,
-    updateSearchTerm,
-    updateCategory,
-    filters: searchFilters,
-    updateFilter,
-  } = useSearch(eventos, {
-    searchFields: ["titulo", "descripcion"],
-  });
+  // Filtrado y procesamiento de eventos
+  const filteredEventos = useMemo(() => {
+    let filtered = [...(eventos || [])];
+
+    // Filtrar por búsqueda
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(evento => 
+        searchInFields(evento, searchTerm, [
+          'titulo',
+          'descripcion',
+          'categoria.nombre',
+          'autor.full_name'
+        ])
+      );
+    }
+
+    // Filtrar por categoría
+    if (selectedCategory.trim()) {
+      filtered = filtered.filter(evento => 
+        evento.categoria?.id?.toString() === selectedCategory
+      );
+    }
+
+    // Filtrar por estado de publicación
+    if (selectedStatus === 'publicado') {
+      filtered = filtered.filter(evento => evento.publicado === true);
+    } else if (selectedStatus === 'borrador') {
+      filtered = filtered.filter(evento => evento.publicado === false);
+    }
+
+
+
+    // Filtrar por rango de fecha del evento
+    if (selectedDateRange.start || selectedDateRange.end) {
+      filtered = filtered.filter(evento => {
+        if (!evento.fecha) return false;
+        
+        const eventoDate = new Date(evento.fecha);
+        let isInRange = true;
+
+        if (selectedDateRange.start) {
+          const startDate = new Date(selectedDateRange.start);
+          isInRange = isInRange && eventoDate >= startDate;
+        }
+
+        if (selectedDateRange.end) {
+          const endDate = new Date(selectedDateRange.end);
+          endDate.setHours(23, 59, 59, 999); // Final del día
+          isInRange = isInRange && eventoDate <= endDate;
+        }
+
+        return isInRange;
+      });
+    }
+
+    // Ordenar por fecha del evento (más recientes primero)
+    filtered.sort((a, b) => {
+      return new Date(b.fecha || b.created_at) - new Date(a.fecha || a.created_at);
+    });
+
+    return filtered;
+  }, [eventos, searchTerm, selectedCategory, selectedStatus, selectedDateRange]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -72,6 +133,16 @@ const EventosGestion = () => {
     setEditingItem(item);
     setModalErrors({});
     setShowCreateModal(true);
+  }, []);
+
+  const handleViewDetails = useCallback((evento) => {
+    setViewingEvento(evento);
+    setShowDetailModal(true);
+  }, []);
+
+  const handleCloseDetailModal = useCallback(() => {
+    setShowDetailModal(false);
+    setViewingEvento(null);
   }, []);
 
   const handleDelete = useCallback((item) => {
@@ -138,9 +209,23 @@ const EventosGestion = () => {
   }, []);
 
   // Manejadores de filtros
+  const handleSearchChange = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
+
+  const handleCategoryChange = useCallback((value) => {
+    setSelectedCategory(value);
+  }, []);
+
   const handleStatusChange = useCallback((value) => {
-    updateFilter('publicado', value);
-  }, [updateFilter]);
+    setSelectedStatus(value);
+  }, []);
+
+
+
+  const handleDateRangeChange = useCallback((dateRange) => {
+    setSelectedDateRange(dateRange);
+  }, []);
 
 
 
@@ -160,13 +245,13 @@ const EventosGestion = () => {
       <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <EventoFilters
           searchTerm={searchTerm}
-          onSearchChange={updateSearchTerm}
+          onSearchChange={handleSearchChange}
           selectedCategory={selectedCategory}
-          onCategoryChange={updateCategory}
-          selectedStatus={searchFilters.publicado || ''}
+          onCategoryChange={handleCategoryChange}
+          selectedStatus={selectedStatus}
           onStatusChange={handleStatusChange}
-  
-
+          selectedDateRange={selectedDateRange}
+          onDateRangeChange={handleDateRangeChange}
           categories={categorias}
           totalItems={filteredEventos.length}
           onCreateNew={handleCreateNew}
@@ -179,7 +264,7 @@ const EventosGestion = () => {
           totalItems={filteredEventos.length}
           onEdit={handleEdit}
           onDelete={handleDelete}
-
+          onViewDetails={handleViewDetails}
           onCreateFirst={handleCreateNew}
           onRetry={() => loadEventos()}
         />
@@ -193,6 +278,14 @@ const EventosGestion = () => {
         evento={editingItem}
         loading={modalLoading}
         errors={modalErrors}
+      />
+
+      {/* Modal de Ver Detalles */}
+      <EventoDetailModal
+        show={showDetailModal}
+        onClose={handleCloseDetailModal}
+        evento={viewingEvento}
+        loading={loading}
       />
 
       {/* Modal de confirmación */}

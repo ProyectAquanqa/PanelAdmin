@@ -133,39 +133,34 @@ const UniversalFilters = ({
    */
   const renderDateRangeGroup = (group) => {
     return (
-      <div className="space-y-2 w-full h-full flex flex-col">
-        <label className="text-[12px] sm:text-[13px] font-semibold text-gray-700 uppercase tracking-wider">
+      <div className={`space-y-2 w-full h-full flex flex-col ${group.containerClass || ''}`}>
+        <label className="text-[12px] sm:text-[13px] font-semibold text-gray-700 uppercase tracking-wider truncate">
           {group.title}
         </label>
         <div className="relative flex-1 flex flex-col justify-end">
           <div className="flex flex-col gap-2 sm:gap-0 sm:flex-row sm:items-center p-3 border border-gray-300 rounded-lg bg-white min-h-[42px]">
-            {group.showIcon && (
-              <svg className="w-4 h-4 text-gray-400 hidden sm:block sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={group.iconPath} />
-              </svg>
-            )}
-            <div className="flex flex-col gap-2 sm:gap-2 sm:flex-row sm:items-center w-full">
-              <div className="flex flex-col sm:flex-1">
+            <div className="flex flex-col gap-2 sm:gap-2 sm:flex-row sm:items-center w-full min-w-0">
+              <div className="flex flex-col sm:flex-1 min-w-0">
                 <label className="text-[11px] text-gray-500 mb-1 sm:hidden">Desde</label>
                 <input
                   type="date"
                   placeholder="Desde"
-                  value={activeFilters[group.key]?.from || ''}
-                  className="w-full text-[12px] sm:text-[13px] border-none outline-none bg-transparent"
-                  onChange={(e) => handleFilterChange(group.key, { ...(activeFilters[group.key] || {}), from: e.target.value })}
+                  value={activeFilters[`${group.key}_start`] || ''}
+                  className="w-full text-[12px] sm:text-[13px] border-none outline-none bg-transparent min-w-0"
+                  onChange={(e) => handleFilterChange(`${group.key}_start`, e.target.value)}
                 />
               </div>
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center flex-shrink-0">
                 <span className="text-gray-400 text-[12px] sm:text-[13px] px-2">-</span>
               </div>
-              <div className="flex flex-col sm:flex-1">
+              <div className="flex flex-col sm:flex-1 min-w-0">
                 <label className="text-[11px] text-gray-500 mb-1 sm:hidden">Hasta</label>
                 <input
                   type="date"
                   placeholder="Hasta"
-                  value={activeFilters[group.key]?.to || ''}
-                  className="w-full text-[12px] sm:text-[13px] border-none outline-none bg-transparent"
-                  onChange={(e) => handleFilterChange(group.key, { ...(activeFilters[group.key] || {}), to: e.target.value })}
+                  value={activeFilters[`${group.key}_end`] || ''}
+                  className="w-full text-[12px] sm:text-[13px] border-none outline-none bg-transparent min-w-0"
+                  onChange={(e) => handleFilterChange(`${group.key}_end`, e.target.value)}
                 />
               </div>
             </div>
@@ -325,7 +320,9 @@ const UniversalFilters = ({
             <div className={`grid ${getGridLayout()}`}>
               {/* Renderizar grupos de filtros */}
               {filterGroups.map((group, index) => (
-                <div key={index} className="min-w-0 w-full flex flex-col h-full">
+                <div key={index} className={`min-w-0 w-full flex flex-col h-full ${
+                  group.type === 'dateRange' ? 'flex-shrink overflow-hidden' : ''
+                }`}>
                   {group.type === 'buttons' 
                     ? renderButtonGroup(group) 
                     : group.type === 'dateRange'

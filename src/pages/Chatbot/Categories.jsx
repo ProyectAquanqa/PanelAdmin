@@ -6,6 +6,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useChatbot } from '../../hooks/useChatbot';
 import { useDataView } from '../../hooks/useDataView';
+import { searchInFields } from '../../utils/searchUtils';
 import toast from 'react-hot-toast';
 
 // Componentes modulares
@@ -44,12 +45,13 @@ const Categories = () => {
   const processedCategories = useMemo(() => {
     let filtered = [...categories];
 
-    // Filtrar por búsqueda
+    // Filtrar por búsqueda (usando searchUtils para manejar acentos)
     if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(category => 
-        category.name.toLowerCase().includes(searchLower) ||
-        (category.description && category.description.toLowerCase().includes(searchLower))
+        searchInFields(category, searchTerm, [
+          'name',
+          'description'
+        ])
       );
     }
 

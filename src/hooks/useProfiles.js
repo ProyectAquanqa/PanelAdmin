@@ -7,6 +7,38 @@ import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import groupService from '../services/groupService';
 
+/**
+ * Ordena los perfiles por fecha de creación (más recientes primero)
+ * @param {Array} perfiles - Array de perfiles
+ * @returns {Array} Perfiles ordenados
+ */
+const ordenarPerfilesPorFecha = (perfiles) => {
+  if (!Array.isArray(perfiles)) return [];
+  
+  return [...perfiles].sort((a, b) => {
+    // Intentar obtener fecha de creación de diferentes campos posibles
+    const fechaA = a.created_at || a.date_joined || a.created || a.date_created || a.timestamp;
+    const fechaB = b.created_at || b.date_joined || b.created || b.date_created || b.timestamp;
+    
+    // Si no hay fechas, mantener orden actual
+    if (!fechaA && !fechaB) return 0;
+    if (!fechaA) return 1;  // Poner los sin fecha al final
+    if (!fechaB) return -1; // Poner los sin fecha al final
+    
+    // Convertir a Date objects para comparar
+    const dateA = new Date(fechaA);
+    const dateB = new Date(fechaB);
+    
+    // Verificar si las fechas son válidas
+    if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+    if (isNaN(dateA.getTime())) return 1;
+    if (isNaN(dateB.getTime())) return -1;
+    
+    // Orden descendente (más recientes primero)
+    return dateB.getTime() - dateA.getTime();
+  });
+};
+
 const useProfiles = () => {
   // Estados principales
   const [profiles, setProfiles] = useState([]);
@@ -42,7 +74,9 @@ const useProfiles = () => {
         perfiles = [];
       }
       
-      setProfiles(perfiles);
+      // Ordenar perfiles por fecha de creación (más recientes primero)
+      const perfilesOrdenados = ordenarPerfilesPorFecha(perfiles);
+      setProfiles(perfilesOrdenados);
     } catch (error) {
       console.error('❌ Error al obtener perfiles:', error);
       toast.error('Error al cargar perfiles');

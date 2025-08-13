@@ -32,10 +32,11 @@ export const eventosFiltersConfig = {
       type: 'buttons',
       options: [
         { value: '', label: 'Todos' },
-        { value: 'true', label: 'Publicado' },
-        { value: 'false', label: 'Borrador' }
+        { value: 'publicado', label: 'Publicado' },
+        { value: 'borrador', label: 'Borrador' }
       ]
     },
+
     {
       key: 'dateRange',
       title: 'Fecha',
@@ -46,10 +47,10 @@ export const eventosFiltersConfig = {
       className: 'h-[42px]',
       responsive: {
         mobile: 'w-full',
-        tablet: 'w-full lg:w-auto',
+        tablet: 'w-auto',
         desktop: 'w-auto'
       },
-      containerClass: 'min-w-0 flex-1 lg:flex-none lg:min-w-[200px] transition-all duration-300 ease-in-out sidebar-aware-filter'
+      containerClass: 'min-w-0 max-w-[240px] lg:max-w-[280px] xl:max-w-[320px] transition-all duration-300 ease-in-out'
     }
   ],
 

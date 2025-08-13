@@ -3,7 +3,7 @@
  * Basado en Django Groups nativos con SimpleGroupViewSet
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://172.16.11.29:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token (reutilizada del userService)
@@ -201,7 +201,28 @@ const groupService = {
    * @returns {Promise} Permisos organizados por app
    */
   getAvailablePermissions: async () => {
-    return await apiCall('/web/admin/permissions/');
+    // Intentar diferentes endpoints para máxima compatibilidad
+    const endpoints = [
+      '/admin/system/permissions/',
+      '/web/admin/permissions/', 
+      '/admin/permissions/',
+      '/api/permissions/'
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await apiCall(endpoint);
+        if (response && (response.status === 'success' || response.data)) {
+          console.log(`✅ Permisos obtenidos desde: ${endpoint}`);
+          return response;
+        }
+      } catch (error) {
+        console.log(`⚠️ Endpoint ${endpoint} no disponible:`, error.message);
+        continue;
+      }
+    }
+
+    throw new Error('No se pudieron obtener permisos de ningún endpoint disponible');
   },
 
   /**
@@ -283,8 +304,9 @@ const groupService = {
    * Alias para compatibilidad con código existente
    * @returns {Promise} Estructura jerárquica de permisos
    */
-  getAvailablePermissions: async () => {
-    return await apiCall('/admin/system/permissions/');
+  getPermissionsForCompatibility: async () => {
+    // Usar el método principal actualizado
+    return await groupService.getAvailablePermissions();
   }
 };
 

@@ -93,7 +93,7 @@ const AlmuerzosGestion = () => {
         
         // Test GET almuerzos
         console.log('🧪 Testing GET /api/web/almuerzos/');
-        const getResponse = await fetch('http://172.16.11.29:8000/api/web/almuerzos/', {
+        const getResponse = await fetch('http://localhost:8000/api/web/almuerzos/', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -116,9 +116,9 @@ const AlmuerzosGestion = () => {
         // Test de endpoint disponibles
         console.log('🧪 Testing API endpoints availability...');
         const endpoints = [
-          'http://172.16.11.29:8000/api/web/almuerzos/',
-          'http://172.16.11.29:8000/api/admin/almuerzos/',
-          'http://172.16.11.29:8000/api/mobile/almuerzos/'
+          'http://localhost:8000/api/web/almuerzos/',
+          'http://localhost:8000/api/admin/almuerzos/',
+          'http://localhost:8000/api/mobile/almuerzos/'
         ];
         
         for (const endpoint of endpoints) {

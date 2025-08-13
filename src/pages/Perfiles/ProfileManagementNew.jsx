@@ -106,11 +106,14 @@ const ProfileManagementNew = () => {
     if (window.confirm(`¿Estás seguro de que quieres eliminar el perfil "${profileName}"?`)) {
       try {
         await deleteProfile(profile.id);
+        // Refrescar la lista después de eliminar
+        await fetchProfiles();
+        console.log('✅ Perfil eliminado y lista actualizada');
       } catch (error) {
         console.error('Error eliminando perfil:', error);
       }
     }
-  }, [deleteProfile]);
+  }, [deleteProfile, fetchProfiles]);
 
   const handleExport = useCallback(async () => {
     try {
@@ -132,9 +135,13 @@ const ProfileManagementNew = () => {
       if (currentView === 'create') {
         await createProfile(data);
         console.log('✅ Perfil creado correctamente');
+        // Refrescar la lista de perfiles para mostrar el nuevo perfil con conteo correcto
+        await fetchProfiles();
       } else if (currentView === 'edit') {
         await updateProfile(editingProfile.id, data);
         console.log('✅ Perfil actualizado correctamente');
+        // Refrescar la lista de perfiles para mostrar los cambios
+        await fetchProfiles();
       }
       // Volver a la lista después de guardar
       setCurrentView('list');
@@ -143,7 +150,7 @@ const ProfileManagementNew = () => {
       console.error('❌ Error guardando perfil:', error);
       // No cambiar de vista si hay error, mantener formulario abierto
     }
-  }, [currentView, editingProfile, createProfile, updateProfile]);
+  }, [currentView, editingProfile, createProfile, updateProfile, fetchProfiles]);
 
 
 
@@ -186,6 +193,7 @@ const ProfileManagementNew = () => {
         {/* Tabla de perfiles usando DataViewSwitcher estándar */}
         <DataViewSwitcher
           data={profilesForTable}
+          onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
           itemType="profile"

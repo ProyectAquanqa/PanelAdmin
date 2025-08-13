@@ -14,8 +14,8 @@ const EventoFilters = ({
   onCategoryChange,
   selectedStatus = '',
   onStatusChange,
-  selectedPinned = '',
-  onPinnedChange,
+  selectedDateRange = { start: '', end: '' },
+  onDateRangeChange,
   categories = [],
   onCreateNew,
   totalItems = 0
@@ -32,7 +32,8 @@ const EventoFilters = ({
     searchTerm,
     selectedCategory,
     selectedStatus,
-    selectedPinned
+    dateRange_start: selectedDateRange?.start || '',
+    dateRange_end: selectedDateRange?.end || ''
   };
 
   // Manejar cambios de filtros
@@ -47,8 +48,17 @@ const EventoFilters = ({
       case 'selectedStatus':
         onStatusChange?.(value);
         break;
-      case 'selectedPinned':
-        onPinnedChange?.(value);
+      case 'dateRange_start':
+        onDateRangeChange?.({ 
+          ...selectedDateRange, 
+          start: value 
+        });
+        break;
+      case 'dateRange_end':
+        onDateRangeChange?.({ 
+          ...selectedDateRange, 
+          end: value 
+        });
         break;
       default:
         break;
@@ -60,7 +70,7 @@ const EventoFilters = ({
     onSearchChange?.('');
     onCategoryChange?.('');
     onStatusChange?.('');
-    onPinnedChange?.('');
+    onDateRangeChange?.({ start: '', end: '' });
   };
 
   return (
@@ -85,8 +95,11 @@ EventoFilters.propTypes = {
   onCategoryChange: PropTypes.func,
   selectedStatus: PropTypes.string,
   onStatusChange: PropTypes.func,
-  selectedPinned: PropTypes.string,
-  onPinnedChange: PropTypes.func,
+  selectedDateRange: PropTypes.shape({
+    start: PropTypes.string,
+    end: PropTypes.string
+  }),
+  onDateRangeChange: PropTypes.func,
   categories: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.number.isRequired,

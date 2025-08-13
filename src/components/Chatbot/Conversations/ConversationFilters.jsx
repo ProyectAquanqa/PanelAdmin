@@ -11,9 +11,8 @@ const ConversationFilters = ({
   onSearchChange,
   selectedUser = '',
   onUserChange,
-  selectedStatus = '',
-  onStatusChange,
-  selectedDateRange = '',
+
+  selectedDateRange = { start: '', end: '' },
   onDateRangeChange,
   totalItems = 0,
   onExport,
@@ -43,32 +42,25 @@ const ConversationFilters = ({
           options: userOptions,
           placeholder: 'Seleccionar usuario...',
           showIcon: true,
-          iconPath: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+          iconPath: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+          className: 'h-[42px]',
+          containerClass: 'min-w-0 w-full sm:w-auto sm:min-w-[200px] transition-all duration-300'
         },
+
         {
-          key: 'selectedStatus',
-          title: 'Estado',
-          type: 'buttons',
-          options: [
-            { value: '', label: 'Todas' },
-            { value: 'exitosa', label: 'Exitosas' },
-            { value: 'fallida', label: 'Fallidas' }
-          ]
-        },
-        {
-          key: 'selectedDateRange',
+          key: 'dateRange',
           title: 'Fecha',
-          type: 'dropdown',
-          options: [
-            { value: '', label: 'Todas las fechas' },
-            { value: 'today', label: 'Hoy' },
-            { value: 'yesterday', label: 'Ayer' },
-            { value: 'week', label: 'Última semana' },
-            { value: 'month', label: 'Último mes' }
-          ],
-          placeholder: 'Seleccionar fecha...',
+          type: 'dateRange',
+          placeholder: 'Seleccionar fechas...',
           showIcon: true,
-          iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+          iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+          className: 'h-[42px]',
+          responsive: {
+            mobile: 'w-full',
+            tablet: 'w-full sm:w-auto',
+            desktop: 'w-auto'
+          },
+          containerClass: 'min-w-0 w-full sm:w-auto sm:min-w-[200px] lg:min-w-[240px] xl:min-w-[280px] transition-all duration-300 ease-in-out'
         }
       ],
       actions: [
@@ -87,8 +79,8 @@ const ConversationFilters = ({
   const activeFilters = {
     searchTerm,
     selectedUser,
-    selectedStatus,
-    selectedDateRange
+    dateRange_start: selectedDateRange?.start || '',
+    dateRange_end: selectedDateRange?.end || ''
   };
 
   // Manejar cambios de filtros
@@ -100,11 +92,18 @@ const ConversationFilters = ({
       case 'selectedUser':
         onUserChange?.(value);
         break;
-      case 'selectedStatus':
-        onStatusChange?.(value);
+
+      case 'dateRange_start':
+        onDateRangeChange?.({
+          ...selectedDateRange,
+          start: value
+        });
         break;
-      case 'selectedDateRange':
-        onDateRangeChange?.(value);
+      case 'dateRange_end':
+        onDateRangeChange?.({
+          ...selectedDateRange,
+          end: value
+        });
         break;
       default:
         break;
@@ -115,8 +114,7 @@ const ConversationFilters = ({
   const handleClearFilters = () => {
     onSearchChange?.('');
     onUserChange?.('');
-    onStatusChange?.('');
-    onDateRangeChange?.('');
+    onDateRangeChange?.({ start: '', end: '' });
   };
 
   return (
@@ -139,9 +137,11 @@ ConversationFilters.propTypes = {
   onSearchChange: PropTypes.func,
   selectedUser: PropTypes.string,
   onUserChange: PropTypes.func,
-  selectedStatus: PropTypes.string,
-  onStatusChange: PropTypes.func,
-  selectedDateRange: PropTypes.string,
+
+  selectedDateRange: PropTypes.shape({
+    start: PropTypes.string,
+    end: PropTypes.string
+  }),
   onDateRangeChange: PropTypes.func,
   totalItems: PropTypes.number,
   onExport: PropTypes.func,

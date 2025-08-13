@@ -6,6 +6,7 @@ import {
   LoadingStates,
 } from "../../components/Chatbot/KnowledgeBase";
 import KnowledgeModal from "../../components/Chatbot/KnowledgeBase/KnowledgeModal";
+import KnowledgeDetailModal from "../../components/Chatbot/KnowledgeBase/KnowledgeDetailModal";
 import KnowledgeFilters from "../../components/Chatbot/KnowledgeBase/KnowledgeFilters";
 import toast from "react-hot-toast";
 
@@ -29,6 +30,8 @@ const KnowledgeBase = () => {
   // Estados locales
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   // Usar hook de búsqueda
   const {
@@ -128,6 +131,16 @@ const KnowledgeBase = () => {
     setEditingItem(null);
   }, []);
 
+  const handleViewDetails = useCallback((item) => {
+    setSelectedItem(item);
+    setShowDetailModal(true);
+  }, []);
+
+  const handleCloseDetailModal = useCallback(() => {
+    setShowDetailModal(false);
+    setSelectedItem(null);
+  }, []);
+
   // Estado de carga general
   if (loading.knowledge && !knowledgeBase?.length) {
     return (
@@ -163,6 +176,7 @@ const KnowledgeBase = () => {
           totalItems={filteredKnowledgeBase.length}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onViewDetails={handleViewDetails}
           onCreateFirst={handleCreateNew}
           onRetry={() => fetchKnowledgeBase()}
         />
@@ -175,6 +189,14 @@ const KnowledgeBase = () => {
         onSubmit={handleSubmit}
         editingItem={editingItem}
         categories={categories}
+        loading={loading.knowledge}
+      />
+
+      {/* Modal de Ver Detalles */}
+      <KnowledgeDetailModal
+        show={showDetailModal}
+        onClose={handleCloseDetailModal}
+        knowledge={selectedItem}
         loading={loading.knowledge}
       />
     </div>

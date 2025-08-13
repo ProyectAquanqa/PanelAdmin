@@ -79,20 +79,14 @@ const CategoriaTableView = ({
             {item.is_active ? 'Activa' : 'Inactiva'}
           </span>
           
-          {/* Creador */}
-          {item.created_by && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-              Por: {typeof item.created_by === 'string' ? item.created_by : item.created_by.username || item.created_by.first_name || 'Usuario'}
-            </span>
-          )}
-
           {/* Fecha de creación */}
           {item.created_at && (
-            <span className="text-gray-500">
+            <span className="text-gray-500 text-xs">
               {new Date(item.created_at).toLocaleDateString('es-ES', {
-                year: 'numeric',
+                day: '2-digit',
                 month: 'short',
-                day: 'numeric',
+                year: '2-digit'
+              })} • {new Date(item.created_at).toLocaleTimeString('es-ES', {
                 hour: '2-digit',
                 minute: '2-digit'
               })}
@@ -218,29 +212,20 @@ const CategoriaTableView = ({
           </div>
         </td>
         
-        {/* Creador */}
-        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden xl:table-cell">
-          <div className="flex items-center">
-            {item.created_by ? (
-              <span className="text-[12px] text-gray-600 font-medium whitespace-nowrap">
-                {typeof item.created_by === 'string' ? item.created_by : item.created_by.username || item.created_by.first_name || 'Usuario'}
-              </span>
-            ) : (
-              <span className="text-[12px] text-gray-400 italic">-</span>
-            )}
-          </div>
-        </td>
-
         {/* Fecha de Creación */}
-        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden sm:table-cell">
-          <div className="flex items-center">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden lg:table-cell">
+          <div className="flex items-center justify-center">
             {item.created_at ? (
               <div className="text-center">
-                <div className="text-[12px] text-gray-600 font-medium">
+                <div className="text-[12px] text-gray-600 font-medium whitespace-nowrap">
                   {new Date(item.created_at).toLocaleDateString('es-ES', {
-                    year: 'numeric',
+                    day: '2-digit',
                     month: 'short',
-                    day: 'numeric',
+                    year: '2-digit'
+                  })}
+                </div>
+                <div className="text-[11px] text-gray-500">
+                  {new Date(item.created_at).toLocaleTimeString('es-ES', {
                     hour: '2-digit',
                     minute: '2-digit'
                   })}
@@ -253,8 +238,8 @@ const CategoriaTableView = ({
         </td>
         
         {/* Acciones */}
-        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 text-right">
-          <div className="flex items-center justify-end gap-2">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 text-center">
+          <div className="flex items-center justify-center gap-2">
             <button
               onClick={() => onEdit?.(item)}
               className="p-2 text-gray-400 hover:text-[#2D728F] transition-colors rounded-lg hover:bg-gray-100"
@@ -291,23 +276,11 @@ const CategoriaTableView = ({
         <table className="w-full min-w-full divide-y divide-gray-300 table-auto">
           <thead className="bg-[#F2F3F5] border-b border-slate-300/60">
             <tr>
-              <th 
-                className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider w-[60px] min-w-[50px] cursor-pointer hover:bg-gray-200/50 transition-colors"
-                onClick={() => onSort('id')}
-              >
-                <div className="flex items-center justify-center">
-                  ID
-                  <SortIcon field="id" currentField={sortField} direction={sortDirection} />
-                </div>
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider w-[60px] min-w-[50px]">
+                ID
               </th>
-              <th 
-                className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[120px] w-[160px] cursor-pointer hover:bg-gray-200/50 transition-colors"
-                onClick={() => onSort('nombre')}
-              >
-                <div className="flex items-center">
-                  Nombre
-                  <SortIcon field="nombre" currentField={sortField} direction={sortDirection} />
-                </div>
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[120px] w-[160px]">
+                Nombre
               </th>
               <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell min-w-[200px] max-w-[300px]">
                 Descripción
@@ -324,19 +297,10 @@ const CategoriaTableView = ({
               <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell min-w-[100px] w-[120px]">
                 Eventos
               </th>
-              <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell w-[120px] min-w-[100px]">
-                Creador
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell min-w-[110px] w-[130px]">
+                Fecha
               </th>
-              <th 
-                className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell cursor-pointer hover:bg-gray-200/50 transition-colors min-w-[100px] w-[120px]"
-                onClick={() => onSort('created_at')}
-              >
-                <div className="flex items-center justify-center">
-                  Creada
-                  <SortIcon field="created_at" currentField={sortField} direction={sortDirection} />
-                </div>
-              </th>
-              <th className="px-3 sm:px-4 md:px-6 py-4 text-right text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[100px] w-[120px]">
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[100px] w-[120px]">
                 Acciones
               </th>
             </tr>

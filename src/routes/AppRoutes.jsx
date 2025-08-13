@@ -27,6 +27,7 @@ const UserManagement = lazy(() => import('../pages/Users/UserManagement'));
 // 🔐 Páginas del módulo de Perfiles
 const ProfileManagement = lazy(() => import('../pages/Perfiles/ProfileManagement'));
 const ProfileManagementNew = lazy(() => import('../pages/Perfiles/ProfileManagementNew'));
+const ProfileTestPage = lazy(() => import('../pages/Perfiles/ProfileTestPage'));
 
 // 📱 Páginas del módulo de Notificaciones
 const NotificationManagement = lazy(() => import('../pages/Notifications/NotificationManagement'));
@@ -166,6 +167,13 @@ const AppRoutes = () => {
         <Route path="usuarios/perfiles" element={
           <Suspense fallback={<LoadingFallback />}>
             <ProfileManagementNew />
+          </Suspense>
+        } />
+        
+        {/* Página de pruebas para desarrollo del sistema de perfiles dinámicos */}
+        <Route path="usuarios/perfiles/test" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <ProfileTestPage />
           </Suspense>
         } />
 

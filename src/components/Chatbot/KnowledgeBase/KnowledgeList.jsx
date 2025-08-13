@@ -14,6 +14,7 @@ const KnowledgeList = ({
   totalItems,
   onEdit,
   onDelete,
+  onViewDetails,
   onCreateFirst,
   onRetry
 }) => {
@@ -45,6 +46,7 @@ const KnowledgeList = ({
         data={knowledgeBase}
         onEdit={onEdit}
         onDelete={onDelete}
+        onViewDetails={onViewDetails}
         onSort={handleSort}
       />
     </div>
@@ -78,6 +80,7 @@ KnowledgeList.propTypes = {
   totalItems: PropTypes.number,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
+  onViewDetails: PropTypes.func,
   onCreateFirst: PropTypes.func,
   onRetry: PropTypes.func
 };

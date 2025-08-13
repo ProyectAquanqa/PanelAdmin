@@ -33,8 +33,8 @@ const Conversations = () => {
   const [viewingConversation, setViewingConversation] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedDateRange, setSelectedDateRange] = useState('');
+
+  const [selectedDateRange, setSelectedDateRange] = useState({ start: '', end: '' });
   const [expandedRows, setExpandedRows] = useState(new Set());
 
   // Cargar conversaciones al montar
@@ -54,7 +54,7 @@ const Conversations = () => {
         userMap.set(userId, {
           id: userId,
           username: conversation.user_username,
-          email: conversation.user_email || '',
+          email: conversation.user?.email || conversation.user_email || '',
           full_name: conversation.user_full_name || conversation.user_username
         });
       }
@@ -135,30 +135,21 @@ const Conversations = () => {
           showIcon: true,
           iconPath: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
         },
+
         {
-          key: 'selectedStatus',
-          title: 'Estado',
-          type: 'buttons',
-          options: [
-            { value: '', label: 'Todas' },
-            { value: 'exitosa', label: 'Exitosas' },
-            { value: 'fallida', label: 'Fallidas' }
-          ]
-        },
-        {
-          key: 'selectedDateRange',
+          key: 'dateRange',
           title: 'Fecha',
-          type: 'dropdown',
-          options: [
-            { value: '', label: 'Todas las fechas' },
-            { value: 'today', label: 'Hoy' },
-            { value: 'yesterday', label: 'Ayer' },
-            { value: 'week', label: 'Última semana' },
-            { value: 'month', label: 'Último mes' }
-          ],
-          placeholder: 'Seleccionar fecha...',
+          type: 'dateRange',
+          placeholder: 'Seleccionar fechas...',
           showIcon: true,
-          iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+          iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+          className: 'h-[42px]',
+          responsive: {
+            mobile: 'w-full',
+            tablet: 'w-auto',
+            desktop: 'w-auto'
+          },
+          containerClass: 'min-w-0 max-w-[240px] lg:max-w-[280px] xl:max-w-[320px] transition-all duration-300 ease-in-out'
         }
       ],
       actions: [
@@ -196,56 +187,34 @@ const Conversations = () => {
       );
     }
 
-    // Filtrar por estado
-    if (selectedStatus === 'exitosa') {
-      filtered = filtered.filter(conversation => 
-        conversation.answer_text && conversation.answer_text.trim()
-      );
-    } else if (selectedStatus === 'fallida') {
-      filtered = filtered.filter(conversation => 
-        !conversation.answer_text || !conversation.answer_text.trim()
-      );
-    }
 
-    // Filtrar por rango de fecha
-    if (selectedDateRange) {
-      const now = new Date();
-      let startDate;
-      
-      switch (selectedDateRange) {
-        case 'today':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case 'yesterday':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-          const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          filtered = filtered.filter(conversation => {
-            const conversationDate = new Date(conversation.created_at);
-            return conversationDate >= startDate && conversationDate < endDate;
-          });
-          break;
-        case 'week':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case 'month':
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          startDate = null;
-      }
-      
-      if (startDate && selectedDateRange !== 'yesterday') {
-        filtered = filtered.filter(conversation => 
-          new Date(conversation.created_at) >= startDate
-        );
-      }
+
+    // Filtrar por rango de fecha (between)
+    if (selectedDateRange?.start || selectedDateRange?.end) {
+      filtered = filtered.filter(conversation => {
+        if (!conversation.created_at) return false;
+        
+        const conversationDate = new Date(conversation.created_at);
+        const startDate = selectedDateRange.start ? new Date(selectedDateRange.start) : null;
+        const endDate = selectedDateRange.end ? new Date(selectedDateRange.end + ' 23:59:59') : null;
+        
+        if (startDate && endDate) {
+          return conversationDate >= startDate && conversationDate <= endDate;
+        } else if (startDate) {
+          return conversationDate >= startDate;
+        } else if (endDate) {
+          return conversationDate <= endDate;
+        }
+        
+        return true;
+      });
     }
 
     // Ordenar por más recientes primero (por defecto)
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     return filtered;
-  }, [displayConversations, searchTerm, selectedUser, selectedStatus, selectedDateRange]);
+  }, [displayConversations, searchTerm, selectedUser, selectedDateRange]);
 
   // Hook personalizado para manejo de vista de datos
   const {
@@ -308,8 +277,6 @@ const Conversations = () => {
             onSearchChange={setSearchTerm}
             selectedUser={selectedUser}
             onUserChange={setSelectedUser}
-            selectedStatus={selectedStatus}
-            onStatusChange={setSelectedStatus}
             selectedDateRange={selectedDateRange}
             onDateRangeChange={setSelectedDateRange}
             totalItems={processedConversations.length}

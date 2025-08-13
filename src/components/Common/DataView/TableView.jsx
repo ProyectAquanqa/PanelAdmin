@@ -20,6 +20,7 @@ const TableView = ({
   onSort,
   onEdit,
   onDelete,
+  onViewDetails,
   onToggleExpansion,
   className = ''
 }) => {
@@ -27,8 +28,6 @@ const TableView = ({
    * Renderiza una fila de la tabla para móvil (card layout)
    */
   const renderMobileCard = (item, index) => {
-    const isExpanded = expandedRows ? expandedRows.has(item.id) : false;
-    const shouldTruncate = item.answer && item.answer.length > 100;
     
     return (
       <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3 hover:shadow-sm transition-shadow">
@@ -39,22 +38,12 @@ const TableView = ({
           </h4>
           {item.answer && (
             <div className="relative">
-              <p className={`text-xs text-gray-600 leading-relaxed ${
-                !isExpanded && shouldTruncate ? 'line-clamp-3' : ''
-              }`}>
-                {item.answer}
+              <p className="text-xs text-gray-600 leading-relaxed">
+                {item.answer.length > 150 
+                  ? `${item.answer.substring(0, 150)}...` 
+                  : item.answer
+                }
               </p>
-              {shouldTruncate && (
-                <button
-                  onClick={() => onToggleExpansion(item.id)}
-                  className="mt-1 text-xs text-[#2D728F] hover:text-[#235A6F] flex items-center gap-1"
-                >
-                  {isExpanded ? 'Ver menos' : 'Ver más'}
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isExpanded ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                  </svg>
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -119,7 +108,19 @@ const TableView = ({
         )}
 
         {/* Acciones */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-100">
+          {onViewDetails && (
+            <button
+              onClick={() => onViewDetails?.(item)}
+              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-lg"
+              title="Ver detalles"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          )}
           <button
             onClick={() => onEdit?.(item)}
             className="p-2 text-gray-400 hover:text-[#2D728F] transition-colors rounded-lg hover:bg-gray-100"
@@ -147,8 +148,6 @@ const TableView = ({
    * Renderiza una fila de la tabla para desktop
    */
   const renderTableRow = (item, index) => {
-    const isExpanded = expandedRows ? expandedRows.has(item.id) : false;
-    const shouldTruncate = item.answer && item.answer.length > 100;
     
     return (
       <tr key={item.id} className="hover:bg-gray-50 transition-colors">
@@ -162,34 +161,12 @@ const TableView = ({
             </div>
             {item.answer && (
               <div className="relative">
-                <p className={`text-[12px] text-gray-500 leading-relaxed ${
-                  !isExpanded && shouldTruncate ? 'line-clamp-2' : ''
-                }`}>
-                  {item.answer}
+                <p className="text-[12px] text-gray-500 leading-relaxed">
+                  {item.answer.length > 200 
+                    ? `${item.answer.substring(0, 200)}...` 
+                    : item.answer
+                  }
                 </p>
-                {shouldTruncate && (
-                  <button
-                    onClick={() => onToggleExpansion(item.id)}
-                    className="mt-1 text-[11px] text-[#2D728F] hover:text-[#235A6F] flex items-center gap-1 transition-colors"
-                    title={isExpanded ? 'Mostrar menos' : 'Mostrar más'}
-                  >
-                    {isExpanded ? (
-                      <>
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                        Ver menos
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                        Ver más
-                      </>
-                    )}
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -293,8 +270,20 @@ const TableView = ({
         </td>
         
         {/* Acciones */}
-        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 text-right">
-          <div className="flex items-center justify-end gap-2">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 text-center">
+          <div className="flex items-center justify-center gap-2">
+            {onViewDetails && (
+              <button
+                onClick={() => onViewDetails?.(item)}
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-lg"
+                title="Ver detalles"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            )}
             <button
               onClick={() => onEdit?.(item)}
               className="p-2 text-gray-400 hover:text-[#2D728F] transition-colors rounded-lg hover:bg-gray-100"
@@ -358,7 +347,7 @@ const TableView = ({
                   <SortIcon field="is_active" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
-              <th className="px-3 sm:px-4 md:px-6 py-4 text-right text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[100px] w-[120px]">
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[100px] w-[120px]">
                 Acciones
               </th>
             </tr>
@@ -380,6 +369,7 @@ TableView.propTypes = {
   onSort: PropTypes.func.isRequired,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
+  onViewDetails: PropTypes.func,
   onToggleExpansion: PropTypes.func.isRequired,
   className: PropTypes.string,
 };

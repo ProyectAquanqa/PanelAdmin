@@ -6,6 +6,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import groupService from '../../services/groupService';
+import dynamicPermissionsService from '../../services/dynamicPermissionsService';
+import PermissionsDebugger from './PermissionsDebugger';
 import { toast } from 'react-hot-toast';
 
 const ProfileFormNew = ({ 
@@ -45,29 +47,37 @@ const ProfileFormNew = ({
     try {
       setLoadingPermissions(true);
       
-      const response = await groupService.getAvailablePermissions();
-
-      if (response.status === 'success' && response.data?.permissions_by_app) {
-        setAvailablePermissions(response.data.permissions_by_app);
-        
-        // Expandir SOLO módulos por defecto - submódulos visibles, permisos ocultos
-        const allExpanded = {
-          // Solo módulos principales
-          'Eventos': true,
-          'Chatbot': true,
-          'Usuarios': true,
-          'Notificaciones': true,
-          'Documentación': true,
-          'Configuración': true,
-          'Permisos': true
-          // NOTA: Submódulos y permisos específicos NO están aquí
-          // Los submódulos se ven pero sus permisos están cerrados
-        };
-        setExpandedApps(allExpanded);
-      }
+      // Limpiar cache antes de cargar para obtener datos frescos
+      dynamicPermissionsService.clearCache();
+      
+      // Usar el nuevo servicio dinámico de permisos
+      const moduleStructure = await dynamicPermissionsService.getModulePermissionsStructure();
+      
+      console.log('🔄 Estructura de módulos obtenida (limpia):', moduleStructure);
+      setAvailablePermissions(moduleStructure);
+      
+      // Expandir SOLO módulos por defecto - submódulos visibles, permisos ocultos
+      const allExpanded = {};
+      Object.keys(moduleStructure).forEach(moduleKey => {
+        allExpanded[moduleKey] = true; // Expandir módulos principales
+        // Los submódulos y permisos específicos NO se expanden inicialmente
+      });
+      
+      setExpandedApps(allExpanded);
+      
     } catch (error) {
       console.error('Error cargando permisos:', error);
       toast.error('Error al cargar permisos');
+      
+      // Fallback a método anterior si falla el nuevo servicio
+      try {
+        const response = await groupService.getAvailablePermissions();
+        if (response.status === 'success' && response.data?.permissions_by_app) {
+          setAvailablePermissions(response.data.permissions_by_app);
+        }
+      } catch (fallbackError) {
+        console.error('Error en fallback:', fallbackError);
+      }
     } finally {
       setLoadingPermissions(false);
     }
@@ -120,7 +130,10 @@ const ProfileFormNew = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('🚀 Formulario enviado - Iniciando validación...');
+    
     if (!validateForm()) {
+      console.log('❌ Validación fallida');
       toast.error('Por favor corrige los errores del formulario');
       return;
     }
@@ -130,317 +143,165 @@ const ProfileFormNew = ({
       permissions: formData.permissions
     };
 
-    onSubmit(dataToSubmit);
+    console.log('✅ Datos a enviar:', dataToSubmit);
+    console.log('📊 Total de permisos seleccionados:', dataToSubmit.permissions.length);
+    
+    try {
+      onSubmit(dataToSubmit);
+      console.log('✅ Llamada a onSubmit exitosa');
+    } catch (error) {
+      console.error('❌ Error en onSubmit:', error);
+      toast.error('Error al guardar el perfil');
+    }
   };
 
-  // Función para traducir permisos técnicos a español comprensible
-  const translatePermissionToSpanish = (permission) => {
-    const translations = {
-      // Eventos
+  // Función mejorada para traducir permisos técnicos a español comprensible
+  const translatePermissionToSpanish = (permission, contextName = '') => {
+    const codename = permission.codename || permission.name || '';
+    
+    // Extraer acción y modelo del codename
+    const action = extractActionFromCodename(codename);
+    const modelPart = codename.replace(`${action}_`, '');
+    
+    // Mapeo de acciones a español
+    const actionTranslations = {
+      'add': 'Crear',
+      'change': 'Editar', 
+      'delete': 'Eliminar',
+      'view': 'Ver',
+      'publish': 'Publicar',
+      'pin': 'Destacar',
+      'feature': 'Promover',
+      'manage': 'Gestionar',
+      'export': 'Exportar',
+      'import': 'Importar',
+      'approve': 'Aprobar',
+      'moderate': 'Moderar',
+      'archive': 'Archivar'
+    };
+    
+    // Mapeo de modelos específicos a español
+    const modelTranslations = {
+      'evento': 'eventos',
+      'categoria': 'categorías',
+      'user': 'usuarios',
+      'usuario': 'usuarios', 
+      'group': 'grupos',
+      'grupo': 'grupos',
+      'chatbotknowledgebase': 'conocimiento del chatbot',
+      'chatbotcategory': 'categorías del chatbot',
+      'chatconversation': 'conversaciones',
+      'notificacion': 'notificaciones',
+      'devicetoken': 'dispositivos',
+      'permission': 'permisos',
+      'permiso': 'permisos',
+      'almuerzo': 'almuerzos'
+    };
+    
+    // Obtener traducción de acción
+    const actionSpanish = actionTranslations[action] || action;
+    
+    // Obtener traducción de modelo (usar contexto si no hay traducción específica)
+    const modelSpanish = modelTranslations[modelPart] || contextName || modelPart;
+    
+    // Construir traducción final
+    const finalTranslation = `${actionSpanish} ${modelSpanish}`;
+    
+    // Diccionario de traducciones específicas para casos especiales
+    const specificTranslations = {
       'add_evento': 'Crear eventos',
-      'change_evento': 'Editar eventos',
+      'change_evento': 'Editar eventos', 
       'delete_evento': 'Eliminar eventos',
       'view_evento': 'Ver eventos',
-      'add_categoria': 'Crear categorías de eventos',
-      'change_categoria': 'Editar categorías de eventos',
-      'delete_categoria': 'Eliminar categorías de eventos',
-      'view_categoria': 'Ver categorías de eventos',
+      'publish_evento': 'Publicar eventos',
+      'pin_evento': 'Destacar eventos',
+      'feature_evento': 'Promover eventos',
       
-      // Chatbot
-      'add_chatbotknowledgebase': 'Crear conocimiento del chatbot',
-      'change_chatbotknowledgebase': 'Editar conocimiento del chatbot',
-      'delete_chatbotknowledgebase': 'Eliminar conocimiento del chatbot',
-      'view_chatbotknowledgebase': 'Ver base de conocimiento',
-      'add_chatbotcategory': 'Crear categorías del chatbot',
-      'change_chatbotcategory': 'Editar categorías del chatbot',
-      'delete_chatbotcategory': 'Eliminar categorías del chatbot',
-      'view_chatbotcategory': 'Ver categorías del chatbot',
-      'add_chatconversation': 'Crear conversaciones',
-      'change_chatconversation': 'Editar conversaciones',
-      'delete_chatconversation': 'Eliminar conversaciones',
-      'view_chatconversation': 'Ver historial de conversaciones',
+      'add_categoria': 'Crear categorías',
+      'change_categoria': 'Editar categorías',
+      'delete_categoria': 'Eliminar categorías', 
+      'view_categoria': 'Ver categorías',
       
-      // Usuarios
       'add_user': 'Crear usuarios',
       'change_user': 'Editar usuarios',
       'delete_user': 'Eliminar usuarios',
       'view_user': 'Ver usuarios',
-      'add_group': 'Crear perfiles de usuario',
-      'change_group': 'Editar perfiles de usuario',
-      'delete_group': 'Eliminar perfiles de usuario',
-      'view_group': 'Ver perfiles de usuario',
       
-      // Notificaciones
-      'add_notificacion': 'Crear notificaciones',
-      'change_notificacion': 'Editar notificaciones',
-      'delete_notificacion': 'Eliminar notificaciones',
-      'view_notificacion': 'Ver historial de notificaciones',
-      'add_devicetoken': 'Registrar dispositivos',
-      'change_devicetoken': 'Editar dispositivos',
-      'delete_devicetoken': 'Eliminar dispositivos',
-      'view_devicetoken': 'Ver dispositivos registrados',
-      
-      // Configuración y permisos
-      'add_permission': 'Crear permisos',
-      'change_permission': 'Editar permisos',
-      'delete_permission': 'Eliminar permisos',
-      'view_permission': 'Ver gestión de permisos'
+      'add_group': 'Crear grupos',
+      'change_group': 'Editar grupos',
+      'delete_group': 'Eliminar grupos',
+      'view_group': 'Ver grupos'
     };
     
-    return translations[permission.codename] || permission.name;
+    // Usar traducción específica si existe, sino usar la construida dinámicamente
+    return specificTranslations[codename] || finalTranslation;
   };
 
-  // Estructura basada en tus módulos reales del menuConfig.js
+  // Estructura dinámica basada en los datos del backend
   const getModuleStructure = () => {
-    return {
-      'Eventos': {
-        title: 'Eventos',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4m-6 12H6a2 2 0 01-2-2v-7h16v7a2 2 0 01-2 2z" />
-          </svg>
-        ),
-        submodules: [
-          { id: 'eventos_gestion', name: 'Gestión de Eventos' },
-          { id: 'eventos_categorias', name: 'Categorías' }
-        ]
-      },
-      'Chatbot': {
-        title: 'Chatbot',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-        ),
-        submodules: [
-          { id: 'chatbot_knowledge', name: 'Base de Conocimiento' },
-          { id: 'chatbot_categories', name: 'Categorías' },
-          { id: 'chatbot_conversations', name: 'Historial de Conversaciones' }
-        ]
-      },
-      'Usuarios': {
-        title: 'Usuarios',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-          </svg>
-        ),
-        submodules: [
-          { id: 'usuarios_gestion', name: 'Gestión de Usuarios' },
-          { id: 'usuarios_perfiles', name: 'Perfiles' }
-        ]
-      },
-      'Notificaciones': {
-        title: 'Notificaciones',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.05 11a8 8 0 1115.9 0c0 .44-.31.8-.69.8H4.74c-.38 0-.69-.36-.69-.8z" />
-          </svg>
-        ),
-        submodules: [
-          { id: 'notificaciones_historial', name: 'Historial de Notificaciones' },
-          { id: 'notificaciones_dispositivos', name: 'Dispositivos Registrados' }
-        ]
-      },
-      'Documentación': {
-        title: 'Documentación',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        ),
-        submodules: [
-          { id: 'documentacion_general', name: 'Documentación General' }
-        ]
-      },
-      'Configuración': {
-        title: 'Configuración',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        ),
-        submodules: [
-          { id: 'configuracion_general', name: 'General' },
-          { id: 'configuracion_api', name: 'API' }
-        ]
-      },
-      'Permisos': {
-        title: 'Permisos',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.012-3a7.5 7.5 0 11-9.775 9.775A7.5 7.5 0 0115.012 9z" />
-          </svg>
-        ),
-        submodules: [
-          { id: 'permisos_gestion', name: 'Gestión de Permisos' }
-        ]
-      }
-    };
+    // Usar directamente la estructura obtenida del backend dinámicamente
+    return availablePermissions || {};
   };
 
   // Función granular para obtener permisos específicos por submódulo  
   const getPermissionsForSubmodule = (submoduleId) => {
     // Debug: Log para verificar permisos disponibles
-    if (submoduleId === 'usuarios_gestion') {
-      console.log('🔍 Debugging usuarios_gestion:');
-      console.log('Available permissions:', availablePermissions);
-      if (availablePermissions.users) {
-        console.log('Users app permissions:', availablePermissions.users);
-      }
-    }
-    const permissionMap = {
-      // Eventos
-      'eventos_gestion': {
-        name: 'Gestión de Eventos',
-        actions: [
-          { action: 'view', label: 'Ver eventos', codename: 'view_evento' },
-          { action: 'add', label: 'Crear eventos', codename: 'add_evento' },
-          { action: 'change', label: 'Editar eventos', codename: 'change_evento' },
-          { action: 'delete', label: 'Eliminar eventos', codename: 'delete_evento' }
-        ]
-      },
-      'eventos_categorias': {
-        name: 'Categorías de Eventos',
-        actions: [
-          { action: 'view', label: 'Ver categorías', codename: 'view_categoria' },
-          { action: 'add', label: 'Crear categorías', codename: 'add_categoria' },
-          { action: 'change', label: 'Editar categorías', codename: 'change_categoria' },
-          { action: 'delete', label: 'Eliminar categorías', codename: 'delete_categoria' }
-        ]
-      },
-      
-      // Chatbot
-      'chatbot_knowledge': {
-        name: 'Base de Conocimiento',
-        actions: [
-          { action: 'view', label: 'Ver conocimiento', codename: 'view_chatbotknowledgebase' },
-          { action: 'add', label: 'Crear conocimiento', codename: 'add_chatbotknowledgebase' },
-          { action: 'change', label: 'Editar conocimiento', codename: 'change_chatbotknowledgebase' },
-          { action: 'delete', label: 'Eliminar conocimiento', codename: 'delete_chatbotknowledgebase' }
-        ]
-      },
-      'chatbot_categories': {
-        name: 'Categorías del Chatbot',
-        actions: [
-          { action: 'view', label: 'Ver categorías', codename: 'view_chatbotcategory' },
-          { action: 'add', label: 'Crear categorías', codename: 'add_chatbotcategory' },
-          { action: 'change', label: 'Editar categorías', codename: 'change_chatbotcategory' },
-          { action: 'delete', label: 'Eliminar categorías', codename: 'delete_chatbotcategory' }
-        ]
-      },
-      'chatbot_conversations': {
-        name: 'Historial de Conversaciones',
-        actions: [
-          { action: 'view', label: 'Ver conversaciones', codename: 'view_chatconversation' },
-          { action: 'add', label: 'Crear conversaciones', codename: 'add_chatconversation' },
-          { action: 'change', label: 'Moderar conversaciones', codename: 'change_chatconversation' },
-          { action: 'delete', label: 'Eliminar conversaciones', codename: 'delete_chatconversation' }
-        ]
-      },
-      
-      // Usuarios
-      'usuarios_gestion': {
-        name: 'Gestión de Usuarios',
-        actions: [
-          { action: 'view', label: 'Ver usuarios', codename: 'view_usuario' },
-          { action: 'add', label: 'Crear usuarios', codename: 'add_usuario' },
-          { action: 'change', label: 'Editar usuarios', codename: 'change_usuario' },
-          { action: 'delete', label: 'Eliminar usuarios', codename: 'delete_usuario' }
-        ]
-      },
-      'usuarios_perfiles': {
-        name: 'Perfiles de Usuario',
-        actions: [
-          { action: 'view', label: 'Ver perfiles', codename: 'view_group' },
-          { action: 'add', label: 'Crear perfiles', codename: 'add_group' },
-          { action: 'change', label: 'Editar perfiles', codename: 'change_group' },
-          { action: 'delete', label: 'Eliminar perfiles', codename: 'delete_group' }
-        ]
-      },
-      
-      // Notificaciones
-      'notificaciones_historial': {
-        name: 'Historial de Notificaciones',
-        actions: [
-          { action: 'view', label: 'Ver notificaciones', codename: 'view_notificacion' },
-          { action: 'add', label: 'Enviar notificaciones', codename: 'add_notificacion' },
-          { action: 'change', label: 'Editar notificaciones', codename: 'change_notificacion' },
-          { action: 'delete', label: 'Eliminar notificaciones', codename: 'delete_notificacion' }
-        ]
-      },
-      'notificaciones_dispositivos': {
-        name: 'Dispositivos Registrados',
-        actions: [
-          { action: 'view', label: 'Ver dispositivos', codename: 'view_devicetoken' },
-          { action: 'add', label: 'Registrar dispositivos', codename: 'add_devicetoken' },
-          { action: 'change', label: 'Editar dispositivos', codename: 'change_devicetoken' },
-          { action: 'delete', label: 'Eliminar dispositivos', codename: 'delete_devicetoken' }
-        ]
-      },
-      
-      // Documentación
-      'documentacion_general': {
-        name: 'Documentación',
-        actions: [
-          { action: 'view', label: 'Ver documentación', codename: 'view_permission' }
-        ]
-      },
-      
-      // Configuración
-      'configuracion_general': {
-        name: 'Configuración General',
-        actions: [
-          { action: 'view', label: 'Ver configuración', codename: 'view_permission' },
-          { action: 'change', label: 'Editar configuración', codename: 'change_permission' }
-        ]
-      },
-      'configuracion_api': {
-        name: 'Configuración API',
-        actions: [
-          { action: 'view', label: 'Ver configuración API', codename: 'view_permission' },
-          { action: 'change', label: 'Editar configuración API', codename: 'change_permission' }
-        ]
-      },
-      
-      // Permisos
-      'permisos_gestion': {
-        name: 'Gestión de Permisos',
-        actions: [
-          { action: 'view', label: 'Ver permisos', codename: 'view_permission' },
-          { action: 'add', label: 'Crear permisos', codename: 'add_permission' },
-          { action: 'change', label: 'Editar permisos', codename: 'change_permission' },
-          { action: 'delete', label: 'Eliminar permisos', codename: 'delete_permission' }
-        ]
-      }
-    };
-
-    const submoduleConfig = permissionMap[submoduleId];
-    if (!submoduleConfig) return [];
-
-    const permissions = [];
+    console.log(`🔍 Obteniendo permisos para submódulo: ${submoduleId}`);
     
-    // Buscar en los permisos disponibles del backend y mapear con las acciones específicas
-    submoduleConfig.actions.forEach(actionConfig => {
-      Object.entries(availablePermissions).forEach(([appKey, appModels]) => {
-        Object.values(appModels).forEach(modelPerms => {
-          modelPerms.forEach(perm => {
-            if (perm.codename === actionConfig.codename) {
-              permissions.push({
-                ...perm,
-                translatedName: actionConfig.label,
-                action: actionConfig.action,
-                submoduleName: submoduleConfig.name
+    // Buscar el submódulo en la nueva estructura dinámica
+    for (const [moduleKey, moduleData] of Object.entries(availablePermissions)) {
+      if (moduleData.submodules) {
+        const submodule = moduleData.submodules.find(sub => sub.id === submoduleId);
+        if (submodule && submodule.permissions) {
+          
+          // FILTRAR SOLO PERMISOS CRUD PRINCIPALES
+          const crudActions = ['view', 'add', 'change', 'delete'];
+          const crudPermissions = [];
+          const seenActions = new Set();
+          
+          submodule.permissions.forEach(permission => {
+            const codename = permission.codename || permission.name;
+            const action = permission.action || extractActionFromCodename(codename);
+            
+            // Solo incluir permisos CRUD principales y evitar duplicados
+            if (crudActions.includes(action) && !seenActions.has(action)) {
+              seenActions.add(action);
+              
+              // Mejorar traducción
+              const translatedName = translatePermissionToSpanish(permission, submodule.name);
+              
+              crudPermissions.push({
+                ...permission,
+                translatedName: translatedName,
+                action: action,
+                submoduleName: submodule.name
               });
             }
           });
-        });
-      });
-    });
+          
+          // Ordenar permisos en orden lógico CRUD
+          const sortedPermissions = crudPermissions.sort((a, b) => {
+            const actionOrder = ['view', 'add', 'change', 'delete'];
+            const aIndex = actionOrder.indexOf(a.action);
+            const bIndex = actionOrder.indexOf(b.action);
+            return aIndex - bIndex;
+          });
+          
+          console.log(`✅ Permisos CRUD para ${submoduleId}:`, sortedPermissions);
+          return sortedPermissions;
+        }
+      }
+    }
 
-    return permissions;
+    console.warn(`⚠️ No se encontraron permisos para submódulo: ${submoduleId}`);
+    return [];
+  };
+
+  // Función mejorada para extraer acción del codename
+  const extractActionFromCodename = (codename) => {
+    if (!codename) return 'unknown';
+    const parts = codename.split('_');
+    return parts.length > 1 ? parts[0] : codename;
   };
 
   const getSubmodulePermissionStatus = (submoduleId) => {
@@ -781,8 +642,10 @@ const ProfileFormNew = ({
               </button>
               <button 
                 type="submit"
+                form="profile-form"
                 disabled={loading || !formData.name.trim()}
                 className="flex items-center space-x-2 px-4 py-2 text-[13px] text-white bg-[#2D728F] hover:bg-[#2D728F]/90 disabled:bg-gray-400 disabled:cursor-not-allowed border border-transparent rounded-lg transition-colors"
+                onClick={() => console.log('🔘 Botón Guardar clickeado')}
               >
                 {loading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -791,7 +654,7 @@ const ProfileFormNew = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
                 )}
-                <span>Grabar</span>
+                <span>Guardar</span>
         </button>
             </div>
       </div>
@@ -821,7 +684,15 @@ const ProfileFormNew = ({
             </div>
           </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="profile-form" onSubmit={handleSubmit} className="space-y-6">
+
+        {/* Debug Component - Solo en desarrollo */}
+        {import.meta.env.DEV && (
+          <PermissionsDebugger 
+            availablePermissions={availablePermissions}
+            formPermissions={formData.permissions}
+          />
+        )}
 
         {/* Sistema de Permisos - Dos Columnas */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -835,11 +706,25 @@ const ProfileFormNew = ({
                   Selecciona los módulos y permisos específicos para este perfil
                 </p>
               </div>
-              <div className="flex items-center space-x-1 px-3 py-1.5 bg-white rounded-full border border-gray-200">
-                <div className="w-2 h-2 bg-[#2D728F] rounded-full animate-pulse"></div>
-                <span className="text-[13px] font-medium text-gray-600">
-                  {formData.permissions.length} permisos activos
-                </span>
+              <div className="flex items-center space-x-3">
+                {/* Botón de recarga en desarrollo */}
+                {import.meta.env.DEV && (
+                  <button
+                    type="button"
+                    onClick={loadAvailablePermissions}
+                    disabled={loadingPermissions}
+                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded border border-blue-300 transition-colors"
+                  >
+                    {loadingPermissions ? '⏳' : '🔄'} Recargar
+                  </button>
+                )}
+                
+                <div className="flex items-center space-x-1 px-3 py-1.5 bg-white rounded-full border border-gray-200">
+                  <div className="w-2 h-2 bg-[#2D728F] rounded-full animate-pulse"></div>
+                  <span className="text-[13px] font-medium text-gray-600">
+                    {formData.permissions.length} permisos activos
+                  </span>
+                </div>
               </div>
           </div>
         </div>

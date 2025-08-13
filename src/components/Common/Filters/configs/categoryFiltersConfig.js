@@ -32,8 +32,8 @@ export const categoryFiltersConfig = {
       type: 'buttons',
       options: [
         { value: '', label: 'Por defecto' },
-        { value: 'asc', label: 'A-Z' },
-        { value: 'desc', label: 'Z-A' }
+        { value: 'nombre_asc', label: 'A-Z' },
+        { value: 'nombre_desc', label: 'Z-A' }
       ]
     }
   ],

@@ -46,24 +46,7 @@ const ConversationTableView = ({
     return conversation.user_full_name || 'Usuario Anónimo';
   };
 
-  const getStatusBadge = (conversation) => {
-    // Determinar estado basado en si hay respuesta
-    const hasAnswer = conversation.answer_text && conversation.answer_text.trim();
-    
-    if (hasAnswer) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          Completada
-        </span>
-      );
-    } else {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          Fallida
-        </span>
-      );
-    }
-  };
+
 
   const columns = [
     {
@@ -90,7 +73,7 @@ const ConversationTableView = ({
               {getUserDisplayName(conversation)}
             </p>
             <p className="text-xs text-gray-500">
-              {formatDate(conversation.created_at)}
+              {conversation.user?.email || conversation.user_email || 'Sin email'}
             </p>
           </div>
         </div>
@@ -103,7 +86,7 @@ const ConversationTableView = ({
       render: (conversation) => (
         <div className="max-w-md">
           <p className="text-sm text-gray-900 line-clamp-2">
-            {conversation.question_text || '-'}
+            {(conversation.question_text || '-').replace(/[''‚‛""„‟«»]/g, '"').replace(/[–—]/g, '-')}
           </p>
         </div>
       )
@@ -115,16 +98,10 @@ const ConversationTableView = ({
       render: (conversation) => (
         <div className="max-w-md">
           <p className="text-sm text-gray-600 line-clamp-2">
-            {conversation.answer_text || 'Sin respuesta'}
+            {(conversation.answer_text || 'Sin respuesta').replace(/[''‚‛""„‟«»]/g, '"').replace(/[–—]/g, '-')}
           </p>
         </div>
       )
-    },
-    {
-      key: 'status',
-      label: 'Estado',
-      sortable: false,
-      render: (conversation) => getStatusBadge(conversation)
     },
     {
       key: 'actions',

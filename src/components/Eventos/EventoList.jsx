@@ -14,6 +14,7 @@ const EventoList = ({
   totalItems,
   onEdit,
   onDelete,
+  onViewDetails,
   onTogglePublish,
   onTogglePin,
   onCreateFirst,
@@ -45,21 +46,29 @@ const EventoList = ({
   // Si no hay datos
   if (!eventos?.length) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-        <div className="flex flex-col items-center">
-          <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay eventos</h3>
-          <p className="text-gray-600 mb-6">No se encontraron eventos. Crea el primer evento para empezar.</p>
-          {onCreateFirst && (
-            <button
-              onClick={onCreateFirst}
-              className="px-4 py-2 bg-[#2D728F] text-white rounded-md hover:bg-[#235a70] transition-colors"
-            >
-              Crear primer evento
-            </button>
-          )}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="p-16 text-center">
+          {/* Ilustración moderna */}
+          <div className="w-20 h-20 mx-auto mb-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center shadow-sm">
+            <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            No hay eventos registrados
+          </h3>
+          
+          <p className="text-gray-500 mb-8 max-w-sm mx-auto text-sm leading-relaxed">
+            Comience creando eventos para mantener informada a su comunidad sobre las actividades más importantes.
+          </p>
+          
+          {/* Elementos decorativos sutiles */}
+          <div className="mt-12 flex justify-center space-x-2">
+            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+            <div className="w-2 h-2 bg-slate-300 rounded-full"></div>
+            <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+          </div>
         </div>
       </div>
     );
@@ -78,7 +87,7 @@ const EventoList = ({
         data={eventos}
         onEdit={onEdit}
         onDelete={onDelete}
-
+        onViewDetails={onViewDetails}
         onSort={handleSort}
         itemType="evento"
         defaultSortField="created_at"
@@ -116,8 +125,8 @@ EventoList.propTypes = {
   totalItems: PropTypes.number,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
+  onViewDetails: PropTypes.func,
   onTogglePublish: PropTypes.func,
-
   onCreateFirst: PropTypes.func,
   onRetry: PropTypes.func
 };

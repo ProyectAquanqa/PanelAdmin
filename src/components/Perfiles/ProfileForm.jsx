@@ -440,7 +440,7 @@ const ProfileForm = ({
                   Procesando...
                 </div>
               ) : (
-                'Grabar'
+                'Guardar'
               )}
             </button>
           </div>

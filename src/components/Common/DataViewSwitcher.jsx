@@ -22,10 +22,12 @@ const DataViewSwitcher = ({
   data = [], 
   onEdit,
   onDelete,
+  onViewDetails,
   onSort,
   onTogglePublish,
   onTogglePin,
-  itemType = 'default'
+  itemType = 'default',
+  disableInternalSorting = false
 }) => {
   // Usar hook personalizado para manejar toda la lógica
   const {
@@ -41,9 +43,10 @@ const DataViewSwitcher = ({
     handlePageChange,
     toggleRowExpansion
   } = useDataView(data, {
-    initialSortField: 'created_at',
-    initialSortDirection: 'desc',
-    itemsPerPage: 10
+    initialSortField: disableInternalSorting ? null : 'created_at',
+    initialSortDirection: disableInternalSorting ? null : 'desc',
+    itemsPerPage: 10,
+    enableSorting: !disableInternalSorting
   });
 
   // Manejar ordenamiento con callback externo
@@ -85,6 +88,7 @@ const DataViewSwitcher = ({
           onSort={handleSortWithCallback}
           onEdit={onEdit}
           onDelete={onDelete}
+          onViewDetails={onViewDetails}
           onToggleExpansion={toggleRowExpansion}
           onTogglePublish={onTogglePublish}
           onTogglePin={onTogglePin}
@@ -119,10 +123,12 @@ DataViewSwitcher.propTypes = {
   data: PropTypes.arrayOf(PropTypes.object),
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
+  onViewDetails: PropTypes.func,
   onSort: PropTypes.func,
   onTogglePublish: PropTypes.func,
   onTogglePin: PropTypes.func,
-  itemType: PropTypes.string
+  itemType: PropTypes.string,
+  disableInternalSorting: PropTypes.bool
 };
 
 export default DataViewSwitcher; 

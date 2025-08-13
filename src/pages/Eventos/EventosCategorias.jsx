@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useCategorias } from "../../hooks/useCategorias";
+import { searchInFields } from "../../utils/searchUtils";
 
 import {
   CategoriaList,
@@ -52,30 +53,39 @@ const EventosCategorias = () => {
   const processedCategorias = useMemo(() => {
     let filtered = [...categorias];
 
-    // Filtrar por búsqueda
+    // Filtrar por búsqueda (insensible a acentos)
     if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(categoria => 
-        categoria.nombre.toLowerCase().includes(searchLower) ||
-        (categoria.descripcion && categoria.descripcion.toLowerCase().includes(searchLower))
+        searchInFields(categoria, searchTerm, [
+          'nombre',
+          'descripcion'
+        ])
       );
     }
 
     // Filtrar por estado
     if (selectedStatus === 'active') {
-      filtered = filtered.filter(categoria => categoria.is_active !== false);
+      filtered = filtered.filter(categoria => categoria.is_active === true);
     } else if (selectedStatus === 'inactive') {
       filtered = filtered.filter(categoria => categoria.is_active === false);
     }
 
     // Ordenar
+    console.log('🔄 Aplicando ordenamiento:', sortOrder, 'a', filtered.length, 'categorías');
     if (sortOrder === 'nombre_asc') {
-      filtered.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      filtered.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+      console.log('📈 Ordenado A-Z:', filtered.map(c => c.nombre).slice(0, 5));
     } else if (sortOrder === 'nombre_desc') {
-      filtered.sort((a, b) => b.nombre.localeCompare(a.nombre));
+      filtered.sort((a, b) => b.nombre.localeCompare(a.nombre, 'es', { sensitivity: 'base' }));
+      console.log('📉 Ordenado Z-A:', filtered.map(c => c.nombre).slice(0, 5));
     } else {
-      // Ordenar por último agregado por defecto
-      filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      // Ordenar por último agregado por defecto (usar created_at si existe, sino usar id)
+      filtered.sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+        const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+        return dateB - dateA || b.id - a.id; // Fallback a ID si las fechas son iguales
+      });
+      console.log('📅 Ordenado por defecto:', filtered.map(c => c.nombre).slice(0, 5));
     }
 
     return filtered;
