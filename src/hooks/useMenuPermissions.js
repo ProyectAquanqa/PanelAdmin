@@ -241,9 +241,7 @@ export const useMenuPermissions = () => {
     if (user.is_staff) return false;
     
     const userGroups = getUserGroups();
-    
-    // Si no tiene grupos, está restringido
-    if (!userGroups || userGroups.length === 0) return true;
+    const allowedCodenames = getAllowedCodenames;
     
     // Grupos que indican usuarios administrativos (no restringidos)
     const adminGroups = [
@@ -254,29 +252,38 @@ export const useMenuPermissions = () => {
       'Administrador'
     ];
     
-    // Grupos que indican usuarios restringidos (trabajadores)
-    const workerGroups = [
-      'Trabajador',
-      'Worker',
-      'Empleado'
+    // Verificar si tiene algún grupo administrativo
+    if (userGroups && userGroups.length > 0) {
+      const hasAdminGroup = userGroups.some(group => {
+        const groupName = typeof group === 'object' ? group.name : group;
+        return adminGroups.includes(groupName);
+      });
+      
+      if (hasAdminGroup) return false;
+    }
+    
+    // **NUEVA LÓGICA**: Verificar si tiene al menos algunos permisos asignados
+    // Si el usuario no tiene ningún permiso, es considerado trabajador restringido
+    if (!allowedCodenames || allowedCodenames.length === 0) {
+      return true; // Sin permisos = acceso restringido
+    }
+    
+    // Si tiene permisos pero no son grupos administrativos, revisar si tiene permisos significativos
+    // Permisos básicos que no otorgan acceso admin (solo para validación)
+    const basicPermissions = [
+      'almuerzos.view_almuerzo', // Solo ver almuerzos
+      'auth.view_user'  // Solo ver su propio perfil
     ];
     
-    // Verificar si tiene algún grupo administrativo
-    const hasAdminGroup = userGroups.some(group => {
-      const groupName = typeof group === 'object' ? group.name : group;
-      return adminGroups.includes(groupName);
-    });
+    // Si solo tiene permisos básicos, sigue siendo trabajador
+    const hasOnlyBasicPerms = allowedCodenames.every(perm => basicPermissions.includes(perm));
+    if (hasOnlyBasicPerms && allowedCodenames.length <= 2) {
+      return true;
+    }
     
-    if (hasAdminGroup) return false;
-    
-    // Verificar si es solo trabajador
-    const isOnlyWorker = userGroups.every(group => {
-      const groupName = typeof group === 'object' ? group.name : group;
-      return workerGroups.includes(groupName);
-    });
-    
-    return isOnlyWorker;
-  }, [isAuthenticated, user]);
+    // Si tiene otros permisos, puede acceder al panel admin
+    return false;
+  }, [isAuthenticated, user, getAllowedCodenames]);
   
   /**
    * Filtra elementos del menú basado en permisos

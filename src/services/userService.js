@@ -63,6 +63,7 @@ const apiCall = async (url, options = {}) => {
       let error;
       try {
         error = await response.json();
+        console.log(`❌ Error HTTP ${response.status} response:`, error);
       } catch (parseError) {
         // Si no se puede parsear como JSON, crear un error básico
         error = { message: `HTTP ${response.status}` };
@@ -71,6 +72,28 @@ const apiCall = async (url, options = {}) => {
       // Si es error 401, podría ser token expirado
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED');
+      }
+      
+      // Para errores 400, incluir más detalles de validación
+      if (response.status === 400) {
+        const detailedMessage = [];
+        
+        // Si hay errores de campo
+        if (error && typeof error === 'object') {
+          Object.entries(error).forEach(([field, messages]) => {
+            if (Array.isArray(messages)) {
+              detailedMessage.push(`${field}: ${messages.join(', ')}`);
+            } else if (typeof messages === 'string') {
+              detailedMessage.push(`${field}: ${messages}`);
+            }
+          });
+        }
+        
+        const fullMessage = detailedMessage.length > 0 
+          ? detailedMessage.join('; ')
+          : error.detail || error.message || 'Error de validación';
+          
+        throw new Error(fullMessage);
       }
       
       throw new Error(error.detail || error.message || `HTTP ${response.status}`);
@@ -176,6 +199,10 @@ const userService = {
      * @returns {Promise} Usuario actualizado
      */
     patch: async (id, data) => {
+      console.log(`🔧 PATCH /web/users/${id}/ con datos:`, data);
+      console.log(`🔧 PATCH - Claves enviadas:`, Object.keys(data));
+      console.log(`🔧 PATCH - ¿Tiene password?:`, 'password' in data);
+      
       return await apiCall(`/web/users/${id}/`, {
         method: 'PATCH',
         body: JSON.stringify(data),
@@ -188,7 +215,7 @@ const userService = {
      * @returns {Promise} Respuesta de la operación
      */
     delete: async (id) => {
-      return await apiCall(`/users/${id}/`, {
+      return await apiCall(`/web/users/${id}/`, {
         method: 'DELETE',
       });
     },

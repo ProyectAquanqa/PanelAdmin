@@ -11,7 +11,8 @@ import {
   BellIcon,
   Cog6ToothIcon,
   ClipboardDocumentListIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  DevicePhoneMobileIcon
 } from "@heroicons/react/24/outline";
 
 /**

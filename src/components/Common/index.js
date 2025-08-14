@@ -8,6 +8,7 @@ export { default as CustomDropdown } from './CustomDropdown';
 
 // Componentes de Modal
 export { default as Modal } from './Modal/Modal';
+export { default as ConfirmModal } from './Modal/ConfirmModal';
 
 // Componentes de DataView
 export { 
@@ -29,6 +30,8 @@ export {
   prepareUserFiltersConfig,
   profileFiltersConfig,
   prepareProfileFiltersConfig,
+  deviceFiltersConfig,
+  prepareDeviceFiltersConfig,
 } from './Filters';
 
 // Componentes de permisos (Sistema dinámico)

@@ -7,7 +7,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import groupService from '../../services/groupService';
 import dynamicPermissionsService from '../../services/dynamicPermissionsService';
-import PermissionsDebugger from './PermissionsDebugger';
+
 import { toast } from 'react-hot-toast';
 
 const ProfileFormNew = ({ 
@@ -52,8 +52,6 @@ const ProfileFormNew = ({
       
       // Usar el nuevo servicio dinámico de permisos
       const moduleStructure = await dynamicPermissionsService.getModulePermissionsStructure();
-      
-      console.log('🔄 Estructura de módulos obtenida (limpia):', moduleStructure);
       setAvailablePermissions(moduleStructure);
       
       // Expandir SOLO módulos por defecto - submódulos visibles, permisos ocultos
@@ -126,6 +124,16 @@ const ProfileFormNew = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Función especial para crear perfil "Trabajador" sin permisos
+  const createWorkerProfile = () => {
+    setFormData({
+      name: 'Trabajador',
+      permissions: []  // Sin permisos = sin acceso al panel admin
+    });
+    
+    toast.success('Perfil "Trabajador" configurado (sin permisos - solo app móvil)');
+  };
+
   // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -145,6 +153,11 @@ const ProfileFormNew = ({
 
     console.log('✅ Datos a enviar:', dataToSubmit);
     console.log('📊 Total de permisos seleccionados:', dataToSubmit.permissions.length);
+    
+    // Mensaje especial para perfiles sin permisos
+    if (dataToSubmit.permissions.length === 0) {
+      console.log('⚠️ PERFIL SIN PERMISOS: Los usuarios de este perfil NO podrán acceder al panel admin');
+    }
     
     try {
       onSubmit(dataToSubmit);
@@ -628,11 +641,28 @@ const ProfileFormNew = ({
         {/* Header como en la imagen con campo nombre */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-[13px] font-semibold text-gray-900">Nuevo perfil</h1>
+            <h1 className="text-[13px] font-semibold text-gray-900">
+              {mode === 'edit' ? 'Editar perfil' : 'Nuevo perfil'}
+            </h1>
             <div className="flex items-center space-x-3">
-        <button 
+              {/* Botón especial para crear perfil "Trabajador" */}
+              {mode === 'create' && (
+                <button 
+                  type="button"
+                  onClick={createWorkerProfile}
+                  className="flex items-center space-x-2 px-4 py-2 text-[13px] text-white bg-gray-600 hover:bg-gray-700 border border-transparent rounded-lg transition-colors"
+                  title="Crear perfil de trabajador sin permisos (solo app móvil)"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                  </svg>
+                  <span>Crear Trabajador</span>
+                </button>
+              )}
+              
+              <button 
                 type="button"
-          onClick={onCancel} 
+                onClick={onCancel} 
                 className="flex items-center space-x-2 px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -652,12 +682,12 @@ const ProfileFormNew = ({
                 ) : (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+                  </svg>
                 )}
                 <span>Guardar</span>
-        </button>
+              </button>
             </div>
-      </div>
+          </div>
 
           {/* Campo de nombre dentro del header */}
           <div className="space-y-2">
@@ -681,18 +711,29 @@ const ProfileFormNew = ({
             <p className="text-[13px] text-gray-500">
               Este será el nombre del grupo en Django
             </p>
+            {formData.permissions.length === 0 && formData.name.trim() && (
+              <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div>
+                    <p className="text-[13px] font-medium text-orange-800">
+                      Perfil sin permisos
+                    </p>
+                    <p className="text-[12px] text-orange-700">
+                      Los usuarios con este perfil NO podrán acceder al panel admin. Solo podrán usar la aplicación móvil.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
           </div>
 
       <form id="profile-form" onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Debug Component - Solo en desarrollo */}
-        {import.meta.env.DEV && (
-          <PermissionsDebugger 
-            availablePermissions={availablePermissions}
-            formPermissions={formData.permissions}
-          />
-        )}
+
 
         {/* Sistema de Permisos - Dos Columnas */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -707,18 +748,6 @@ const ProfileFormNew = ({
                 </p>
               </div>
               <div className="flex items-center space-x-3">
-                {/* Botón de recarga en desarrollo */}
-                {import.meta.env.DEV && (
-                  <button
-                    type="button"
-                    onClick={loadAvailablePermissions}
-                    disabled={loadingPermissions}
-                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded border border-blue-300 transition-colors"
-                  >
-                    {loadingPermissions ? '⏳' : '🔄'} Recargar
-                  </button>
-                )}
-                
                 <div className="flex items-center space-x-1 px-3 py-1.5 bg-white rounded-full border border-gray-200">
                   <div className="w-2 h-2 bg-[#2D728F] rounded-full animate-pulse"></div>
                   <span className="text-[13px] font-medium text-gray-600">
@@ -765,7 +794,7 @@ const ProfileFormNew = ({
       </form>
 
       {/* Estilos para scroll personalizado */}
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }

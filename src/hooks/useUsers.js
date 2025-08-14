@@ -65,7 +65,7 @@ export const useUsers = () => {
   const fetchUsers = useCallback(async (page = 1, filters = {}) => {
     setLoading(prev => ({ ...prev, users: true }));
     try {
-      const response = await userService.users.list(page, pagination.limit, filters);
+      const response = await userService.users.list(page, 10, filters);
       
       // Manejar formato de respuesta según directrices: {status: "success", data: {...}}
       if (response.status === 'success') {
@@ -79,7 +79,7 @@ export const useUsers = () => {
           ...prev,
           current: page,
           total: data.count || data.length || 0,
-          totalPages: Math.ceil((data.count || data.length || 0) / prev.limit)
+          totalPages: Math.ceil((data.count || data.length || 0) / 10)
         }));
       } else {
         // Fallback para respuestas directas del DRF ViewSet
@@ -90,7 +90,7 @@ export const useUsers = () => {
           ...prev,
           current: page,
           total: response.count || response.length || 0,
-          totalPages: Math.ceil((response.count || response.length || 0) / prev.limit)
+          totalPages: Math.ceil((response.count || response.length || 0) / 10)
         }));
       }
     } catch (error) {
@@ -100,7 +100,7 @@ export const useUsers = () => {
     } finally {
       setLoading(prev => ({ ...prev, users: false }));
     }
-  }, [pagination.limit]);
+  }, []);
 
   const fetchUserStats = useCallback(async () => {
     setLoading(prev => ({ ...prev, userStats: true }));
@@ -153,7 +153,7 @@ export const useUsers = () => {
     } finally {
       setLoading(prev => ({ ...prev, create: false }));
     }
-  }, [fetchUsers, pagination.current]);
+  }, []);
 
   const updateUser = useCallback(async (id, userData) => {
     setLoading(prev => ({ ...prev, update: true }));
@@ -219,22 +219,18 @@ export const useUsers = () => {
       const response = await userService.users.delete(id);
       
       if (response.status === 'success') {
-        toast.success(response.message || 'Usuario desactivado exitosamente');
-        // Actualizar el estado local (desactivar en lugar de eliminar)
-        setUsers(prev => prev.map(user => 
-          user.id === id ? { ...user, is_active: false } : user
-        ));
+        toast.success(response.message || 'Usuario eliminado exitosamente');
+        // Eliminar completamente el usuario del estado local
+        setUsers(prev => prev.filter(user => user.id !== id));
         return true;
       } else {
-        toast.success('Usuario desactivado exitosamente');
-        setUsers(prev => prev.map(user => 
-          user.id === id ? { ...user, is_active: false } : user
-        ));
+        toast.success('Usuario eliminado exitosamente');
+        setUsers(prev => prev.filter(user => user.id !== id));
         return true;
       }
     } catch (error) {
       console.error('❌ Error en deleteUser:', error);
-      toast.error(`Error al desactivar usuario: ${error.message}`);
+      toast.error(`Error al eliminar usuario: ${error.message}`);
       return false;
     } finally {
       setLoading(prev => ({ ...prev, delete: false }));
@@ -286,7 +282,7 @@ export const useUsers = () => {
     } finally {
       setLoading(prev => ({ ...prev, create: false }));
     }
-  }, [fetchUsers, pagination.current]);
+  }, []);
 
   // 📊 Funciones de utilidades
   const exportUsers = useCallback(async (filters = {}) => {
@@ -405,14 +401,32 @@ export const useUsers = () => {
 
   const refreshUsers = useCallback(() => {
     fetchUsers(pagination.current);
-  }, [fetchUsers, pagination.current]);
+  }, []);
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales (solo una vez)
   useEffect(() => {
-    fetchUsers();
-    fetchUserStats();
-    fetchGroups();
-  }, [fetchUsers, fetchUserStats, fetchGroups]);
+    let isMounted = true;
+    
+    const loadInitialData = async () => {
+      if (isMounted) {
+        try {
+          await Promise.all([
+            fetchUsers(),
+            fetchUserStats(),
+            fetchGroups()
+          ]);
+        } catch (error) {
+          console.error('❌ Error cargando datos iniciales de usuarios:', error);
+        }
+      }
+    };
+    
+    loadInitialData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Sin dependencias para ejecutar solo una vez
 
   // Retornar estado y funciones
   return {

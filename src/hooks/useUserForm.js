@@ -44,14 +44,19 @@ export const useUserForm = (initialData = {}, options = {}) => {
       is_staff: false,
       ...initialData
     };
-
-    if (detectedFormType === 'create') {
-      // Para creación, incluir campos de registro
-      return {
-        ...baseData,
-        password: '',
-        confirmPassword: ''
-      };
+    
+    // Solo agregar campos de contraseña si no estamos en modo edición con datos existentes
+    if (detectedFormType === 'create' || !initialData.id) {
+      baseData.password = '';
+      baseData.confirmPassword = '';
+    } else {
+      // En edición, solo agregar si no existen en initialData
+      if (!('password' in baseData)) {
+        baseData.password = '';
+      }
+      if (!('confirmPassword' in baseData)) {
+        baseData.confirmPassword = '';
+      }
     }
 
     return baseData;
@@ -206,40 +211,149 @@ export const useUserForm = (initialData = {}, options = {}) => {
       // Preparar datos para envío
       const dataToSubmit = { ...formData };
       
-      console.log('🔐 Datos completos antes de preparar:', formData);
-      console.log('🔐 Tipo de formulario:', detectedFormType);
-      console.log('🔐 FormData groups antes de procesar:', formData.groups, typeof formData.groups);
+      // La validación de contraseñas se maneja más abajo de forma unificada
       
-      // Para formularios de creación, manejar validación de contraseñas
+      // IMPORTANTE: Verificar formato del backend
+      // El backend puede esperar diferentes formatos según la versión
+      console.log('🔍 Datos antes de procesamiento:', dataToSubmit);
+      
+      if (dataToSubmit.groups) {
+        // Si es array, procesarlo
+        if (Array.isArray(dataToSubmit.groups)) {
+          // Filtrar valores vacíos y convertir a string
+          dataToSubmit.groups = dataToSubmit.groups
+            .filter(group => group && group !== '')
+            .map(group => {
+              // Si es un objeto, extraer el nombre
+              if (typeof group === 'object' && group !== null) {
+                return group.name || group.nombre || String(group);
+              }
+              // Si es string, devolverlo tal como está
+              return String(group);
+            });
+        } else if (dataToSubmit.groups !== '') {
+          // Si no es array y no está vacío, convertir a array
+          dataToSubmit.groups = [String(dataToSubmit.groups)];
+        } else {
+          // Si está vacío, usar array vacío
+          dataToSubmit.groups = [];
+        }
+      } else {
+        // Si no hay grupos, enviar array vacío
+        dataToSubmit.groups = [];
+      }
+      
+      console.log('✅ Datos después de procesamiento:', dataToSubmit);
+      
+      // MANEJAR CONTRASEÑAS DE FORMA MÁS ROBUSTA
+      const passwordValue = dataToSubmit.password;
+      const confirmPasswordValue = dataToSubmit.confirmPassword;
+      const hasPassword = passwordValue && typeof passwordValue === 'string' && passwordValue.trim() !== '';
+      const hasConfirmPassword = confirmPasswordValue && typeof confirmPasswordValue === 'string' && confirmPasswordValue.trim() !== '';
+      
+      console.log('🔍 DEBUG - hasPassword:', hasPassword, 'hasConfirmPassword:', hasConfirmPassword);
+      console.log('🔍 DEBUG - passwordValue:', passwordValue, 'confirmPasswordValue:', confirmPasswordValue);
+      
       if (detectedFormType === 'create') {
-        console.log('🔐 Password:', dataToSubmit.password);
-        console.log('🔐 Confirm Password:', dataToSubmit.confirmPassword);
-        
-        if (!dataToSubmit.password || dataToSubmit.password.trim() === '') {
+        // EN CREACIÓN: contraseña es OBLIGATORIA
+        if (!hasPassword) {
           setErrors(prev => ({ 
             ...prev, 
-            password: 'La contraseña es requerida' 
+            password: 'La contraseña es requerida para crear usuario' 
           }));
           return { success: false };
         }
         
-        if (dataToSubmit.password !== dataToSubmit.confirmPassword) {
+        if (passwordValue !== confirmPasswordValue) {
           setErrors(prev => ({ 
             ...prev, 
             confirmPassword: 'Las contraseñas no coinciden' 
           }));
           return { success: false };
         }
-        // Remover confirmPassword antes de enviar
+      } else if (detectedFormType === 'edit') {
+        // EN EDICIÓN: contraseña es OPCIONAL
+        if (hasPassword || hasConfirmPassword) {
+          // Si hay alguna contraseña, validar ambas
+          if (!hasPassword) {
+            setErrors(prev => ({ 
+              ...prev, 
+              password: 'Complete la nueva contraseña' 
+            }));
+            return { success: false };
+          }
+          
+          if (!hasConfirmPassword) {
+            setErrors(prev => ({ 
+              ...prev, 
+              confirmPassword: 'Confirme la nueva contraseña' 
+            }));
+            return { success: false };
+          }
+          
+          if (passwordValue !== confirmPasswordValue) {
+            setErrors(prev => ({ 
+              ...prev, 
+              confirmPassword: 'Las contraseñas no coinciden' 
+            }));
+            return { success: false };
+          }
+        } else {
+          // NO HAY CONTRASEÑAS: eliminar completamente del objeto
+          console.log('🗑️ Eliminando campos de contraseña vacíos...');
+          delete dataToSubmit.password;
+          delete dataToSubmit.confirmPassword;
+        }
+      }
+      
+      // SIEMPRE eliminar confirmPassword antes del envío final
+      if ('confirmPassword' in dataToSubmit) {
         delete dataToSubmit.confirmPassword;
       }
       
-      // IMPORTANTE: El backend espera nombres de grupo, no IDs
-      // No convertir aquí, dejar que el componente maneje esta conversión
+      console.log('🔧 Datos finales para envío:', dataToSubmit);
+      console.log('🔧 ¿Tiene password?:', 'password' in dataToSubmit);
+      console.log('🔧 Claves del objeto final:', Object.keys(dataToSubmit));
       
-      console.log('🔐 Datos finales a enviar al backend:', dataToSubmit);
-      console.log('🔐 Groups final:', dataToSubmit.groups, typeof dataToSubmit.groups);
-
+      // VERIFICACIÓN FINAL: asegurar que no hay campos de contraseña vacíos
+      if (detectedFormType === 'edit') {
+        const finalPasswordValue = dataToSubmit.password;
+        if (finalPasswordValue === '' || finalPasswordValue === null || finalPasswordValue === undefined) {
+          console.log('⚠️ LIMPIEZA FINAL: Eliminando password vacío');
+          delete dataToSubmit.password;
+        }
+        if ('confirmPassword' in dataToSubmit) {
+          console.log('⚠️ LIMPIEZA FINAL: Eliminando confirmPassword');
+          delete dataToSubmit.confirmPassword;
+        }
+        console.log('🧹 POST-LIMPIEZA - Datos finales:', dataToSubmit);
+        console.log('🧹 POST-LIMPIEZA - Claves:', Object.keys(dataToSubmit));
+      }
+      
+      // Para edición, enviar solo los campos que realmente cambiaron
+      if (detectedFormType === 'edit') {
+        const cleanedData = {};
+        
+        // Solo incluir campos que tienen valor y no son campos de metadata
+        Object.entries(dataToSubmit).forEach(([key, value]) => {
+          // Excluir campos de metadata y campos vacíos innecesarios
+          if (key !== 'id' && key !== 'date_joined' && key !== 'last_login' && 
+              value !== null && value !== undefined && value !== '') {
+            cleanedData[key] = value;
+          }
+        });
+        
+        console.log('🧴 Datos ultra-limpiados para PATCH:', cleanedData);
+        const result = await onSubmit(cleanedData);
+        
+        if (resetOnSubmit && result !== false) {
+          resetForm();
+        }
+        
+        return { success: result !== false };
+      }
+      
+      // Para creación, usar datos completos
       const result = await onSubmit(dataToSubmit);
       
       if (resetOnSubmit && result !== false) {

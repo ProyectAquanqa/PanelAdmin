@@ -13,6 +13,7 @@ import ComentarioTableView from '../Eventos/ComentarioTableView';
 import ProfileTableView from '../Perfiles/ProfileTableView';
 import UserTableViewNew from '../Users/UserTableViewNew';
 import AreaTableView from '../Areas/AreaTableView';
+import DeviceTableView from '../Devices/DeviceTableView';
 import Pagination from './DataView/Pagination';
 // import { EventoItem } from '../Eventos'; // Comentado para evitar dependencias circulares
 
@@ -87,6 +88,8 @@ const DataViewSwitcher = ({
       TableComponent = UserTableViewNew;
     } else if (itemType === 'area') {
       TableComponent = AreaTableView;
+    } else if (itemType === 'device') {
+      TableComponent = DeviceTableView;
     }
     
     return (

@@ -108,7 +108,6 @@ const groupService = {
     try {
       // Primero obtener lista básica de grupos
       const basicGroups = await apiCall('/web/groups/');
-      console.log('🔍 Grupos básicos recibidos:', basicGroups);
       
       // Extraer el array de datos según el formato de respuesta
       let groups = [];
@@ -126,7 +125,6 @@ const groupService = {
         groups.map(async (group) => {
           try {
             const fullGroup = await apiCall(`/web/groups/${group.id}/`);
-            console.log(`🔍 Permisos para grupo ${group.name}:`, fullGroup);
             
             // Extraer datos según formato de respuesta
             let groupData = fullGroup;
@@ -153,7 +151,6 @@ const groupService = {
         })
       );
 
-      console.log('✅ Grupos finales con permisos:', groupsWithPermissions);
       return groupsWithPermissions;
       
     } catch (error) {

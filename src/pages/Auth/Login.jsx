@@ -95,7 +95,7 @@ const Login = () => {
             {/* Logo AquanQ */}
             <div className="mb-8">
               <h2 className="text-6xl md:text-7xl font-calligraphy text-white drop-shadow-lg mb-4">
-                AquanQ
+                Aquanqa
               </h2>
               <div className="w-32 h-0.5 bg-white/70"></div>
             </div>

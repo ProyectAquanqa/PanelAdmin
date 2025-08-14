@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useUsers } from "../../hooks/useUsers";
 import { useDataView } from "../../hooks/useDataView";
 import { usePermissions } from "../../hooks/usePermissions";
+import { useAreas } from "../../hooks/useAreas";
 import { searchInFields } from "../../utils/searchUtils";
 import { PermissionGate, AccessDenied } from "../../components/Common";
 import toast from "react-hot-toast";
@@ -38,9 +39,13 @@ const UserManagement = () => {
     fetchGroups,
     createUser,
     updateUser,
+    patchUser,
     deleteUser,
     toggleUserActiveStatus
   } = useUsers();
+  
+  // Hook para obtener cargos (para evitar múltiples instancias en el modal)
+  const { cargos } = useAreas();
 
   // Estado del modal
   const [showModal, setShowModal] = useState(false);
@@ -59,11 +64,29 @@ const UserManagement = () => {
   // Hook para vista de datos (tabla/card)
   const { currentView, toggleView } = useDataView('table');
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales (solo una vez)
   useEffect(() => {
-    fetchUsers();
-    fetchGroups();
-  }, [fetchUsers, fetchGroups]);
+    let isMounted = true;
+    
+    const loadInitialData = async () => {
+      if (isMounted) {
+        try {
+          await Promise.all([
+            fetchUsers(),
+            fetchGroups()
+          ]);
+        } catch (error) {
+          console.error('❌ Error cargando datos iniciales:', error);
+        }
+      }
+    };
+    
+    loadInitialData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Sin dependencias para ejecutar solo una vez
 
   // Filtrado simple de usuarios (vista unificada)
   const filteredUsers = useMemo(() => {
@@ -133,9 +156,10 @@ const UserManagement = () => {
           handleCloseModal(); // Solo cerrar si fue exitoso
         }
       } else if (formMode === 'edit') {
-        const result = await updateUser(editingUser.id, userData);
+        // Usar PATCH en lugar de PUT para actualizaciones parciales
+        const result = await patchUser(editingUser.id, userData);
         if (result) {
-          toast.success('Usuario actualizado exitosamente');
+          // El toast de éxito ya se muestra en useUsers.js, no duplicar aquí
           handleCloseModal(); // Solo cerrar si fue exitoso
         }
       }
@@ -146,18 +170,25 @@ const UserManagement = () => {
   }, [formMode, editingUser, createUser, updateUser, handleCloseModal]);
 
   const handleDeleteUser = useCallback(async (userId) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+    // Buscar el usuario para mostrar su nombre en el confirm
+    const user = users.find(u => u.id === userId);
+    const userName = user ? `${user.first_name} ${user.last_name}` : 'este usuario';
+    
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${userName}?\n\nEsta acción no se puede deshacer.`)) {
       return;
     }
 
     try {
-      await deleteUser(userId);
-      toast.success('Usuario eliminado exitosamente');
+      const result = await deleteUser(userId);
+      if (result) {
+        // El toast de éxito ya se maneja en el hook useUsers
+        console.log(`✅ Usuario ${userName} eliminado exitosamente`);
+      }
     } catch (error) {
       console.error('Error al eliminar usuario:', error);
       toast.error('Error al eliminar usuario');
     }
-  }, [deleteUser]);
+  }, [deleteUser, users]);
 
   const handleToggleStatus = useCallback(async (userId, currentStatus) => {
     try {
@@ -271,7 +302,7 @@ const UserManagement = () => {
           editingUser={editingUser}
           loading={loading.create || loading.update}
           availableRoles={groups}
-          availableCargos={[]}
+          availableCargos={cargos}
           mode={formMode}
         />
 

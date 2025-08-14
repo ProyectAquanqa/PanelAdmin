@@ -64,14 +64,12 @@ const Sidebar = () => {
   const allEventosItems = menuCategories.find(cat => cat.id === 'eventos')?.items || [];
   const allChatbotItems = menuCategories.find(cat => cat.id === 'chatbot')?.items || [];
   const allUserNotificationItems = menuCategories.find(cat => cat.id === 'users')?.items || [];
-  const allSettingsItems = menuCategories.find(cat => cat.id === 'settings')?.items || [];
 
   // Filtrar elementos del menú basado en permisos del usuario
   const menuItems = useMemo(() => filterMenuByPermissions(allMenuItems), [filterMenuByPermissions, allMenuItems]);
   const eventosItems = useMemo(() => filterMenuByPermissions(allEventosItems), [filterMenuByPermissions, allEventosItems]);
   const chatbotItems = useMemo(() => filterMenuByPermissions(allChatbotItems), [filterMenuByPermissions, allChatbotItems]);
   const userNotificationItems = useMemo(() => filterMenuByPermissions(allUserNotificationItems), [filterMenuByPermissions, allUserNotificationItems]);
-  const settingsItems = useMemo(() => filterMenuByPermissions(allSettingsItems), [filterMenuByPermissions, allSettingsItems]);
 
   // Función auxiliar para obtener el objeto de menú por su ID
   const getItemByMenuId = useCallback((menuId) => {
@@ -87,12 +85,9 @@ const Sidebar = () => {
     } else if (menuId?.startsWith('users_')) {
       const index = parseInt(menuId.replace('users_', ''));
       return userNotificationItems[index];
-    } else if (menuId?.startsWith('settings_')) {
-      const index = parseInt(menuId.replace('settings_', ''));
-      return settingsItems[index];
     }
     return null;
-  }, [menuItems, eventosItems, chatbotItems, userNotificationItems, settingsItems]);
+  }, [menuItems, eventosItems, chatbotItems, userNotificationItems]);
 
   // Variantes de animación para el sidebar
   const sidebarVariants = {
@@ -159,23 +154,9 @@ const Sidebar = () => {
         />
       )}
 
-      {/* Solo mostrar Configuración si hay items y el usuario no está restringido */}
-      {settingsItems.length > 0 && !isRestrictedUser && (
-        <SidebarMenu 
-          items={settingsItems}
-          categoryTitle="CONFIGURACIÓN"
-          category="settings"
-          isCollapsed={isCollapsed}
-          isHovered={isHovered}
-          expandedMenus={expandedMenus}
-          toggleSubmenu={toggleSubmenu}
-          isActive={isActive}
-          lastClickedMenu={lastClickedMenu}
-          onSubmenuItemSelect={handleSubmenuItemSelect}
-        />
-      )}
+
     </>
-  ), [eventosItems, chatbotItems, userNotificationItems, settingsItems, isRestrictedUser,
+  ), [eventosItems, chatbotItems, userNotificationItems, isRestrictedUser,
       isCollapsed, isHovered, expandedMenus, toggleSubmenu, isActive, lastClickedMenu, handleSubmenuItemSelect]);
 
   return (

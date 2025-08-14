@@ -32,3 +32,8 @@ export {
   prepareProfileFiltersConfig 
 } from './configs/profileFiltersConfig';
 
+export { 
+  deviceFiltersConfig, 
+  prepareDeviceFiltersConfig 
+} from './configs/deviceFiltersConfig';
+

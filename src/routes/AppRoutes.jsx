@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getUserPermissions } from '../services/permissionService';
 import AdminLayout from '../components/Layout/AdminLayout';
 
 // Carga perezosa de componentes para mejorar el rendimiento
@@ -32,6 +33,9 @@ const ProfileManagementNew = lazy(() => import('../pages/Perfiles/ProfileManagem
 
 // 📱 Páginas del módulo de Notificaciones
 const NotificationManagement = lazy(() => import('../pages/Notifications/NotificationManagement'));
+
+// 📱 Páginas del módulo de Dispositivos
+const DeviceManagement = lazy(() => import('../pages/Devices/DeviceManagement'));
 
 // 🍽️ Páginas del módulo de Almuerzoss 
 const AlmuerzosGestion = lazy(() => import('../pages/Almuerzos/AlmuerzosGestion'));
@@ -71,9 +75,9 @@ const TemporaryPage = ({ title }) => (
   </div>
 );
 
-// ✅ Componente para verificar autenticación actualizado para usar el contexto real
+// ✅ Componente para verificar autenticación y acceso al panel admin
 const RequireAuth = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   
   // Mostrar loading mientras se verifica la autenticación
   if (loading) {
@@ -86,6 +90,165 @@ const RequireAuth = ({ children }) => {
   }
   
   return children;
+};
+
+// ✅ Componente para verificar acceso al panel admin (usuarios administrativos)
+const RequireAdminAccess = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+  
+  // Mostrar loading mientras se verifica la autenticación
+  if (loading) {
+    return <LoadingFallback />;
+  }
+  
+  // Si no está autenticado, redirigir al login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Verificar si el usuario tiene acceso al panel admin
+  const hasAdminAccess = () => {
+    if (!user) return false;
+    
+    // Superusuarios y staff tienen acceso
+    if (user.is_superuser || user.is_staff) return true;
+    
+    // Verificar grupos administrativos
+    const userGroups = user.groups || [];
+    const adminGroups = [
+      'Administrador de Contenido',
+      'Editor de Contenido', 
+      'Gestor de Chatbot',
+      'Admin',
+      'Administrador'
+    ];
+    
+    const hasAdminGroup = userGroups.some(group => {
+      const groupName = typeof group === 'object' ? group.name : group;
+      return adminGroups.includes(groupName);
+    });
+    
+    if (hasAdminGroup) return true;
+    
+    // **NUEVA LÓGICA**: Verificar si tiene permisos asignados
+    // Si no tiene ningún permiso, no puede acceder al panel admin
+    const userPermissions = getUserPermissions() || [];
+    
+    if (userPermissions.length === 0) {
+      return false; // Sin permisos = sin acceso al panel admin
+    }
+    
+    // Permisos básicos que no otorgan acceso admin
+    const basicPermissions = [
+      'almuerzos.view_almuerzo', // Solo ver almuerzos
+      'auth.view_user'  // Solo ver su propio perfil
+    ];
+    
+    // Si solo tiene permisos básicos, no tiene acceso admin
+    const hasOnlyBasicPerms = userPermissions.every(perm => basicPermissions.includes(perm));
+    if (hasOnlyBasicPerms && userPermissions.length <= 2) {
+      return false;
+    }
+    
+    // Si tiene otros permisos, puede acceder al panel admin
+    return true;
+  };
+  
+  // Función para obtener el tipo de usuario basado en grupos
+  const getTipoUsuario = () => {
+    if (!user) return 'Sin definir';
+    
+    if (hasAdminAccess()) {
+      return 'Administrativo';
+    } else if (user.groups?.some(group => {
+      const groupName = typeof group === 'object' ? group.name : group;
+      return groupName === 'Trabajador';
+    })) {
+      return 'Trabajador';
+    } else {
+      return 'Sin definir';
+    }
+  };
+  
+  // Si es solo trabajador (sin acceso administrativo), mostrar página de acceso denegado
+  if (!hasAdminAccess()) {
+    return <WorkerAccessDenied />;
+  }
+  
+  return children;
+};
+
+// Página de acceso denegado para trabajadores
+const WorkerAccessDenied = () => {
+  const { logout } = useAuth();
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      // En caso de error, redirigir al login anyway
+      window.location.href = '/login';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="text-center">
+          <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Acceso Restringido
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Este panel está reservado para usuarios administrativos.
+          </p>
+        </div>
+      </div>
+      
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="text-center space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Para usuarios trabajadores
+                  </h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <p>Utiliza la aplicación móvil de AquanQ para acceder a las funciones disponibles para tu perfil.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+              <div className="text-sm text-gray-600">
+                <p className="font-medium">¿Necesitas acceso administrativo?</p>
+                <p className="mt-1">Contacta con tu administrador de sistema para solicitar los permisos correspondientes.</p>
+              </div>
+            </div>
+            
+            <div className="pt-4">
+              <button
+                onClick={handleLogout}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const AppRoutes = () => {
@@ -101,7 +264,9 @@ const AppRoutes = () => {
       {/* Rutas protegidas dentro del layout de administración */}
       <Route path="/" element={
         <RequireAuth>
-          <AdminLayout />
+          <RequireAdminAccess>
+            <AdminLayout />
+          </RequireAdminAccess>
         </RequireAuth>
       }>
         <Route index element={
@@ -190,7 +355,11 @@ const AppRoutes = () => {
             <NotificationManagement />
           </Suspense>
         } />
-        <Route path="notificaciones/dispositivos" element={<TemporaryPage title="Dispositivos Registrados" />} />
+        <Route path="notificaciones/dispositivos" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <DeviceManagement />
+          </Suspense>
+        } />
         
         {/* Almuerzos */}
         <Route path="almuerzos" element={

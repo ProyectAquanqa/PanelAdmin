@@ -444,8 +444,9 @@ export const validateUserForm = (formData, formType = 'user') => {
     }
   }
 
-  // Validación de contraseña (solo para creación)
+  // Validación de contraseña
   if (formType === 'create') {
+    // En creación, la contraseña es obligatoria
     if (formData.password) {
       const passwordValidation = validateUserPassword(formData.password, {
         minLength: 6,
@@ -467,6 +468,36 @@ export const validateUserForm = (formData, formType = 'user') => {
       }
     } else if (formData.password && !formData.confirmPassword) {
       errors.confirmPassword = 'Confirmación de contraseña es obligatoria';
+    }
+  } else if (formType === 'edit') {
+    // En edición, la contraseña es opcional, pero si se proporciona debe ser válida
+    const hasPassword = formData.password && formData.password.trim() !== '';
+    const hasConfirmPassword = formData.confirmPassword && formData.confirmPassword.trim() !== '';
+    
+    if (hasPassword || hasConfirmPassword) {
+      // Si hay alguna contraseña, validar ambas
+      if (hasPassword) {
+        const passwordValidation = validateUserPassword(formData.password, {
+          minLength: 6,
+          requireUppercase: false,
+          requireSpecialChars: false
+        });
+        if (!passwordValidation.isValid) {
+          errors.password = passwordValidation.error;
+        }
+      }
+      
+      // Validación de confirmación
+      if (hasPassword && hasConfirmPassword) {
+        const confirmValidation = validatePasswordConfirmation(formData.password, formData.confirmPassword);
+        if (!confirmValidation.isValid) {
+          errors.confirmPassword = confirmValidation.error;
+        }
+      } else if (hasPassword && !hasConfirmPassword) {
+        errors.confirmPassword = 'Confirme la nueva contraseña';
+      } else if (!hasPassword && hasConfirmPassword) {
+        errors.password = 'Complete la nueva contraseña';
+      }
     }
   }
 

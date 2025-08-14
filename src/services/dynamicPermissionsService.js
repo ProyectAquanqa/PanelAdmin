@@ -127,7 +127,6 @@ const getPermissionsStructure = async () => {
       try {
         response = await apiCall(endpoint);
         if (response && (response.status === 'success' || response.data)) {
-          console.log(`✅ Permisos obtenidos desde: ${endpoint}`);
           break;
         }
       } catch (error) {
@@ -157,7 +156,6 @@ const getPermissionsStructure = async () => {
     permissionsCache.structure = structure;
     permissionsCache.lastUpdated = Date.now();
     
-    console.log('✅ Estructura de permisos procesada:', structure);
     return structure;
 
   } catch (error) {
@@ -479,6 +477,7 @@ const getModulePermissionsStructure = async () => {
   const baseStructure = await getPermissionsStructure();
   
   // Organizar permisos por módulos de la aplicación (no por apps de Django)
+  // Estructura actualizada según los módulos del sidebar actual
   const moduleStructure = {
     'Eventos': {
       title: 'Eventos',
@@ -496,8 +495,8 @@ const getModulePermissionsStructure = async () => {
       title: 'Notificaciones',
       submodules: []
     },
-    'Configuración': {
-      title: 'Configuración',
+    'Almuerzos': {
+      title: 'Almuerzos',
       submodules: []
     }
   };
@@ -530,7 +529,7 @@ const getModulePermissionsStructure = async () => {
  * @returns {string} Clave del módulo
  */
 const getModuleForModel = (appName, modelName) => {
-  // Mapeo dinámico basado en patrones
+  // Mapeo dinámico basado en patrones - actualizado según módulos del sidebar actual
   if (appName.includes('event') || modelName.includes('evento') || modelName.includes('categoria')) {
     return 'Eventos';
   }
@@ -547,8 +546,13 @@ const getModuleForModel = (appName, modelName) => {
     return 'Notificaciones';
   }
   
-  // Todo lo demás va a configuración
-  return 'Configuración';
+  if (appName.includes('almuerzo') || modelName.includes('almuerzo')) {
+    return 'Almuerzos';
+  }
+  
+  // Si no coincide con ningún módulo específico, no se incluye
+  // Esto elimina la sección de "Configuración" que ya no existe
+  return null;
 };
 
 /**

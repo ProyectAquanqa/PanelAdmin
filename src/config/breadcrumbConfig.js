@@ -88,6 +88,7 @@ export const mainSections = {
     color: '#2D728F',
     description: 'Sistema de notificaciones'
   },
+
   'Documentación': {
     icon: 'DocumentTextIcon',
     color: '#2D728F',

@@ -38,7 +38,7 @@ export const useAreas = () => {
     try {
       setLoading(prev => ({ ...prev, areas: true }));
       
-      const result = await areasService.areas.list(page, pagination.limit, filters);
+      const result = await areasService.areas.list(page, 10, filters);
       console.log('🏢 Resultado areasService.areas.list:', result);
       
       // Manejar diferentes formatos de respuesta
@@ -64,7 +64,7 @@ export const useAreas = () => {
         ...prev,
         current: page,
         total: totalCount,
-        totalPages: Math.ceil(totalCount / prev.limit)
+        totalPages: Math.ceil(totalCount / 10)
       }));
 
       console.log('✅ Areas cargadas:', areasData.length);
@@ -76,7 +76,7 @@ export const useAreas = () => {
     } finally {
       setLoading(prev => ({ ...prev, areas: false }));
     }
-  }, [pagination.limit]);
+  }, []);
 
   // Función para obtener cargos
   const fetchCargos = useCallback(async (filters = {}) => {
@@ -137,7 +137,7 @@ export const useAreas = () => {
     } finally {
       setLoading(prev => ({ ...prev, create: false }));
     }
-  }, [fetchAreas]);
+  }, []);
 
   // Función para actualizar area
   const updateArea = useCallback(async (id, areaData) => {
@@ -166,7 +166,7 @@ export const useAreas = () => {
     } finally {
       setLoading(prev => ({ ...prev, update: false }));
     }
-  }, [fetchAreas]);
+  }, []);
 
   // Función para eliminar area
   const deleteArea = useCallback(async (id) => {
@@ -195,7 +195,7 @@ export const useAreas = () => {
     } finally {
       setLoading(prev => ({ ...prev, delete: false }));
     }
-  }, [fetchAreas]);
+  }, []);
 
   // Función para alternar estado activo
   const toggleAreaActiveStatus = useCallback(async (id) => {
@@ -329,7 +329,7 @@ export const useAreas = () => {
     } finally {
       setLoading(prev => ({ ...prev, create: false }));
     }
-  }, [fetchCargos]);
+  }, []);
 
   const updateCargo = useCallback(async (id, cargoData) => {
     try {
@@ -351,7 +351,7 @@ export const useAreas = () => {
     } finally {
       setLoading(prev => ({ ...prev, update: false }));
     }
-  }, [fetchCargos]);
+  }, []);
 
   const deleteCargo = useCallback(async (id) => {
     try {
@@ -379,13 +379,27 @@ export const useAreas = () => {
     } finally {
       setLoading(prev => ({ ...prev, delete: false }));
     }
-  }, [fetchCargos]);
+  }, []);
 
-  // 🔄 Efecto para cargar datos iniciales
+  // 🔄 Efecto para cargar datos iniciales (solo una vez)
   useEffect(() => {
-    fetchAreas();
-    fetchCargos();
-  }, [fetchAreas, fetchCargos]);
+    let isMounted = true;
+    
+    const loadInitialData = async () => {
+      if (isMounted) {
+        await Promise.all([
+          fetchAreas(),
+          fetchCargos()
+        ]);
+      }
+    };
+    
+    loadInitialData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Sin dependencias para ejecutar solo una vez
 
   // Retornar toda la funcionalidad
   return {
@@ -415,9 +429,9 @@ export const useAreas = () => {
     deleteCargo,
     
     // Utilidades
-    refreshData: () => {
+    refreshData: useCallback(() => {
       fetchAreas();
       fetchCargos();
-    }
+    }, [])
   };
 };

@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useUserForm } from '../../hooks/useUserForm';
-import { useAreas } from '../../hooks/useAreas';
+// import { useAreas } from '../../hooks/useAreas'; // Removido para evitar múltiples instancias
 import userService from '../../services/userService';
 import toast from 'react-hot-toast';
 
@@ -33,8 +33,8 @@ const UserModal = ({
   const [groupsDisponibles, setGroupsDisponibles] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   
-  // Hook de áreas para obtener cargos dinámicos
-  const { cargos, fetchCargos, fetchAreasWithCargos } = useAreas();
+  // Los cargos ahora se reciben como prop para evitar múltiples instancias de useAreas
+  // const { cargos, fetchCargos, fetchAreasWithCargos } = useAreas(); // Removido
   
   // Hook de formulario
   const {
@@ -51,6 +51,32 @@ const UserModal = ({
   } = useUserForm(editingUser || {}, { 
     formType: mode === 'create' ? 'create' : 'edit' 
   });
+
+  // Función para obtener el tipo de usuario basado en el grupo seleccionado
+  const getTipoUsuarioFromGroup = useCallback(() => {
+    if (!Array.isArray(formData.groups) || formData.groups.length === 0) {
+      return 'Sin definir';
+    }
+    
+    const groupName = formData.groups[0];
+    
+    // Grupos administrativos
+    const adminGroups = [
+      'Administrador de Contenido',
+      'Editor de Contenido', 
+      'Gestor de Chatbot',
+      'Admin',
+      'Administrador'
+    ];
+    
+    if (adminGroups.includes(groupName)) {
+      return 'Administrativo';
+    } else if (groupName === 'Trabajador') {
+      return 'Trabajador';
+    } else {
+      return 'Sin definir';
+    }
+  }, [formData.groups]);
 
   // Configuración de pestañas sin emojis
   const tabs = [
@@ -120,17 +146,12 @@ const UserModal = ({
         setLoadingGroups(false);
       }
 
-      // Cargar cargos dinámicamente de áreas
-      try {
-        await fetchCargos();
-        await fetchAreasWithCargos();
-      } catch (error) {
-        console.error('Error loading cargos:', error);
-      }
+      // Los cargos se pasan como prop availableCargos, no necesitamos cargarlos aquí
+      console.log('📋 Cargos disponibles desde props:', availableCargos);
     };
 
     loadInitialData();
-  }, [show, fetchCargos, fetchAreasWithCargos]);
+  }, [show]); // Solo depende de show ya que los cargos vienen como props
 
   // Limpiar estados cuando cambie el modo o usuario
   useEffect(() => {
@@ -157,12 +178,26 @@ const UserModal = ({
       return;
     }
     
-    const result = await handleSubmit(onSubmit);
-    
-    if (result.success) {
-      handleClose();
+    try {
+      console.log('📝 Iniciando envío del formulario, modo:', mode);
+      console.log('📝 Datos del formulario:', formData);
+      
+      const result = await handleSubmit(onSubmit);
+      
+      if (result.success) {
+        console.log('✅ Formulario enviado exitosamente');
+        handleClose();
+      } else {
+        console.log('❌ Error en el envío del formulario:', result);
+        if (result.error) {
+          toast.error(`Error: ${result.error.message || 'Error desconocido'}`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error capturado en handleFormSubmit:', error);
+      toast.error(`Error inesperado: ${error.message}`);
     }
-  }, [mode, handleSubmit, onSubmit, handleClose]);
+  }, [mode, handleSubmit, onSubmit, handleClose, formData]);
 
   // Consultar DNI
   const handleDniBlur = useCallback(async (dni) => {
@@ -374,8 +409,27 @@ const UserModal = ({
         </div>
       </div>
 
-      {/* Contraseñas (solo para creación) */}
-      {isCreateMode && (
+      {/* Contraseñas (para creación y edición) */}
+      {isEditMode && (
+        <div className="border border-yellow-200 bg-yellow-50 rounded-lg overflow-hidden mb-4">
+          <div className="bg-yellow-100 px-4 py-2 border-b border-yellow-200">
+            <h5 className="text-[13px] font-bold text-yellow-800 uppercase tracking-wider flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Cambio de Contraseña
+            </h5>
+          </div>
+          <div className="p-3">
+            <p className="text-[13px] text-yellow-800 leading-relaxed">
+              Complete estos campos solo si desea cambiar la contraseña del usuario. 
+              Si deja los campos vacíos, la contraseña actual se mantendrá sin cambios.
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {(isCreateMode || isEditMode) && (
         <div className="grid grid-cols-2 gap-4">
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
@@ -386,7 +440,7 @@ const UserModal = ({
                 <input
                   {...getInputProps('password')}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={isCreateMode ? "Mínimo 6 caracteres" : "Nueva contraseña (opcional)"}
                   className={`w-full px-4 py-3 pr-10 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
                     errors.password ? 'border-red-300 bg-red-50' : 'bg-white'
                   }`}
@@ -409,7 +463,10 @@ const UserModal = ({
                 <p className="text-[13px] text-red-600">{errors.password}</p>
               )}
               <p className="text-[13px] text-gray-500">
-                Debe tener al menos 6 caracteres
+                {isCreateMode 
+                  ? "Debe tener al menos 6 caracteres" 
+                  : "Dejar vacío para mantener la contraseña actual"
+                }
               </p>
             </div>
           </div>
@@ -422,7 +479,7 @@ const UserModal = ({
               <input
                 {...getInputProps('confirmPassword')}
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Repetir contraseña"
+                placeholder={isCreateMode ? "Repetir contraseña" : "Confirmar nueva contraseña"}
                 className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
                   errors.confirmPassword ? 'border-red-300 bg-red-50' : 'bg-white'
                 }`}
@@ -431,7 +488,10 @@ const UserModal = ({
                 <p className="text-[13px] text-red-600">{errors.confirmPassword}</p>
               )}
               <p className="text-[13px] text-gray-500">
-                Debe coincidir con la contraseña
+                {isCreateMode 
+                  ? "Debe coincidir con la contraseña" 
+                  : "Solo requerido si cambia la contraseña"
+                }
               </p>
             </div>
           </div>
@@ -443,55 +503,74 @@ const UserModal = ({
         <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
           <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Perfil del Usuario</h5>
         </div>
-        <div className="p-3 space-y-2">
-          <select
-            name="groups"
-            disabled={isViewMode || loadingGroups}
-            value={
-              // Mostrar el ID del grupo seleccionado en el UI
-              Array.isArray(formData.groups) && formData.groups.length > 0 
-                ? (() => {
-                    // Si formData.groups contiene nombres, buscar el ID correspondiente
-                    const groupName = formData.groups[0];
-                    const group = groupsDisponibles.find(g => g.name === groupName);
-                    return group ? String(group.id) : '';
-                  })()
-                : ''
-            }
-            onChange={(e) => {
-              const groupId = e.target.value;
-              console.log('🔄 Grupo ID seleccionado:', groupId);
-              
-              if (groupId) {
-                // Buscar el nombre del grupo seleccionado
-                const selectedGroup = groupsDisponibles.find(g => g.id == groupId);
-                const groupName = selectedGroup ? selectedGroup.name : '';
-                console.log('🔄 Nombre del grupo encontrado:', groupName);
-                // El backend espera el NOMBRE del grupo, no el ID
-                setFieldValue('groups', [groupName]); // Enviar como array de nombres
-              } else {
-                setFieldValue('groups', []); // Array vacío si no hay selección
+        <div className="p-3 space-y-3">
+          <div>
+            <label className="block text-[13px] font-medium text-gray-700 mb-2">Grupo/Rol</label>
+            <select
+              name="groups"
+              disabled={isViewMode || loadingGroups}
+              value={
+                // Mostrar el ID del grupo seleccionado en el UI
+                Array.isArray(formData.groups) && formData.groups.length > 0 
+                  ? (() => {
+                      // Si formData.groups contiene nombres, buscar el ID correspondiente
+                      const groupName = formData.groups[0];
+                      const group = groupsDisponibles.find(g => g.name === groupName);
+                      return group ? String(group.id) : '';
+                    })()
+                  : ''
               }
-            }}
-            className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
-              errors.groups ? 'border-red-300 bg-red-50' : 'bg-white'
-            } ${(isViewMode || loadingGroups) ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-          >
-            <option value="">
-              {loadingGroups ? 'Cargando perfiles...' : 'Seleccionar perfil/rol'}
-            </option>
-            {groupsDisponibles.map(group => (
-              <option key={group.id} value={group.id}>
-                {group.name}
+              onChange={(e) => {
+                const groupId = e.target.value;
+                if (groupId) {
+                  // Buscar el nombre del grupo seleccionado
+                  const selectedGroup = groupsDisponibles.find(g => g.id == groupId);
+                  const groupName = selectedGroup ? selectedGroup.name : '';
+                  // El backend espera el NOMBRE del grupo, no el ID
+                  setFieldValue('groups', [groupName]); // Enviar como array de nombres
+                } else {
+                  setFieldValue('groups', []); // Array vacío si no hay selección
+                }
+              }}
+              className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+                errors.groups ? 'border-red-300 bg-red-50' : 'bg-white'
+              } ${(isViewMode || loadingGroups) ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+            >
+              <option value="">
+                {loadingGroups ? 'Cargando perfiles...' : 'Seleccionar perfil/rol'}
               </option>
-            ))}
-          </select>
-          {errors.groups && (
-            <p className="text-[13px] text-red-600">{errors.groups}</p>
+              {groupsDisponibles.map(group => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+            {errors.groups && (
+              <p className="text-[13px] text-red-600">{errors.groups}</p>
+            )}
+          </div>
+          
+                    {/* Descripción del tipo de usuario (solo cuando hay grupo seleccionado) */}
+          {getTipoUsuarioFromGroup() !== 'Sin definir' && (
+            <div className="mt-2 p-3 rounded-lg border bg-gray-50 border-gray-200">
+              <div className="flex items-start gap-2">
+                <span className={`w-2 h-2 rounded-full mt-1.5 ${
+                  getTipoUsuarioFromGroup() === 'Administrativo' ? 'bg-blue-500' : 'bg-gray-500'
+                }`}></span>
+                <div>
+                  <p className="text-[13px] font-medium text-gray-800">
+                    Tipo: {getTipoUsuarioFromGroup()}
+                  </p>
+                  <p className="text-[12px] text-gray-600">
+                    {getTipoUsuarioFromGroup() === 'Administrativo' ?
+                      'Este usuario podrá acceder al panel administrativo' :
+                      'Este usuario solo podrá usar la aplicación móvil'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
-          <p className="text-[13px] text-gray-500">
-            El perfil determina los permisos y accesos del usuario
-          </p>
         </div>
       </div>
 
@@ -554,7 +633,7 @@ const UserModal = ({
             } ${isViewMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
           >
             <option value="">Seleccionar cargo</option>
-            {cargos.map(cargo => (
+            {availableCargos.map(cargo => (
               <option key={cargo.id} value={cargo.id}>
                 {cargo.nombre} - {cargo.area_nombre || 'Sin área'}
               </option>
@@ -584,7 +663,7 @@ const UserModal = ({
             Los cargos disponibles se cargan automáticamente desde las áreas organizacionales configuradas en el sistema.
             Cada cargo está asociado a un área específica, lo que permite una mejor organización y asignación de responsabilidades.
           </p>
-          {cargos.length === 0 && (
+          {availableCargos.length === 0 && (
             <p className="text-[13px] text-blue-700 mt-2">
               <strong>Nota:</strong> No hay cargos disponibles. Asegúrate de que existan áreas con cargos configurados.
             </p>
