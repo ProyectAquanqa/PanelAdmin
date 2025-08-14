@@ -31,6 +31,7 @@ export const breadcrumbRoutes = {
   '/usuarios': { section: 'Usuarios', subsection: 'Gestión de Usuarios' },
   '/usuarios/gestion': { section: 'Usuarios', subsection: 'Gestión de Usuarios' },
   '/usuarios/perfiles': { section: 'Usuarios', subsection: 'Perfiles' },
+  '/usuarios/areas': { section: 'Usuarios', subsection: 'Áreas' },
   
   // NOTIFICACIONES - Todas las subcategorías
   '/notificaciones': { section: 'Notificaciones', subsection: 'Historial de Notificaciones' },

@@ -21,6 +21,7 @@ const EventosCategorias = lazy(() => import('../pages/Eventos/EventosCategorias'
 // 👥 Páginas del módulo de Usuarios
 const Users = lazy(() => import('../pages/Users/Users'));
 const UserManagement = lazy(() => import('../pages/Users/UserManagement'));
+const Areas = lazy(() => import('../pages/Users/Areas'));
 
 
 
@@ -174,6 +175,12 @@ const AppRoutes = () => {
         <Route path="usuarios/perfiles/test" element={
           <Suspense fallback={<LoadingFallback />}>
             <ProfileTestPage />
+          </Suspense>
+        } />
+
+        <Route path="usuarios/areas" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <Areas />
           </Suspense>
         } />
 
