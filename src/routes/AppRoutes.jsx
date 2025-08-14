@@ -17,6 +17,7 @@ const TestMode = lazy(() => import('../pages/Chatbot/TestMode'));
 // 📅 Páginas del módulo de Eventos
 const EventosGestion = lazy(() => import('../pages/Eventos/EventosGestion'));
 const EventosCategorias = lazy(() => import('../pages/Eventos/EventosCategorias'));
+const ComentariosGestion = lazy(() => import('../pages/Eventos/ComentariosGestion'));
 
 // 👥 Páginas del módulo de Usuarios
 const Users = lazy(() => import('../pages/Users/Users'));
@@ -28,12 +29,11 @@ const Areas = lazy(() => import('../pages/Users/Areas'));
 // 🔐 Páginas del módulo de Perfiles
 const ProfileManagement = lazy(() => import('../pages/Perfiles/ProfileManagement'));
 const ProfileManagementNew = lazy(() => import('../pages/Perfiles/ProfileManagementNew'));
-const ProfileTestPage = lazy(() => import('../pages/Perfiles/ProfileTestPage'));
 
 // 📱 Páginas del módulo de Notificaciones
 const NotificationManagement = lazy(() => import('../pages/Notifications/NotificationManagement'));
 
-// 🍽️ Páginas del módulo de Almuerzos
+// 🍽️ Páginas del módulo de Almuerzoss 
 const AlmuerzosGestion = lazy(() => import('../pages/Almuerzos/AlmuerzosGestion'));
 
 
@@ -122,6 +122,11 @@ const AppRoutes = () => {
             <EventosCategorias />
           </Suspense>
         } />
+        <Route path="eventos/comentarios" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <ComentariosGestion />
+          </Suspense>
+        } />
         
         
         {/* 🤖 Módulo Chatbot - 4 submódulos según el prompt */}
@@ -168,13 +173,6 @@ const AppRoutes = () => {
         <Route path="usuarios/perfiles" element={
           <Suspense fallback={<LoadingFallback />}>
             <ProfileManagementNew />
-          </Suspense>
-        } />
-        
-        {/* Página de pruebas para desarrollo del sistema de perfiles dinámicos */}
-        <Route path="usuarios/perfiles/test" element={
-          <Suspense fallback={<LoadingFallback />}>
-            <ProfileTestPage />
           </Suspense>
         } />
 

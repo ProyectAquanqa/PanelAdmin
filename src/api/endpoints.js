@@ -47,6 +47,17 @@ export const eventEndpoints = {
 };
 
 /**
+ * Endpoints de comentarios
+ */
+export const commentEndpoints = {
+  list: '/web/comentarios/',
+  detail: (id) => `/web/comentarios/${id}/`,
+  delete: (id) => `/web/comentarios/${id}/`,
+  moderate: (id) => `/web/comentarios/${id}/moderar/`,
+  statistics: '/admin/comentarios/statistics/',
+};
+
+/**
  * Endpoints de usuarios
  */
 export const userEndpoints = {
@@ -92,6 +103,7 @@ export const endpoints = {
   auth: authEndpoints,
   chatbot: chatbotEndpoints,
   events: eventEndpoints,
+  comments: commentEndpoints,
   users: userEndpoints,
   notifications: notificationEndpoints,
   config: configEndpoints,

@@ -23,6 +23,7 @@ export const breadcrumbRoutes = {
   '/eventos': { section: 'Eventos', subsection: 'Gestión de Eventos' },
   '/eventos/gestion': { section: 'Eventos', subsection: 'Gestión de Eventos' },
   '/eventos/categorias': { section: 'Eventos', subsection: 'Categorías' },
+  '/eventos/comentarios': { section: 'Eventos', subsection: 'Comentarios' },
 
   // ALMUERZOS - Gestión de almuerzos
   '/almuerzos': { section: 'Almuerzos', subsection: 'Gestión de Almuerzos' },

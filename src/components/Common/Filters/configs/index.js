@@ -15,6 +15,10 @@ export {
   prepareEventosFiltersConfig
 } from './eventosFiltersConfig';
 export { 
+  comentariosFiltersConfig,
+  prepareComentariosFiltersConfig
+} from './comentariosFiltersConfig';
+export { 
   profileFiltersConfig,
   prepareProfileFiltersConfig
 } from './profileFiltersConfig';

@@ -36,7 +36,7 @@ export const eventosItems = [
     submenu: [
       { title: 'Gestión de Eventos', path: '/eventos/gestion' },
       { title: 'Categorías', path: '/eventos/categorias' },
-      
+      { title: 'Comentarios', path: '/eventos/comentarios' },
     ],
   },
 ];

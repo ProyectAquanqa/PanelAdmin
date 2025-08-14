@@ -5,3 +5,4 @@
 
 export { default as EventosGestion } from './EventosGestion';
 export { default as EventosCategorias } from './EventosCategorias';
+export { default as ComentariosGestion } from './ComentariosGestion';

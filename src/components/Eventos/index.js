@@ -12,4 +12,8 @@ export { default as CategoriaModal } from './CategoriaModal';
 export { default as CategoriaList } from './CategoriaList';
 export { default as CategoriaTableView } from './CategoriaTableView';
 export { default as CategoriaActions } from './CategoriaActions';
+export { default as ComentarioDetailModal } from './ComentarioDetailModal';
+export { default as ComentarioFilters } from './ComentarioFilters';
+export { default as ComentarioList } from './ComentarioList';
+export { default as ComentarioTableView } from './ComentarioTableView';
 export { default as LoadingStates } from './LoadingStates';
