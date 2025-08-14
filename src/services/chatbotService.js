@@ -62,8 +62,9 @@ const chatbotService = {
   },
 
   // 📊 Obtener estadísticas del chatbot
-  getStats: async () => {
-    return await apiCall('/web/chatbot-knowledge/statistics/');
+  getStats: async (queryParams = '') => {
+    const url = `/web/chatbot-knowledge/statistics/${queryParams}`;
+    return await apiCall(url);
   },
 
   // 💬 Gestión de conversaciones

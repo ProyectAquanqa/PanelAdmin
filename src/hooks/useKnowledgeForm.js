@@ -48,7 +48,9 @@ export const useKnowledgeForm = (initialData = {}, options = {}) => {
       answer: '',
       category: '',
       keywords: '',
+      recommended_questions: [],
       is_active: true,
+      recommended_questions: [],
       ...initialData
     };
   }, [detectedFormType, initialData]);

@@ -170,13 +170,16 @@ export const useDashboard = () => {
     }
   }, []);
   
-  // Obtener estadísticas de chatbot (datos reales del backend)
+  // Obtener estadísticas de chatbot (datos reales del backend) - con cache busting
   const fetchChatbotStats = useCallback(async () => {
     try {
       setLoading(prev => ({ ...prev, chatbot: true }));
       
-      // Obtener estadísticas del chatbot desde el backend
-      const statsResponse = await chatbotService.getStats();
+      // Añadir timestamp para evitar cache del navegador
+      const timestamp = Date.now();
+      
+      // Obtener estadísticas del chatbot desde el backend con cache busting
+      const statsResponse = await chatbotService.getStats(`?_t=${timestamp}`);
       
       // CRÍTICO: Usar exactamente los datos que devuelve el backend, SIN fallbacks
       let chatbotData = {};
@@ -192,18 +195,39 @@ export const useDashboard = () => {
         
         // Validar que tenemos los campos esperados del backend
         if (!chatbotData.hasOwnProperty('total_conversations')) {
-          throw new Error('Formato de respuesta del backend incorrecto');
+          console.warn('Formato de respuesta del backend puede ser incorrecto:', chatbotData);
+          // En lugar de throw, usar datos vacíos para evitar romper la UI
+          chatbotData = {
+            total_conversations: 0,
+            total_knowledge_base: 0,
+            total_views: 0,
+            top_categories: []
+          };
         }
       } else {
-        throw new Error('Sin respuesta del backend de estadísticas');
+        console.warn('Sin respuesta del backend de estadísticas');
+        // Datos vacíos por defecto
+        chatbotData = {
+          total_conversations: 0,
+          total_knowledge_base: 0,
+          total_views: 0,
+          top_categories: []
+        };
       }
-      
-
       
       setDashboardData(prev => ({ ...prev, chatbot: chatbotData }));
     } catch (error) {
       console.error('Error fetching chatbot stats:', error);
-      throw error;
+      // En caso de error, no throw para que no rompa el polling
+      setDashboardData(prev => ({ 
+        ...prev, 
+        chatbot: {
+          total_conversations: 0,
+          total_knowledge_base: 0,
+          total_views: 0,
+          top_categories: []
+        }
+      }));
     } finally {
       setLoading(prev => ({ ...prev, chatbot: false }));
     }
@@ -213,12 +237,35 @@ export const useDashboard = () => {
   const refreshData = useCallback(async () => {
     setError(null);
     try {
-      await Promise.all([
+      // Ejecutar todas las consultas en paralelo para mejor rendimiento
+      const promises = [
         fetchUserStats(),
         fetchEventStats(), 
         fetchNotificationStats(),
         fetchChatbotStats()
-      ]);
+      ];
+      
+      // Esperar todas las promesas y manejar errores individuales
+      const results = await Promise.allSettled(promises);
+      
+      // Verificar si alguna falló y mostrar advertencia en lugar de error total
+      const failedServices = results
+        .map((result, index) => ({ result, service: ['usuarios', 'eventos', 'notificaciones', 'chatbot'][index] }))
+        .filter(({ result }) => result.status === 'rejected')
+        .map(({ service }) => service);
+      
+      if (failedServices.length > 0) {
+        console.warn('Algunos servicios fallaron:', failedServices);
+        if (failedServices.length === results.length) {
+          setError('Error al cargar datos del dashboard');
+          toast.error('Error al cargar datos del dashboard');
+        } else {
+          toast('Algunos datos pueden estar desactualizados', {
+            icon: '⚠️',
+            duration: 3000
+          });
+        }
+      }
     } catch (error) {
       console.error('Error al cargar datos del dashboard:', error);
       setError('Error al cargar datos del dashboard');
@@ -312,10 +359,21 @@ export const useDashboard = () => {
     });
   }, [dashboardData.events.recent]);
   
-  // Inicialización
+  // Inicialización y actualización automática cada 30 segundos
   useEffect(() => {
     refreshData();
-  }, [refreshData]);
+    
+    // Configurar polling para actualización automática del chatbot
+    const pollInterval = setInterval(() => {
+      // Solo actualizar estadísticas del chatbot para mantener datos frescos
+      fetchChatbotStats().catch(console.error);
+    }, 30000); // 30 segundos
+    
+    // Cleanup
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [refreshData, fetchChatbotStats]);
   
   return {
     // Datos del dashboard
@@ -333,7 +391,10 @@ export const useDashboard = () => {
     fetchUserStats,
     fetchEventStats,
     fetchNotificationStats,
-    fetchChatbotStats
+    fetchChatbotStats,
+    
+    // Funciones específicas para actualizaciones dinámicas
+    refreshChatbotStats: fetchChatbotStats
   };
 };
 

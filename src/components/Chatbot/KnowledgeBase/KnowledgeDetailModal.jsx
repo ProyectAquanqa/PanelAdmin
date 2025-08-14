@@ -158,6 +158,57 @@ const KnowledgeDetailModal = ({
                 </div>
               )}
 
+              {/* Preguntas Recomendadas */}
+              {knowledge.recommended_questions && knowledge.recommended_questions.length > 0 && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                    <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">
+                      Preguntas Recomendadas ({knowledge.recommended_questions.length})
+                    </h5>
+                  </div>
+                  <div className="p-3">
+                    <div className="max-h-32 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      {knowledge.recommended_questions.map((question, index) => (
+                        <div key={question.id || index} className="flex items-start space-x-3 p-2 bg-white border border-gray-100 rounded-lg hover:border-gray-200 transition-colors">
+                          <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-[11px] font-bold text-blue-600">#{index + 1}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-medium text-gray-900 leading-relaxed">
+                              {typeof question === 'object' && question.question ? question.question : 
+                               typeof question === 'string' ? question : 
+                               `Pregunta ID: ${question.id || question}`}
+                            </p>
+                            {question.category && (
+                              <p className="text-[11px] text-gray-500 mt-1">
+                                Categoria: {typeof question.category === 'object' ? question.category.name : question.category}
+                              </p>
+                            )}
+                            {question.view_count !== undefined && (
+                              <p className="text-[11px] text-gray-400 mt-1">
+                                {question.view_count} vistas
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex-shrink-0">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium ${
+                              question.is_active !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {question.is_active !== false ? 'Activa' : 'Inactiva'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <p className="text-[12px] text-gray-500">
+                        Estas preguntas se mostraran como sugerencias a los usuarios cuando consulten sobre este tema
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Fechas sutiles */}
               <div className="text-[13px] text-gray-500 pt-3 border-t border-gray-100">
                 <div className="flex flex-wrap gap-4">
@@ -207,7 +258,22 @@ KnowledgeDetailModal.propTypes = {
       id: PropTypes.number,
       name: PropTypes.string,
       description: PropTypes.string
-    })
+    }),
+    recommended_questions: PropTypes.arrayOf(
+      PropTypes.oneOfType([
+        PropTypes.shape({
+          id: PropTypes.number,
+          question: PropTypes.string,
+          is_active: PropTypes.bool,
+          view_count: PropTypes.number,
+          category: PropTypes.shape({
+            id: PropTypes.number,
+            name: PropTypes.string
+          })
+        }),
+        PropTypes.string
+      ])
+    )
   }),
   loading: PropTypes.bool
 };

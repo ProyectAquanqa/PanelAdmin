@@ -11,9 +11,13 @@ import 'simplebar-react/dist/simplebar.min.css';
 // Importar hooks especializados
 import { useSidebar } from '../../hooks/useSidebar';
 import { useSidebarMenu } from '../../hooks/useSidebarMenu';
+import { useMenuPermissions } from '../../hooks/useMenuPermissions';
 
 // Importar configuración de menús
 import { menuCategories } from '../../config/menuConfig';
+
+// Debug utils (solo en desarrollo)
+// import { debugUserPermissions } from '../../utils/permissionDebugUtils';
 
 // Importar componentes modulares
 import { 
@@ -52,12 +56,22 @@ const Sidebar = () => {
     handleSubmenuItemSelect
   } = useSidebarMenu();
 
-  // Obtener configuración de menús desde menuCategories
-  const menuItems = menuCategories.find(cat => cat.id === 'main')?.items || [];
-  const eventosItems = menuCategories.find(cat => cat.id === 'eventos')?.items || [];
-  const chatbotItems = menuCategories.find(cat => cat.id === 'chatbot')?.items || [];
-  const userNotificationItems = menuCategories.find(cat => cat.id === 'users')?.items || [];
-  const settingsItems = menuCategories.find(cat => cat.id === 'settings')?.items || [];
+  // Hook de permisos para filtrar menú
+  const { filterMenuByPermissions, isRestrictedUser } = useMenuPermissions();
+
+  // Obtener configuración de menús desde menuCategories y filtrar por permisos
+  const allMenuItems = menuCategories.find(cat => cat.id === 'main')?.items || [];
+  const allEventosItems = menuCategories.find(cat => cat.id === 'eventos')?.items || [];
+  const allChatbotItems = menuCategories.find(cat => cat.id === 'chatbot')?.items || [];
+  const allUserNotificationItems = menuCategories.find(cat => cat.id === 'users')?.items || [];
+  const allSettingsItems = menuCategories.find(cat => cat.id === 'settings')?.items || [];
+
+  // Filtrar elementos del menú basado en permisos del usuario
+  const menuItems = useMemo(() => filterMenuByPermissions(allMenuItems), [filterMenuByPermissions, allMenuItems]);
+  const eventosItems = useMemo(() => filterMenuByPermissions(allEventosItems), [filterMenuByPermissions, allEventosItems]);
+  const chatbotItems = useMemo(() => filterMenuByPermissions(allChatbotItems), [filterMenuByPermissions, allChatbotItems]);
+  const userNotificationItems = useMemo(() => filterMenuByPermissions(allUserNotificationItems), [filterMenuByPermissions, allUserNotificationItems]);
+  const settingsItems = useMemo(() => filterMenuByPermissions(allSettingsItems), [filterMenuByPermissions, allSettingsItems]);
 
   // Función auxiliar para obtener el objeto de menú por su ID
   const getItemByMenuId = useCallback((menuId) => {
@@ -94,61 +108,74 @@ const Sidebar = () => {
   };
 
   // Memoizar los componentes SidebarMenu para evitar rerenderizados innecesarios
+  // Solo mostrar secciones que tengan elementos visibles para el usuario
   const renderMenuSections = useMemo(() => (
     <>
-      <SidebarMenu 
-        items={eventosItems}
-        categoryTitle="CONTENIDO"
-        category="eventos"
-        isCollapsed={isCollapsed}
-        isHovered={isHovered}
-        expandedMenus={expandedMenus}
-        toggleSubmenu={toggleSubmenu}
-        isActive={isActive}
-        lastClickedMenu={lastClickedMenu}
-        onSubmenuItemSelect={handleSubmenuItemSelect}
-      />
+      {/* Solo mostrar Eventos si hay items y el usuario no está restringido */}
+      {eventosItems.length > 0 && (
+        <SidebarMenu 
+          items={eventosItems}
+          categoryTitle="CONTENIDO"
+          category="eventos"
+          isCollapsed={isCollapsed}
+          isHovered={isHovered}
+          expandedMenus={expandedMenus}
+          toggleSubmenu={toggleSubmenu}
+          isActive={isActive}
+          lastClickedMenu={lastClickedMenu}
+          onSubmenuItemSelect={handleSubmenuItemSelect}
+        />
+      )}
 
-      <SidebarMenu 
-        items={chatbotItems}
-        categoryTitle="INTERACCIÓN"
-        category="chatbot"
-        isCollapsed={isCollapsed}
-        isHovered={isHovered}
-        expandedMenus={expandedMenus}
-        toggleSubmenu={toggleSubmenu}
-        isActive={isActive}
-        lastClickedMenu={lastClickedMenu}
-        onSubmenuItemSelect={handleSubmenuItemSelect}
-      />
+      {/* Solo mostrar Chatbot si hay items y el usuario no está restringido */}
+      {chatbotItems.length > 0 && (
+        <SidebarMenu 
+          items={chatbotItems}
+          categoryTitle="INTERACCIÓN"
+          category="chatbot"
+          isCollapsed={isCollapsed}
+          isHovered={isHovered}
+          expandedMenus={expandedMenus}
+          toggleSubmenu={toggleSubmenu}
+          isActive={isActive}
+          lastClickedMenu={lastClickedMenu}
+          onSubmenuItemSelect={handleSubmenuItemSelect}
+        />
+      )}
 
-      <SidebarMenu 
-        items={userNotificationItems}
-        categoryTitle="USUARIOS"
-        category="users"
-        isCollapsed={isCollapsed}
-        isHovered={isHovered}
-        expandedMenus={expandedMenus}
-        toggleSubmenu={toggleSubmenu}
-        isActive={isActive}
-        lastClickedMenu={lastClickedMenu}
-        onSubmenuItemSelect={handleSubmenuItemSelect}
-      />
+      {/* Solo mostrar Usuarios si hay items y el usuario no está restringido */}
+      {userNotificationItems.length > 0 && (
+        <SidebarMenu 
+          items={userNotificationItems}
+          categoryTitle="USUARIOS"
+          category="users"
+          isCollapsed={isCollapsed}
+          isHovered={isHovered}
+          expandedMenus={expandedMenus}
+          toggleSubmenu={toggleSubmenu}
+          isActive={isActive}
+          lastClickedMenu={lastClickedMenu}
+          onSubmenuItemSelect={handleSubmenuItemSelect}
+        />
+      )}
 
-      <SidebarMenu 
-        items={settingsItems}
-        categoryTitle="CONFIGURACIÓN"
-        category="settings"
-        isCollapsed={isCollapsed}
-        isHovered={isHovered}
-        expandedMenus={expandedMenus}
-        toggleSubmenu={toggleSubmenu}
-        isActive={isActive}
-        lastClickedMenu={lastClickedMenu}
-        onSubmenuItemSelect={handleSubmenuItemSelect}
-      />
+      {/* Solo mostrar Configuración si hay items y el usuario no está restringido */}
+      {settingsItems.length > 0 && !isRestrictedUser && (
+        <SidebarMenu 
+          items={settingsItems}
+          categoryTitle="CONFIGURACIÓN"
+          category="settings"
+          isCollapsed={isCollapsed}
+          isHovered={isHovered}
+          expandedMenus={expandedMenus}
+          toggleSubmenu={toggleSubmenu}
+          isActive={isActive}
+          lastClickedMenu={lastClickedMenu}
+          onSubmenuItemSelect={handleSubmenuItemSelect}
+        />
+      )}
     </>
-  ), [eventosItems, chatbotItems, userNotificationItems, settingsItems, 
+  ), [eventosItems, chatbotItems, userNotificationItems, settingsItems, isRestrictedUser,
       isCollapsed, isHovered, expandedMenus, toggleSubmenu, isActive, lastClickedMenu, handleSubmenuItemSelect]);
 
   return (
