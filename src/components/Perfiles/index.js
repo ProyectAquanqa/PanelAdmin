@@ -11,4 +11,5 @@ export { default as ProfileForm } from './ProfileForm'; // Old complex form
 export { default as ProfileFormNew } from './ProfileFormNew'; // New simplified form
 export { default as ProfileList } from './ProfileList';
 export { LoadingStates } from './LoadingStates';
+export { default as ProfileDetailModal } from './ProfileDetailModal';
  

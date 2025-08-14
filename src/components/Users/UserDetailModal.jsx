@@ -50,74 +50,65 @@ const UserDetailModal = ({
   const renderGeneralTab = () => (
     <div className="space-y-6">
       {/* Información Personal */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="border border-gray-200 rounded-lg p-4">
         <h3 className="text-[13px] font-bold text-gray-900 uppercase tracking-wider mb-4">
           Información Personal
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Nombre Completo</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'No especificado'}
             </p>
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">DNI/Username</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.username || 'No especificado'}
             </p>
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Email</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.email || 'No especificado'}
             </p>
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Estado</label>
-            <p className="text-[13px] bg-white px-3 py-2 rounded-md border">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium ${
-                user?.is_active 
-                  ? 'bg-green-50 text-green-700 border border-green-200'
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
-                <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                  user?.is_active ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                {user?.is_active ? 'Activo' : 'Inactivo'}
-              </span>
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
+              {user?.is_active ? 'Activo' : 'Inactivo'}
             </p>
           </div>
         </div>
       </div>
 
       {/* Información Laboral */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="border border-gray-200 rounded-lg p-4">
         <h3 className="text-[13px] font-bold text-gray-900 uppercase tracking-wider mb-4">
           Información Laboral
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Cargo</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.cargo_detail?.nombre || 'No asignado'}
             </p>
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Área</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.area_nombre || user?.cargo_detail?.area_nombre || 'No asignado'}
             </p>
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Empresa</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.empresa_display || 'No especificada'}
             </p>
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Tipo de Usuario</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.is_staff ? 'Staff/Administrador' : user?.is_superuser ? 'Superusuario' : 'Usuario Regular'}
             </p>
           </div>
@@ -129,7 +120,7 @@ const UserDetailModal = ({
   const renderPermissionsTab = () => (
     <div className="space-y-6">
       {/* Perfiles/Grupos */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="border border-gray-200 rounded-lg p-4">
         <h3 className="text-[13px] font-bold text-gray-900 uppercase tracking-wider mb-4">
           Perfiles Asignados
         </h3>
@@ -138,9 +129,9 @@ const UserDetailModal = ({
             {user.groups.map((group, idx) => (
               <span 
                 key={idx} 
-                className="inline-flex items-center px-3 py-1 rounded-full text-[13px] bg-blue-50 text-blue-700 border border-blue-200"
+                className="inline-flex items-center px-3 py-1 text-[13px] text-gray-700 border border-gray-300 rounded"
               >
-                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 {typeof group === 'string' ? group : (group.name || group.nombre)}
@@ -153,7 +144,7 @@ const UserDetailModal = ({
       </div>
 
       {/* Permisos Efectivos */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="border border-gray-200 rounded-lg p-4">
         <h3 className="text-[13px] font-bold text-gray-900 uppercase tracking-wider mb-4">
           Permisos Efectivos
         </h3>
@@ -162,9 +153,9 @@ const UserDetailModal = ({
             {user.permissions.map((permission, idx) => (
               <div 
                 key={idx} 
-                className="flex items-center text-[13px] text-gray-700 bg-white px-2 py-1 rounded border"
+                className="flex items-center text-[13px] text-gray-700 px-2 py-1 border border-gray-300 rounded"
               >
-                <svg className="w-3 h-3 mr-1.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 {permission}
@@ -181,14 +172,14 @@ const UserDetailModal = ({
   const renderActivityTab = () => (
     <div className="space-y-6">
       {/* Información de Registro */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="border border-gray-200 rounded-lg p-4">
         <h3 className="text-[13px] font-bold text-gray-900 uppercase tracking-wider mb-4">
           Información de Registro
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Fecha de Registro</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.date_joined_formatted || (user?.date_joined ? new Date(user.date_joined).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
@@ -200,7 +191,7 @@ const UserDetailModal = ({
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Último Acceso</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.last_login_formatted || (user?.last_login ? new Date(user.last_login).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
@@ -212,13 +203,13 @@ const UserDetailModal = ({
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Creado Por</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.created_by?.full_name || user?.created_by?.username || 'Sistema'}
             </p>
           </div>
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1">Última Modificación</label>
-            <p className="text-[13px] text-gray-900 bg-white px-3 py-2 rounded-md border">
+            <p className="text-[13px] text-gray-900 px-3 py-2 border border-gray-300 rounded-md">
               {user?.updated_at ? new Date(user.updated_at).toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: 'long',
@@ -232,23 +223,23 @@ const UserDetailModal = ({
       </div>
 
       {/* Estadísticas */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="border border-gray-200 rounded-lg p-4">
         <h3 className="text-[13px] font-bold text-gray-900 uppercase tracking-wider mb-4">
           Estadísticas de Usuario
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-3 border text-center">
-            <div className="text-2xl font-bold text-blue-600">{user?.groups_count || 0}</div>
+          <div className="border border-gray-200 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-gray-900">{user?.groups_count || 0}</div>
             <div className="text-[13px] text-gray-600">Perfiles</div>
           </div>
-          <div className="bg-white rounded-lg p-3 border text-center">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="border border-gray-200 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-gray-900">
               {user?.permissions?.length || 0}
             </div>
             <div className="text-[13px] text-gray-600">Permisos</div>
           </div>
-          <div className="bg-white rounded-lg p-3 border text-center">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="border border-gray-200 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-gray-900">
               {user?.is_active ? 'Activo' : 'Inactivo'}
             </div>
             <div className="text-[13px] text-gray-600">Estado</div>

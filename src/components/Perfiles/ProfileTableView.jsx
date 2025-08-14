@@ -117,7 +117,7 @@ const ProfileTableView = ({
       <tr key={item.id} className="hover:bg-gray-50 transition-colors">
         {/* ID */}
         <td className="px-4 py-3 border-b border-gray-100 text-center">
-          <span className="text-[12px] text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
+          <span className="text-[13px] text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
             #{String(profile.id).padStart(3, '0')}
           </span>
         </td>
@@ -197,14 +197,14 @@ const ProfileTableView = ({
         <table className="w-full min-w-full table-auto">
           <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider w-[80px]">
+              <th className="px-4 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider w-[80px]">
                 ID
               </th>
-              <th className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider">
+              <th className="px-4 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider">
                 Nombre
               </th>
               <th 
-                className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[100px]"
+                className="px-4 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[100px]"
                 onClick={() => onSort('users_count')}
               >
                 <div className="flex items-center justify-center gap-1">
@@ -212,10 +212,10 @@ const ProfileTableView = ({
                   <SortIcon field="users_count" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
-              <th className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider w-[100px]">
+              <th className="px-4 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider w-[100px]">
                 Permisos
               </th>
-              <th className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider w-[140px]">
+              <th className="px-4 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider w-[140px]">
                 Acciones
               </th>
             </tr>

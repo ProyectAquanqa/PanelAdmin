@@ -10,7 +10,7 @@ import { useDataView } from '../../hooks/useDataView';
 import { searchInFields } from '../../utils/searchUtils';
 import ProfileActions from '../../components/Perfiles/ProfileActions';
 import ProfileFormNew from '../../components/Perfiles/ProfileFormNew';
-import { ProfileList, LoadingStates } from '../../components/Perfiles';
+import { ProfileList, LoadingStates, ProfileDetailModal } from '../../components/Perfiles';
 import useProfiles from '../../hooks/useProfiles';
 
 /**
@@ -32,6 +32,10 @@ const ProfileManagementNew = () => {
   // Estados de vista (reemplaza lógica de modal)
   const [currentView, setCurrentView] = useState('list'); // 'list', 'create', 'edit', 'view'
   const [editingProfile, setEditingProfile] = useState(null);
+
+  // Estados para modal de detalles
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [viewingProfile, setViewingProfile] = useState(null);
 
   // Estados de filtros (solo para vista de listado)
   const [searchTerm, setSearchTerm] = useState('');
@@ -90,8 +94,13 @@ const ProfileManagementNew = () => {
   const handleView = useCallback((adaptedProfile) => {
     // Extraer el perfil original del objeto adaptado
     const originalProfile = adaptedProfile._original || adaptedProfile;
-    setEditingProfile(originalProfile);
-    setCurrentView('view');
+    setViewingProfile(originalProfile);
+    setShowDetailModal(true);
+  }, []);
+
+  const handleCloseDetailModal = useCallback(() => {
+    setShowDetailModal(false);
+    setViewingProfile(null);
   }, []);
 
   const handleDelete = useCallback(async (adaptedProfileOrId) => {
@@ -204,6 +213,14 @@ const ProfileManagementNew = () => {
           onView={handleView}
           onCreateFirst={handleCreateNew}
           onRetry={fetchProfiles}
+        />
+
+        {/* Modal de Ver Detalles */}
+        <ProfileDetailModal
+          show={showDetailModal}
+          onClose={handleCloseDetailModal}
+          profile={viewingProfile}
+          loading={loading.profiles}
         />
       </div>
     </div>
