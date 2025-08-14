@@ -167,6 +167,29 @@ const EventoTableView = ({
           </div>
         </td>
 
+        {/* Estado PIN */}
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden lg:table-cell">
+          <div className="flex items-center justify-center">
+            {item.is_pinned ? (
+              <button
+                onClick={() => onUnpin?.(item)}
+                className="px-3 py-1.5 text-xs font-medium bg-yellow-100 text-yellow-700 border border-yellow-200 rounded hover:bg-yellow-200 transition-colors"
+                title="Desfijar evento"
+              >
+                FIJADO
+              </button>
+            ) : (
+              <button
+                onClick={() => onPin?.(item)}
+                className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 rounded hover:bg-gray-200 transition-colors"
+                title="Fijar evento"
+              >
+                FIJAR
+              </button>
+            )}
+          </div>
+        </td>
+
         {/* Estado */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden sm:table-cell">
           <div className="flex items-center">
@@ -255,6 +278,9 @@ const EventoTableView = ({
               <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell min-w-[100px] w-[15%]">
                 Autor
               </th>
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell min-w-[100px] w-[12%]">
+                Pin
+              </th>
               <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell min-w-[80px] w-[12%]">
                 Estado
               </th>
@@ -289,6 +315,8 @@ EventoTableView.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onViewDetails: PropTypes.func,
+  onPin: PropTypes.func,
+  onUnpin: PropTypes.func,
   className: PropTypes.string,
 };
 

@@ -15,8 +15,8 @@ const EventoList = ({
   onEdit,
   onDelete,
   onViewDetails,
-  onTogglePublish,
-  onTogglePin,
+  onPin,
+  onUnpin,
   onCreateFirst,
   onRetry
 }) => {
@@ -88,6 +88,8 @@ const EventoList = ({
         onEdit={onEdit}
         onDelete={onDelete}
         onViewDetails={onViewDetails}
+        onPin={onPin}
+        onUnpin={onUnpin}
         onSort={handleSort}
         itemType="evento"
         defaultSortField="created_at"
@@ -126,7 +128,8 @@ EventoList.propTypes = {
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onViewDetails: PropTypes.func,
-  onTogglePublish: PropTypes.func,
+  onPin: PropTypes.func,
+  onUnpin: PropTypes.func,
   onCreateFirst: PropTypes.func,
   onRetry: PropTypes.func
 };

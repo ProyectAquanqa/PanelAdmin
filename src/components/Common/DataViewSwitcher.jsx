@@ -26,7 +26,8 @@ const DataViewSwitcher = ({
   onViewDetails,
   onSort,
   onTogglePublish,
-  onTogglePin,
+  onPin,
+  onUnpin,
   itemType = 'default',
   disableInternalSorting = false
 }) => {
@@ -60,7 +61,7 @@ const DataViewSwitcher = ({
   if (data.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-400 text-lg mb-2">📋</div>
+        <div className="text-gray-400 text-lg mb-2">[TABLA]</div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">No hay datos disponibles</h3>
         <p className="text-gray-500">No se encontraron elementos para mostrar.</p>
       </div>
@@ -94,7 +95,8 @@ const DataViewSwitcher = ({
           onViewDetails={onViewDetails}
           onToggleExpansion={toggleRowExpansion}
           onTogglePublish={onTogglePublish}
-          onTogglePin={onTogglePin}
+          onPin={onPin}
+          onUnpin={onUnpin}
         />
       </div>
     );

@@ -31,6 +31,7 @@ const EventoModal = ({
     fecha: '',
     categoria_id: '',
     publicado: false,
+    is_pinned: false,
     imagen: null
   });
 
@@ -50,6 +51,7 @@ const EventoModal = ({
         fecha: evento.fecha ? new Date(evento.fecha).toISOString().slice(0, 16) : '',
         categoria_id: evento.categoria?.id || '',
         publicado: evento.publicado || false,
+        is_pinned: evento.is_pinned || false,
         imagen: null
       });
       
@@ -64,6 +66,7 @@ const EventoModal = ({
         fecha: '',
         categoria_id: '',
         publicado: false,
+        is_pinned: false,
         imagen: null
       });
       setImagePreview(null);
@@ -107,6 +110,7 @@ const EventoModal = ({
       submitData.append('fecha', formData.fecha);
       // FormData requiere string para boolean
       submitData.append('publicado', formData.publicado ? 'true' : 'false');
+      submitData.append('is_pinned', formData.is_pinned ? 'true' : 'false');
       
       if (formData.categoria_id) {
         submitData.append('categoria_id', formData.categoria_id);
@@ -127,6 +131,7 @@ const EventoModal = ({
         descripcion: formData.descripcion,
         fecha: formData.fecha,
         publicado: formData.publicado, // Boolean se mantiene como boolean
+        is_pinned: formData.is_pinned, // Boolean se mantiene como boolean
         ...(formData.categoria_id && { categoria_id: formData.categoria_id })
       };
       
@@ -147,6 +152,7 @@ const EventoModal = ({
       fecha: '',
       categoria_id: '',
       publicado: false,
+      is_pinned: false,
       imagen: null
     });
     setImagePreview(null);
@@ -294,19 +300,37 @@ const EventoModal = ({
               )}
             </div>
             
-            {/* Checkbox de publicación - Igual que el is_active de knowledge base */}
-            <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <input
-                type="checkbox"
-                id="publicado"
-                name="publicado"
-                checked={formData.publicado}
-                onChange={handleChange}
-                className="h-4 w-4 text-[#2D728F] focus:ring-[#2D728F] border-gray-300 rounded transition-all"
-              />
-              <label htmlFor="publicado" className="text-[13px] font-medium text-gray-700">
-                Publicar evento (estará visible para todos los usuarios)
-              </label>
+            {/* Checkboxes de opciones */}
+            <div className="space-y-3">
+              {/* Checkbox de publicación */}
+              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <input
+                  type="checkbox"
+                  id="publicado"
+                  name="publicado"
+                  checked={formData.publicado}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-[#2D728F] focus:ring-[#2D728F] border-gray-300 rounded transition-all"
+                />
+                <label htmlFor="publicado" className="text-[13px] font-medium text-gray-700">
+                  Publicar evento (estará visible para todos los usuarios)
+                </label>
+              </div>
+
+              {/* Checkbox de fijar evento */}
+              <div className="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <input
+                  type="checkbox"
+                  id="is_pinned"
+                  name="is_pinned"
+                  checked={formData.is_pinned}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded transition-all"
+                />
+                <label htmlFor="is_pinned" className="text-[13px] font-medium text-gray-700 flex items-center">
+                  Fijar evento (aparecerá al principio de la lista)
+                </label>
+              </div>
             </div>
 
             {/* Errores generales */}

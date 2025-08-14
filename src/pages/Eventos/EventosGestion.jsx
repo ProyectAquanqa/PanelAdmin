@@ -25,6 +25,8 @@ const EventosGestion = () => {
     actualizarEvento,
     eliminarEvento,
     alternarPublicacion,
+    fijarEvento,
+    desfijarEvento,
   } = useEventos();
 
   const { categorias, loadCategorias } = useCategorias();
@@ -139,6 +141,15 @@ const EventosGestion = () => {
     setViewingEvento(evento);
     setShowDetailModal(true);
   }, []);
+
+  // Manejar pin/unpin de eventos
+  const handlePin = useCallback(async (evento) => {
+    await fijarEvento(evento.id);
+  }, [fijarEvento]);
+
+  const handleUnpin = useCallback(async (evento) => {
+    await desfijarEvento(evento.id);
+  }, [desfijarEvento]);
 
   const handleCloseDetailModal = useCallback(() => {
     setShowDetailModal(false);
@@ -265,6 +276,8 @@ const EventosGestion = () => {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onViewDetails={handleViewDetails}
+          onPin={handlePin}
+          onUnpin={handleUnpin}
           onCreateFirst={handleCreateNew}
           onRetry={() => loadEventos()}
         />

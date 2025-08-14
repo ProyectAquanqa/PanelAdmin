@@ -99,6 +99,12 @@ const EventoDetailModal = ({
                   </span>
                 )}
                 
+                {evento.is_pinned && (
+                  <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-[13px] font-medium bg-yellow-100/50 text-yellow-700 border border-yellow-200/50">
+                    FIJADO
+                  </span>
+                )}
+                
                 <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-[13px] font-medium border whitespace-nowrap ${
                   statusInfo.status === 'Publicado' ? 'bg-slate-50 text-slate-600 border-slate-200' :
                   'bg-gray-100 text-gray-600 border-gray-200'
@@ -174,6 +180,28 @@ const EventoDetailModal = ({
                   </div>
                 </div>
               )}
+
+              {/* Estadísticas de Interacción */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                  <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Estadísticas de Interacción</h5>
+                </div>
+                <div className="p-3 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] text-gray-500 font-medium">Total de Likes:</span>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-200 text-[13px] font-medium">
+                      {evento.likes_count || 0} likes
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] text-gray-500 font-medium">Total de Comentarios:</span>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-[13px] font-medium">
+                      {evento.comentarios_count || 0} comentarios
+                    </span>
+                  </div>
+
+                </div>
+              </div>
 
               {/* Datos Adicionales - Si existen */}
               {evento.datos && Object.keys(evento.datos).length > 0 && (

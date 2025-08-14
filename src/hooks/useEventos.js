@@ -11,7 +11,9 @@ import {
   createEvento, 
   updateEvento,
   patchEvento,
-  deleteEvento 
+  deleteEvento,
+  pinEvento,
+  unpinEvento 
 } from '../services/eventosService';
 
 export const useEventos = () => {
@@ -207,6 +209,74 @@ export const useEventos = () => {
 
 
 
+  /**
+   * Fija un evento al principio de la lista
+   * @param {number} id - ID del evento
+   * @returns {Promise<boolean>} True si se fijó correctamente
+   */
+  const fijarEvento = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await pinEvento(id);
+      
+      if (response.status === 'success') {
+        // Actualizar el evento en la lista local
+        setEventos(prev => prev.map(evento => 
+          evento.id === id 
+            ? { ...evento, is_pinned: true }
+            : evento
+        ));
+        toast.success('Evento fijado exitosamente');
+        return true;
+      } else {
+        throw new Error(response.error?.message || 'Error al fijar evento');
+      }
+    } catch (err) {
+      console.error('Error pinning evento:', err);
+      setError(err.message);
+      toast.error(err.message || 'Error al fijar evento');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Desfija un evento
+   * @param {number} id - ID del evento
+   * @returns {Promise<boolean>} True si se desfijó correctamente
+   */
+  const desfijarEvento = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await unpinEvento(id);
+      
+      if (response.status === 'success') {
+        // Actualizar el evento en la lista local
+        setEventos(prev => prev.map(evento => 
+          evento.id === id 
+            ? { ...evento, is_pinned: false }
+            : evento
+        ));
+        toast.success('Evento desfijado exitosamente');
+        return true;
+      } else {
+        throw new Error(response.error?.message || 'Error al desfijar evento');
+      }
+    } catch (err) {
+      console.error('Error unpinning evento:', err);
+      setError(err.message);
+      toast.error(err.message || 'Error al desfijar evento');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     eventos,
     loading,
@@ -219,6 +289,8 @@ export const useEventos = () => {
     actualizarEventoParcial,
     eliminarEvento,
     alternarPublicacion,
+    fijarEvento,
+    desfijarEvento,
   };
 };
 

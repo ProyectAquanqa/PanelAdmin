@@ -310,6 +310,48 @@ export const deleteCategoria = async (id) => {
   }
 };
 
+/**
+ * Fija un evento al principio de la lista
+ * @param {number} id - ID del evento
+ * @returns {Promise<Object>} Respuesta de la API
+ */
+export const pinEvento = async (id) => {
+  try {
+    console.log('Fijando evento:', id);
+    const response = await apiCall(`${API_BASE}/web/eventos/${id}/pin_evento/`, {
+      method: 'POST',
+    });
+    
+    const data = await response.json();
+    console.log('Evento fijado exitosamente');
+    return data;
+  } catch (error) {
+    console.error('Error pinning evento:', error);
+    throw error;
+  }
+};
+
+/**
+ * Desfija un evento
+ * @param {number} id - ID del evento
+ * @returns {Promise<Object>} Respuesta de la API
+ */
+export const unpinEvento = async (id) => {
+  try {
+    console.log('Desfijando evento:', id);
+    const response = await apiCall(`${API_BASE}/web/eventos/${id}/unpin_evento/`, {
+      method: 'POST',
+    });
+    
+    const data = await response.json();
+    console.log('Evento desfijado exitosamente');
+    return data;
+  } catch (error) {
+    console.error('Error unpinning evento:', error);
+    throw error;
+  }
+};
+
 export default {
   getEventos,
   getEvento,
@@ -321,4 +363,6 @@ export default {
   createCategoria,
   updateCategoria,
   deleteCategoria,
+  pinEvento,
+  unpinEvento,
 };
