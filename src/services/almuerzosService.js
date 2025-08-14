@@ -3,7 +3,7 @@
  * Basado en los endpoints de AquanQ AlmuerzoViewSet
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://172.16.11.29:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token
@@ -110,11 +110,8 @@ export const getAlmuerzos = async (params = {}) => {
     const queryString = queryParams.toString();
     const url = `${API_BASE}/web/almuerzos/${queryString ? `?${queryString}` : ''}`;
     
-    console.log('🌐 Request:', url);
-    
     const response = await apiCall(url);
     const data = await response.json();
-    console.log('🌐 Response status:', response.status, 'Data type:', typeof data);
     
     return data;
   } catch (error) {
@@ -190,18 +187,12 @@ export const updateAlmuerzo = async (id, almuerzoData) => {
  */
 export const patchAlmuerzo = async (id, almuerzoData) => {
   try {
-    console.log('🔧 PATCH Almuerzo - ID:', id, 'Data:', almuerzoData);
-    
     const response = await apiCall(`${API_BASE}/web/almuerzos/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(almuerzoData),
     });
     
-    console.log('🔧 PATCH Response status:', response.status);
-    
     const data = await response.json();
-    console.log('🔧 PATCH Response data:', data);
-    
     return data;
   } catch (error) {
     console.error('❌ Error patching almuerzo:', error);

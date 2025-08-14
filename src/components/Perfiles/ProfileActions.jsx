@@ -15,7 +15,6 @@ const ProfileActions = ({
   onGroupChange,
   groups = [],
   onCreateNew,
-  onExport,
   onImport,
   totalItems = 0,
   loading = false
@@ -24,12 +23,11 @@ const ProfileActions = ({
   const filtersConfig = useMemo(() => {
     const handlers = {
       onCreateNew,
-      onExport,
       onImport
     };
 
     return prepareProfileFiltersConfig(groups, handlers);
-  }, [groups, onCreateNew, onExport, onImport]);
+  }, [groups, onCreateNew, onImport]);
 
   // Estado actual de filtros  
   const activeFilters = {
@@ -80,7 +78,6 @@ ProfileActions.propTypes = {
   onGroupChange: PropTypes.func.isRequired,
   groups: PropTypes.arrayOf(PropTypes.object),
   onCreateNew: PropTypes.func.isRequired,
-  onExport: PropTypes.func.isRequired,
   onImport: PropTypes.func.isRequired,
   totalItems: PropTypes.number,
   loading: PropTypes.bool

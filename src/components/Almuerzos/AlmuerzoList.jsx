@@ -19,8 +19,7 @@ const AlmuerzoList = ({
   totalItems = 0,
   onEdit,
   onDelete,
-  onToggleStatus,
-  onCreateFirst,
+  onViewDetails,
   onRetry,
   className = ''
 }) => {
@@ -57,30 +56,28 @@ const AlmuerzoList = ({
 
   // Componente de estado vacío
   const EmptyState = () => (
-    <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-      <div className="text-center py-12 px-6">
-        <div className="mx-auto h-12 w-12 text-gray-400">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-full h-full">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
-                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="p-16 text-center">
+        {/* Ilustración moderna */}
+        <div className="w-20 h-20 mx-auto mb-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center shadow-sm">
+          <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
         </div>
-        <h3 className="mt-4 text-lg font-medium text-gray-900">
-          No hay almuerzos
+        
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">
+          No hay almuerzos registrados
         </h3>
-        <p className="mt-2 text-sm text-gray-500 max-w-sm mx-auto">
+        
+        <p className="text-gray-500 mb-8 max-w-sm mx-auto text-sm leading-relaxed">
           Comienza creando tu primer almuerzo del menú. Podrás gestionar toda la información del menú diario desde aquí.
         </p>
-        <div className="mt-6">
-          <button
-            onClick={onCreateFirst}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-[#2D728F] hover:bg-[#235A6F] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2D728F] transition-colors"
-          >
-            <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Crear primer almuerzo
-          </button>
+        
+        {/* Elementos decorativos sutiles */}
+        <div className="mt-12 flex justify-center space-x-2">
+          <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
+          <div className="w-2 h-2 bg-slate-300 rounded-full"></div>
+          <div className="w-2 h-2 bg-slate-200 rounded-full"></div>
         </div>
       </div>
     </div>
@@ -147,7 +144,7 @@ const AlmuerzoList = ({
             onEdit={onEdit}
             onDelete={onDelete}
             onToggleExpansion={handleToggleExpansion}
-            onToggleStatus={onToggleStatus}
+            onViewDetails={onViewDetails}
           />
           
           {/* Indicador de loading durante recargas */}
@@ -162,30 +159,7 @@ const AlmuerzoList = ({
         </div>
       )}
 
-      {/* Información adicional en el footer */}
-      {almuerzos.length > 0 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-gray-500 px-2">
-          <div>
-            Mostrando {almuerzos.length} de {totalItems} almuerzos
-          </div>
-          
-          {/* Leyenda de estados */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span>Activo</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              <span>Inactivo</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-              <span>Feriado</span>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
@@ -208,8 +182,7 @@ AlmuerzoList.propTypes = {
   totalItems: PropTypes.number,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
-  onToggleStatus: PropTypes.func,
-  onCreateFirst: PropTypes.func,
+  onViewDetails: PropTypes.func,
   onRetry: PropTypes.func,
   className: PropTypes.string,
 };

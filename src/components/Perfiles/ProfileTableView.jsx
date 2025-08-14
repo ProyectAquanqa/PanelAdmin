@@ -38,43 +38,35 @@ const ProfileTableView = ({
     const canDelete = (profile.users_count || 0) === 0;
     
     return (
-      <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200 mx-auto max-w-lg">
-        {/* Header centrado */}
-        <div className="text-center mb-4">
-          {/* Avatar centrado */}
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2">
-            <span className="text-[12px] text-gray-600">
-              {profile.name?.substring(0, 2).toUpperCase() || 'PR'}
-            </span>
-          </div>
-          
-          {/* Nombre y ID */}
-          <h4 className="text-[14px] text-gray-900 mb-1">
+      <div key={item.id} className="bg-white border-l-4 border-l-blue-500 p-4 space-y-3 hover:bg-gray-50 transition-colors">
+        {/* Nombre del perfil */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-900 mb-1">
             {profile.name}
           </h4>
-          <span className="text-[11px] text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
+          <span className="text-xs text-gray-500 font-mono">
             #{profile.id}
           </span>
         </div>
 
-        {/* Stats centrados */}
-        <div className="grid grid-cols-2 gap-4 mb-4 text-center">
-          <div>
-            <div className="text-[16px] text-gray-900">{profile.users_count || 0}</div>
-            <div className="text-[10px] text-gray-500 uppercase">Usuarios</div>
+        {/* Stats */}
+        <div className="flex gap-4 text-sm">
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500">Usuarios:</span>
+            <span className="font-medium text-gray-900">{profile.users_count || 0}</span>
           </div>
-          <div>
-            <div className="text-[16px] text-gray-900">{permissionStats.total}</div>
-            <div className="text-[10px] text-gray-500 uppercase">Permisos</div>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500">Permisos:</span>
+            <span className="font-medium text-gray-900">{permissionStats.total}</span>
           </div>
         </div>
 
-        {/* Acciones centradas */}
-        <div className="flex items-center justify-center gap-2">
+        {/* Acciones */}
+        <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-100">
           <button
             onClick={() => onView?.(item)}
-            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors rounded-lg"
-            title="Ver"
+            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-lg"
+            title="Ver detalles"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -83,7 +75,7 @@ const ProfileTableView = ({
           </button>
           <button
             onClick={() => onEdit?.(item)}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-lg"
+            className="p-2 text-gray-400 hover:text-[#2D728F] transition-colors rounded-lg hover:bg-gray-100"
             title="Editar"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +90,7 @@ const ProfileTableView = ({
                 ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' 
                 : 'text-gray-300 cursor-not-allowed opacity-50'
             }`}
-            title={canDelete ? "Eliminar" : "No se puede eliminar"}
+            title={canDelete ? "Eliminar" : "No se puede eliminar (tiene usuarios)"}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

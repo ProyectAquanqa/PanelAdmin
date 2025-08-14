@@ -8,6 +8,19 @@ import PropTypes from 'prop-types';
 import SortIcon from '../Common/DataView/SortIcon';
 
 /**
+ * Función helper para formatear fechas sin problemas de zona horaria
+ */
+const formatDateSafe = (dateString, options = {}) => {
+  if (!dateString) return '';
+  
+  // Crear fecha directamente desde el string YYYY-MM-DD sin conversión de zona horaria
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day); // month - 1 porque los meses en JS van de 0-11
+  
+  return date.toLocaleDateString('es-ES', options);
+};
+
+/**
  * Componente AlmuerzoTableView - Vista de tabla para almuerzos
  */
 const AlmuerzoTableView = ({
@@ -19,7 +32,7 @@ const AlmuerzoTableView = ({
   onEdit,
   onDelete,
   onToggleExpansion,
-  onToggleStatus,
+  onViewDetails,
   className = ''
 }) => {
   /**
@@ -31,7 +44,7 @@ const AlmuerzoTableView = ({
     const shouldTruncatePlatoFondo = item.plato_fondo && item.plato_fondo.length > 50;
     
     return (
-      <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3 hover:shadow-sm transition-shadow">
+      <div key={item.id} className="bg-white border-l-4 border-l-blue-500 p-4 space-y-3 hover:bg-gray-50 transition-colors">
         {/* Fecha y día */}
         <div className="flex items-center justify-between">
           <div>
@@ -39,7 +52,7 @@ const AlmuerzoTableView = ({
               {item.nombre_dia}
             </h4>
             <p className="text-xs text-gray-600">
-              {new Date(item.fecha).toLocaleDateString('es-ES', {
+              {formatDateSafe(item.fecha, {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
@@ -51,11 +64,11 @@ const AlmuerzoTableView = ({
           <div className="flex flex-col items-end gap-1">
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
               item.active 
-                ? 'bg-green-50 text-green-700 border-green-200' 
+                ? 'bg-slate-50 text-slate-600 border-slate-200' 
                 : 'bg-red-50 text-red-700 border-red-200'
             }`}>
               <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                item.active ? 'bg-green-500' : 'bg-red-500'
+                item.active ? 'bg-slate-500' : 'bg-red-500'
               }`}></div>
               {item.active ? 'Activo' : 'Inactivo'}
             </span>
@@ -152,19 +165,13 @@ const AlmuerzoTableView = ({
           
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onToggleStatus?.(item)}
-              className={`p-2 transition-colors rounded-lg ${
-                item.active
-                  ? 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                  : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
-              }`}
-              title={item.active ? 'Desactivar' : 'Activar'}
+              onClick={() => onViewDetails?.(item)}
+              className="p-2 text-gray-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-gray-100"
+              title="Ver detalles"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d={item.active 
-                        ? "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        : "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
             </button>
             
@@ -210,7 +217,7 @@ const AlmuerzoTableView = ({
               {item.nombre_dia}
             </p>
             <p className="text-[11px] text-gray-500 mt-1">
-              {new Date(item.fecha).toLocaleDateString('es-ES', {
+              {formatDateSafe(item.fecha, {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
@@ -284,9 +291,7 @@ const AlmuerzoTableView = ({
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden xl:table-cell">
           <div className="max-w-[120px]">
             {item.dieta ? (
-              <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-[11px]">
-                {item.dieta}
-              </span>
+              <span className="text-[12px] text-gray-600">{item.dieta}</span>
             ) : (
               <span className="text-[12px] text-gray-400 italic">-</span>
             )}
@@ -298,11 +303,11 @@ const AlmuerzoTableView = ({
           <div className="flex flex-col items-center gap-1">
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium border whitespace-nowrap ${
               item.active 
-                ? 'bg-green-50 text-green-700 border-green-200' 
+                ? 'bg-slate-50 text-slate-600 border-slate-200' 
                 : 'bg-red-50 text-red-700 border-red-200'
             }`}>
               <div className={`w-1.5 h-1.5 rounded-full mr-1 ${
-                item.active ? 'bg-green-500' : 'bg-red-500'
+                item.active ? 'bg-slate-500' : 'bg-red-500'
               }`}></div>
               {item.active ? 'Activo' : 'Inactivo'}
             </span>
@@ -333,19 +338,13 @@ const AlmuerzoTableView = ({
             )}
             
             <button
-              onClick={() => onToggleStatus?.(item)}
-              className={`p-2 transition-colors rounded-lg ${
-                item.active
-                  ? 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                  : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
-              }`}
-              title={item.active ? 'Desactivar' : 'Activar'}
+              onClick={() => onViewDetails?.(item)}
+              className="p-2 text-gray-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-gray-100"
+              title="Ver detalles"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d={item.active 
-                        ? "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        : "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
             </button>
 
@@ -375,16 +374,18 @@ const AlmuerzoTableView = ({
   };
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200 ${className}`}>
       {/* Vista móvil - Cards */}
-      <div className="block md:hidden space-y-3">
-        {data.map(renderMobileCard)}
+      <div className="block md:hidden">
+        <div className="divide-y divide-gray-200">
+          {data.map(renderMobileCard)}
+        </div>
       </div>
 
       {/* Vista desktop - Tabla */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full min-w-full divide-y divide-gray-300 table-auto">
-          <thead className="bg-[#F2F3F5] border-b border-slate-300/60">
+        <table className="min-w-full divide-y divide-gray-200 table-auto">
+          <thead className="bg-gray-50">
             <tr>
               <th 
                 className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[120px] w-[140px] cursor-pointer hover:bg-gray-200/50 transition-colors"
@@ -433,7 +434,7 @@ AlmuerzoTableView.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onToggleExpansion: PropTypes.func.isRequired,
-  onToggleStatus: PropTypes.func,
+  onViewDetails: PropTypes.func,
   className: PropTypes.string,
 };
 

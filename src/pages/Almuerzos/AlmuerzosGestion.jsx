@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAlmuerzos } from "../../hooks/useAlmuerzos";
 import { useSearch } from "../../hooks/useSearch";
 import {
@@ -6,8 +6,10 @@ import {
   LoadingStates,
 } from "../../components/Almuerzos";
 import AlmuerzoModal from "../../components/Almuerzos/AlmuerzoModal";
+import AlmuerzoDetailModal from "../../components/Almuerzos/AlmuerzoDetailModal";
 import AlmuerzoFilters from "../../components/Almuerzos/AlmuerzoFilters";
 import { ConfirmModal } from "../../components/Common/Modal";
+import { getDateRangeFromOption } from "../../utils/dateRangeHelpers.js";
 import toast from "react-hot-toast";
 
 /**
@@ -22,7 +24,6 @@ const AlmuerzosGestion = () => {
     crearAlmuerzo,
     actualizarAlmuerzo,
     eliminarAlmuerzo,
-    alternarEstado,
   } = useAlmuerzos();
 
   // Estados locales
@@ -30,6 +31,10 @@ const AlmuerzosGestion = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalErrors, setModalErrors] = useState({});
+  
+  // Estados para modal de detalles
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedAlmuerzo, setSelectedAlmuerzo] = useState(null);
 
   // Estados del modal de confirmación
   const [confirmModal, setConfirmModal] = useState({
@@ -39,114 +44,40 @@ const AlmuerzosGestion = () => {
     onConfirm: null,
   });
 
-  // Ref para evitar múltiples llamadas de test
-  const hasTestedRef = useRef(false);
 
-  // Usar hook de búsqueda y filtros
+
+  // Usar hook de búsqueda - COPIADO EXACTAMENTE DEL CHATBOT
   const {
     filteredData: filteredAlmuerzos,
     searchTerm,
+    selectedStatus,
+    selectedEmbedding: selectedDiet,
     updateSearchTerm,
-    filters: searchFilters,
-    updateFilter,
+    updateStatusFilter,
+    updateEmbeddingFilter: updateDietFilter,
   } = useSearch(almuerzos, {
     searchFields: ["entrada", "plato_fondo", "refresco", "dieta"],
     customFilters: {
       selectedStatus: (item, value) => {
-        console.log('🔍 Filtro Status - Item:', item, 'Value:', value);
         if (value === '' || value === null || value === undefined) return true;
         return item.active === (value === 'true');
       },
-      selectedHoliday: (item, value) => {
-        console.log('🔍 Filtro Holiday - Item:', item, 'Value:', value);
+      selectedEmbedding: (item, value) => {
         if (value === '' || value === null || value === undefined) return true;
-        return item.es_feriado === (value === 'true');
-      },
-      selectedDiet: (item, value) => {
-        console.log('🔍 Filtro Diet - Item:', item, 'Value:', value);
-        if (value === '' || value === null || value === undefined) return true;
-        if (value === 'with_diet') return Boolean(item.dieta && item.dieta.trim());
-        if (value === 'without_diet') return !Boolean(item.dieta && item.dieta.trim());
+        if (value === 'with') return Boolean(item.dieta && item.dieta.trim());
+        if (value === 'without') return !Boolean(item.dieta && item.dieta.trim());
         return true;
       }
     }
   });
 
+  // Estado para filtro de fecha predefinido (como en conversaciones)
+  const [selectedDateRange, setSelectedDateRange] = useState('');
+
   // Cargar datos iniciales
   useEffect(() => {
-    console.log('🚀 AlmuerzosGestion: Cargando datos iniciales');
     loadAlmuerzos();
   }, [loadAlmuerzos]);
-
-  // Debug de datos básico
-  useEffect(() => {
-    if (almuerzos?.length > 0) {
-      console.log('📋 Almuerzos cargados:', almuerzos.length, 'Filtrados:', filteredAlmuerzos.length);
-    }
-  }, [almuerzos, filteredAlmuerzos]);
-
-  // Test directo de la API - TEMPORAL para debug
-  useEffect(() => {
-    const testAlmuerzosAPI = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        
-        // Test GET almuerzos
-        console.log('🧪 Testing GET /api/web/almuerzos/');
-        const getResponse = await fetch('http://localhost:8000/api/web/almuerzos/', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('🧪 GET Status:', getResponse.status);
-        if (getResponse.ok) {
-          const getData = await getResponse.json();
-          console.log('🧪 GET Data:', getData);
-          console.log('🧪 GET Data Type:', typeof getData);
-          console.log('🧪 GET Is Array:', Array.isArray(getData));
-          console.log('🧪 GET Has results:', Boolean(getData?.results));
-          console.log('🧪 GET Results length:', getData?.results?.length || 0);
-        } else {
-          console.log('🧪 GET Error response:', await getResponse.text());
-        }
-        
-        // Test de endpoint disponibles
-        console.log('🧪 Testing API endpoints availability...');
-        const endpoints = [
-          'http://localhost:8000/api/web/almuerzos/',
-          'http://localhost:8000/api/admin/almuerzos/',
-          'http://localhost:8000/api/mobile/almuerzos/'
-        ];
-        
-        for (const endpoint of endpoints) {
-          try {
-            const testResponse = await fetch(endpoint, {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            console.log(`🧪 ${endpoint} - Status: ${testResponse.status}`);
-          } catch (err) {
-            console.log(`🧪 ${endpoint} - Error: ${err.message}`);
-          }
-        }
-        
-      } catch (error) {
-        console.log('🧪 TEST ERROR:', error);
-      }
-    };
-
-    // Solo hacer test una vez cuando el componente se monta
-    if (!hasTestedRef.current) {
-      hasTestedRef.current = true;
-      testAlmuerzosAPI();
-    }
-  }, []);
 
   // Handlers de acciones
   const handleCreateNew = useCallback(() => {
@@ -179,15 +110,15 @@ const AlmuerzosGestion = () => {
     }
   };
 
-  const handleToggleStatus = useCallback(async (item) => {
-    try {
-      console.log('🎯 handleToggleStatus - Item:', item);
-      console.log('🎯 handleToggleStatus - ID:', item.id, 'Current active:', item.active, 'New active:', !item.active);
-      await alternarEstado(item.id, !item.active);
-    } catch (error) {
-      console.error('❌ Error al cambiar estado del almuerzo:', error);
-    }
-  }, [alternarEstado]);
+  const handleViewDetails = useCallback((item) => {
+    setSelectedAlmuerzo(item);
+    setShowDetailModal(true);
+  }, []);
+
+  const handleCloseDetailModal = useCallback(() => {
+    setShowDetailModal(false);
+    setSelectedAlmuerzo(null);
+  }, []);
 
   // Manejar envío del formulario
   const handleSubmit = useCallback(
@@ -244,21 +175,39 @@ const AlmuerzosGestion = () => {
     setModalLoading(false);
   }, []);
 
-  // Manejadores de filtros
+  // Manejadores de filtros - COPIADO EXACTAMENTE DEL CHATBOT
   const handleStatusChange = useCallback((value) => {
-    console.log('🎛️ handleStatusChange - Value:', value);
-    updateFilter('selectedStatus', value);
-  }, [updateFilter]);
+    updateStatusFilter(value);
+  }, [updateStatusFilter]);
 
-  const handleHolidayChange = useCallback((value) => {
-    console.log('🎛️ handleHolidayChange - Value:', value);
-    updateFilter('selectedHoliday', value);
-  }, [updateFilter]);
+  const handleDateRangeChange = useCallback((value) => {
+    setSelectedDateRange(value);
+  }, []);
 
   const handleDietChange = useCallback((value) => {
-    console.log('🎛️ handleDietChange - Value:', value);
-    updateFilter('selectedDiet', value);
-  }, [updateFilter]);
+    updateDietFilter(value);
+  }, [updateDietFilter]);
+
+  // Derivados con useMemo (deben declararse antes de cualquier return condicional)
+  const almuerzosFiltradosPorFecha = useMemo(() => {
+    if (!selectedDateRange) return filteredAlmuerzos;
+    
+    const dateRange = getDateRangeFromOption(selectedDateRange);
+    const from = dateRange.from ? new Date(dateRange.from) : null;
+    const to = dateRange.to ? new Date(dateRange.to) : null;
+    
+    if (!from && !to) return filteredAlmuerzos;
+    
+    return filteredAlmuerzos.filter(item => {
+      const d = new Date(item.fecha);
+      if (Number.isNaN(d.getTime())) return true;
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    });
+  }, [filteredAlmuerzos, selectedDateRange]);
+
+  const totalFiltradosPorFecha = useMemo(() => almuerzosFiltradosPorFecha.length, [almuerzosFiltradosPorFecha]);
 
   // Estado de carga general
   if (loading && !almuerzos?.length) {
@@ -277,25 +226,24 @@ const AlmuerzosGestion = () => {
         <AlmuerzoFilters
           searchTerm={searchTerm}
           onSearchChange={updateSearchTerm}
-          selectedStatus={searchFilters.selectedStatus || ''}
+          selectedStatus={selectedStatus}
           onStatusChange={handleStatusChange}
-          selectedHoliday={searchFilters.selectedHoliday || ''}
-          onHolidayChange={handleHolidayChange}
-          selectedDiet={searchFilters.selectedDiet || ''}
+          selectedDateRange={selectedDateRange}
+          onDateRangeChange={handleDateRangeChange}
+          selectedDiet={selectedDiet}
           onDietChange={handleDietChange}
-          totalItems={filteredAlmuerzos.length}
+          totalItems={totalFiltradosPorFecha}
           onCreateNew={handleCreateNew}
         />
 
         <AlmuerzoList
-          almuerzos={filteredAlmuerzos}
+          almuerzos={almuerzosFiltradosPorFecha}
           loading={loading}
           error={null}
-          totalItems={filteredAlmuerzos.length}
+          totalItems={totalFiltradosPorFecha}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          onToggleStatus={handleToggleStatus}
-          onCreateFirst={handleCreateNew}
+          onViewDetails={handleViewDetails}
           onRetry={() => loadAlmuerzos()}
         />
       </div>
@@ -319,6 +267,14 @@ const AlmuerzosGestion = () => {
         message={confirmModal.message}
         confirmText="Eliminar"
         confirmButtonClass="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+      />
+
+      {/* Modal de detalles */}
+      <AlmuerzoDetailModal
+        show={showDetailModal}
+        onClose={handleCloseDetailModal}
+        almuerzo={selectedAlmuerzo}
+        loading={false}
       />
     </div>
   );

@@ -37,7 +37,6 @@ export const useAlmuerzos = () => {
       setError(null);
       
       const response = await getAlmuerzos(params);
-      console.log('📊 API Response:', response, 'Type:', typeof response);
       
       let almuerzosData = [];
       
@@ -49,11 +48,8 @@ export const useAlmuerzos = () => {
       } else if (Array.isArray(response)) {
         almuerzosData = response;
       } else {
-        console.warn('❌ Estructura de respuesta no reconocida');
         almuerzosData = [];
       }
-      
-      console.log('🍽️ Almuerzos cargados:', almuerzosData.length);
       
       setAlmuerzos(almuerzosData);
       
@@ -183,24 +179,20 @@ export const useAlmuerzos = () => {
   // Alternar estado activo
   const alternarEstado = useCallback(async (id, active) => {
     try {
-      console.log('🔄 Alternando estado - ID:', id, 'Active:', active);
       setLoading(true);
       setError(null);
 
       // Usar PATCH en lugar de PUT para actualización parcial
       const response = await patchAlmuerzo(id, { active });
-      console.log('🔄 Respuesta del servidor:', response);
       
       const updatedAlmuerzo = response?.data || response;
       
       if (updatedAlmuerzo) {
-        setAlmuerzos(prevAlmuerzos => {
-          const newAlmuerzos = prevAlmuerzos.map(almuerzo =>
+        setAlmuerzos(prevAlmuerzos =>
+          prevAlmuerzos.map(almuerzo =>
             almuerzo.id === id ? { ...almuerzo, active: active } : almuerzo
-          );
-          console.log('🔄 Nuevos almuerzos después de toggle:', newAlmuerzos);
-          return newAlmuerzos;
-        });
+          )
+        );
         toast.success(`Almuerzo ${active ? 'activado' : 'desactivado'} exitosamente`);
         return updatedAlmuerzo;
       }

@@ -14,7 +14,6 @@ const UserActions = ({
   selectedGroup = '',
   onGroupChange,
   onCreateNew,
-  onExport,
   onImport,
   groups = [],
   totalItems = 0,
@@ -51,12 +50,11 @@ const UserActions = ({
   const filtersConfig = useMemo(() => {
     const handlers = {
       onCreateNew: userPermissions.canCreate ? onCreateNew : null,
-      onExport: userPermissions.canExport ? onExport : null,
       onImport: userPermissions.canImport ? onImport : null
     };
 
     return prepareUserFiltersConfig(groups, handlers);
-  }, [groups, userPermissions, onCreateNew, onExport, onImport]);
+  }, [groups, userPermissions, onCreateNew, onImport]);
 
   // Estado actual de filtros  
   const activeFilters = {
@@ -105,7 +103,6 @@ UserActions.propTypes = {
   selectedGroup: PropTypes.string,
   onGroupChange: PropTypes.func.isRequired,
   onCreateNew: PropTypes.func,
-  onExport: PropTypes.func,
   onImport: PropTypes.func,
   groups: PropTypes.array,
   totalItems: PropTypes.number,

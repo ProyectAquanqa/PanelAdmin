@@ -9,8 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useDataView } from '../../hooks/useDataView';
 import { searchInFields } from '../../utils/searchUtils';
 import ProfileActions from '../../components/Perfiles/ProfileActions';
-import { DataViewSwitcher } from '../../components/Common';
 import ProfileFormNew from '../../components/Perfiles/ProfileFormNew';
+import { ProfileList, LoadingStates } from '../../components/Perfiles';
 import useProfiles from '../../hooks/useProfiles';
 
 /**
@@ -26,8 +26,7 @@ const ProfileManagementNew = () => {
     fetchProfiles,
     createProfile,
     updateProfile,
-    deleteProfile,
-    exportProfiles
+    deleteProfile
   } = useProfiles();
 
   // Estados de vista (reemplaza lógica de modal)
@@ -115,13 +114,7 @@ const ProfileManagementNew = () => {
     }
   }, [deleteProfile, fetchProfiles]);
 
-  const handleExport = useCallback(async () => {
-    try {
-      await exportProfiles();
-    } catch (error) {
-      console.error('Error exportando perfiles:', error);
-    }
-  }, [exportProfiles]);
+
 
   // === HANDLERS PARA VISTA DE FORMULARIO ===
 
@@ -169,6 +162,17 @@ const ProfileManagementNew = () => {
     );
   }
 
+  // Estado de carga general (igual que KnowledgeBase)
+  if (loading.profiles && !profiles?.length) {
+    return (
+      <div className="w-full bg-slate-50">
+        <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <LoadingStates.ProfileListLoading />
+        </div>
+      </div>
+    );
+  }
+
   // Vista de Listado (por defecto)
   return (
     <div className="w-full bg-slate-50">
@@ -184,19 +188,22 @@ const ProfileManagementNew = () => {
           onGroupChange={setSelectedGroup}
           groups={profiles} // Pasar todos los grupos para las opciones del filtro
           onCreateNew={handleCreateNew}
-          onExport={handleExport}
-          onImport={() => console.log('Importar perfiles (por implementar)')} // TODO: Implementar import
+          onImport={() => {}} // TODO: Implementar import
           totalItems={profilesForTable.length}
           loading={loading.profiles}
         />
 
-        {/* Tabla de perfiles usando DataViewSwitcher estándar */}
-        <DataViewSwitcher
-          data={profilesForTable}
-          onView={handleView}
+        {/* Lista de perfiles usando ProfileList (igual que KnowledgeBase) */}
+        <ProfileList
+          profiles={profilesForTable}
+          loading={loading.profiles}
+          error={loading.error}
+          totalItems={profilesForTable.length}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          itemType="profile"
+          onView={handleView}
+          onCreateFirst={handleCreateNew}
+          onRetry={fetchProfiles}
         />
       </div>
     </div>

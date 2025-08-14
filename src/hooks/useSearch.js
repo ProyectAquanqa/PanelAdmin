@@ -24,7 +24,9 @@ export const useSearch = (data = [], options = {}) => {
     debounceDelay = searchConfig.debounceDelay,
     minSearchLength = searchConfig.minSearchLength,
     caseSensitive = searchConfig.caseSensitive,
-    enableHighlight = searchConfig.highlightMatches
+    enableHighlight = searchConfig.highlightMatches,
+    // Permitir filtros personalizados por módulo (e.g., dieta en Almuerzos)
+    customFilters = {}
   } = options;
 
   // Estado de búsqueda
@@ -43,6 +45,15 @@ export const useSearch = (data = [], options = {}) => {
   // Estados adicionales para otros filtros
   const [filters, setFilters] = useState({});
 
+  // Exponer un estado de filtros para uso en filtros personalizados
+  const filtersState = useMemo(() => ({
+    selectedCategory,
+    selectedEmbedding,
+    selectedStatus,
+    dateRange,
+    ...filters
+  }), [selectedCategory, selectedEmbedding, selectedStatus, dateRange, filters]);
+
   // Debounce del término de búsqueda
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -57,18 +68,60 @@ export const useSearch = (data = [], options = {}) => {
     if (!data || !Array.isArray(data)) return [];
 
     // Construir objeto de filtros
+    const hasCustomEmbedding = Boolean(customFilters?.selectedEmbedding);
+    const hasCustomStatus = Boolean(customFilters?.selectedStatus);
+
     const filters = {
       searchTerm: debouncedSearchTerm.length >= minSearchLength ? debouncedSearchTerm : '',
       searchFields,
       categoryId: selectedCategory,
-      embeddingFilter: selectedEmbedding,
-      isActive: selectedStatus !== '' ? selectedStatus === 'active' : undefined,
+      // Si hay filtro personalizado para embedding (e.g., dieta), no aplicar el embebido por defecto
+      embeddingFilter: hasCustomEmbedding ? '' : selectedEmbedding,
+      // Si hay filtro personalizado para estado, no aplicar el estado por defecto
+      isActive: hasCustomStatus ? undefined : (selectedStatus !== '' ? selectedStatus === 'active' : undefined),
       dateField: 'created_at',
       startDate: dateRange.start,
       endDate: dateRange.end
     };
 
-    return applyMultipleFilters(data, filters);
+    // Aplicar filtros base
+    let result = applyMultipleFilters(data, filters);
+
+    // Aplicar filtros personalizados si fueron provistos
+    if (customFilters && typeof customFilters === 'object') {
+      Object.entries(customFilters).forEach(([key, predicate]) => {
+        if (typeof predicate !== 'function') return;
+
+        // Mapear el valor actual del filtro según la clave esperada
+        let value;
+        switch (key) {
+          case 'selectedStatus':
+            value = selectedStatus;
+            break;
+          case 'selectedEmbedding':
+            value = selectedEmbedding;
+            break;
+          case 'selectedCategory':
+            value = selectedCategory;
+            break;
+          default:
+            value = filtersState[key] ?? undefined;
+        }
+
+        // Aplicar solo si el valor está definido (permite vacíos como '')
+        if (value !== undefined) {
+          result = result.filter(item => {
+            try {
+              return predicate(item, value);
+            } catch (_) {
+              return true;
+            }
+          });
+        }
+      });
+    }
+
+    return result;
   }, [
     data, 
     debouncedSearchTerm, 
@@ -77,7 +130,8 @@ export const useSearch = (data = [], options = {}) => {
     selectedCategory, 
     selectedEmbedding, 
     selectedStatus, 
-    dateRange
+    dateRange,
+    customFilters
   ]);
 
   // Estadísticas de búsqueda (memoizadas)

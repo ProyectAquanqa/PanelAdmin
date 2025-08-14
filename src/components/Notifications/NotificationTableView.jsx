@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import notificationsService from '../../services/notificationsService';
 import { normalizeText } from '../../utils/searchUtils';
@@ -19,29 +19,12 @@ const NotificationTableView = ({
   onTogglePublish,
   onTogglePin,
 }) => {
-  // Estado para controlar expansión de mensajes largos
-  const [expandedMessages, setExpandedMessages] = useState(new Set());
+
   // Funciones de validación del servicio (solo lectura)
   const isAutomatic = (item) => notificationsService.isAutomatic(item);
   const isRead = (item) => notificationsService.isRead(item);
 
-  // Función para manejar expansión de mensajes
-  const toggleMessageExpansion = (itemId) => {
-    setExpandedMessages(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  };
 
-  // Función para truncar texto
-  const shouldTruncateMessage = (message) => {
-    return message && message.length > 100;
-  };
   const renderMobileCard = (item) => {
     const recipientName = item.recipient || (item.destinatario
       ? `${item.destinatario.first_name || ''} ${item.destinatario.last_name || ''}`.trim() || item.destinatario.username
@@ -52,7 +35,7 @@ const NotificationTableView = ({
     const eventoTitulo = item.evento_title || item.evento?.titulo || '';
 
     return (
-      <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3 hover:shadow-sm transition-shadow">
+      <div key={item.id} className="bg-white border-l-4 border-l-blue-500 p-4 space-y-3 hover:bg-gray-50 transition-colors">
         {/* Título */}
         <div>
           <h4 className="text-sm font-semibold text-gray-900 mb-1">{item.titulo}</h4>
@@ -61,24 +44,9 @@ const NotificationTableView = ({
         {/* Mensaje */}
         {item.mensaje && (
           <div className="border-l-4 border-slate-200 pl-3">
-            <div className="relative">
-              <p className={`text-xs text-gray-600 leading-relaxed ${
-                !expandedMessages.has(item.id) && shouldTruncateMessage(item.mensaje) ? 'line-clamp-3' : ''
-              }`}>
-                {item.mensaje}
-              </p>
-              {shouldTruncateMessage(item.mensaje) && (
-                <button
-                  onClick={() => toggleMessageExpansion(item.id)}
-                  className="mt-1 text-xs text-slate-600 hover:text-slate-800 flex items-center gap-1 font-medium"
-                >
-                  {expandedMessages.has(item.id) ? 'Ver menos' : 'Ver más'}
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expandedMessages.has(item.id) ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                  </svg>
-                </button>
-              )}
-            </div>
+            <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
+              {item.mensaje}
+            </p>
           </div>
         )}
 
@@ -87,11 +55,11 @@ const NotificationTableView = ({
           {/* Estado Leído */}
           <span className={`inline-flex items-center px-2 py-1 rounded-full border text-[13px] font-medium ${
             isRead(item)
-              ? 'bg-green-50 text-green-700 border-green-200' 
+              ? 'bg-slate-50 text-slate-600 border-slate-200' 
               : 'bg-gray-50 text-gray-500 border-gray-300'
           }`}>
             <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-              isRead(item) ? 'bg-green-500' : 'bg-gray-400'
+              isRead(item) ? 'bg-slate-500' : 'bg-gray-400'
             }`}></div>
             {isRead(item) ? 'Leída' : 'No leída'}
           </span>
@@ -119,7 +87,7 @@ const NotificationTableView = ({
     return (
       <tr key={item.id} className="hover:bg-gray-50 transition-colors">
         {/* Título */}
-        <td className="px-3 sm:px-4 py-3 border-b border-gray-100 align-top">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 align-top">
           <div className="w-full min-w-0">
             <div className="text-[13px] font-bold text-gray-800 line-clamp-2 break-words" title={item.titulo}>
               {item.titulo}
@@ -128,26 +96,11 @@ const NotificationTableView = ({
         </td>
         
         {/* Mensaje */}
-        <td className="px-3 sm:px-4 py-3 border-b border-gray-100 hidden sm:table-cell align-top">
-          <div className="w-full min-w-0">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden sm:table-cell align-top">
+          <div className="max-w-[200px] min-w-0">
             {item.mensaje ? (
-              <div className="relative">
-                <div className={`text-[13px] text-gray-600 break-words ${
-                  !expandedMessages.has(item.id) && shouldTruncateMessage(item.mensaje) ? 'line-clamp-3' : ''
-                }`} title={item.mensaje}>
-                  {item.mensaje}
-                </div>
-                {shouldTruncateMessage(item.mensaje) && (
-                  <button
-                    onClick={() => toggleMessageExpansion(item.id)}
-                    className="mt-1 text-[12px] text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
-                  >
-                    {expandedMessages.has(item.id) ? 'Ver menos' : 'Ver más'}
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expandedMessages.has(item.id) ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-                    </svg>
-                  </button>
-                )}
+              <div className="text-[13px] text-gray-600 break-words line-clamp-2" title={item.mensaje}>
+                {item.mensaje}
               </div>
             ) : (
               <span className="text-[13px] text-gray-400 italic">Sin mensaje</span>
@@ -156,15 +109,15 @@ const NotificationTableView = ({
         </td>
         
         {/* Estado Leído */}
-        <td className="px-3 sm:px-4 py-3 border-b border-gray-100 hidden md:table-cell align-top">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden md:table-cell align-top">
           <div className="flex items-center">
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-[13px] font-medium border whitespace-nowrap ${
               isRead(item)
-                ? 'bg-green-50 text-green-700 border-green-200' 
+                ? 'bg-slate-50 text-slate-600 border-slate-200' 
                 : 'bg-gray-50 text-gray-500 border-gray-300'
             }`}>
               <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                isRead(item) ? 'bg-green-500' : 'bg-gray-400'
+                isRead(item) ? 'bg-slate-500' : 'bg-gray-400'
               }`}></div>
               {isRead(item) ? 'Leída' : 'No leída'}
             </span>
@@ -172,10 +125,10 @@ const NotificationTableView = ({
         </td>
         
         {/* Evento */}
-        <td className="px-3 sm:px-4 py-3 border-b border-gray-100 hidden lg:table-cell align-top">
-          <div className="w-full min-w-0">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden lg:table-cell align-top">
+          <div className="max-w-[180px] min-w-0">
             {eventoTitulo ? (
-              <div className="text-[13px] text-blue-700 font-medium truncate" title={eventoTitulo}>
+              <div className="text-[13px] text-gray-900 break-words line-clamp-2" title={eventoTitulo}>
                 {eventoTitulo}
               </div>
             ) : (
@@ -185,7 +138,7 @@ const NotificationTableView = ({
         </td>
         
         {/* Fecha */}
-        <td className="px-3 sm:px-4 py-3 border-b border-gray-100 hidden xl:table-cell align-top">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden xl:table-cell align-top">
           <div className="text-[13px] text-gray-600 whitespace-nowrap">
             {fecha ? (
               <div>
@@ -197,10 +150,10 @@ const NotificationTableView = ({
         </td>
         
         {/* Acción Ver */}
-        <td className="px-3 sm:px-4 py-3 border-b border-gray-100 text-center">
+        <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 text-center">
           <button
             onClick={() => onViewDetails?.(item)}
-            className="inline-flex items-center justify-center w-8 h-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
+            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-lg"
             title="Ver detalles"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,23 +167,25 @@ const NotificationTableView = ({
   };
 
   return (
-    <div className="w-full">
+    <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
       {/* Vista móvil - Cards */}
-      <div className="block md:hidden space-y-3">
-        {data.map(renderMobileCard)}
+      <div className="block md:hidden">
+        <div className="divide-y divide-gray-200">
+          {data.map(renderMobileCard)}
+        </div>
       </div>
 
       {/* Vista desktop - Tabla */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full min-w-[800px] divide-y divide-gray-300 table-fixed">
-                            <thead className="bg-[#F2F3F5] border-b border-slate-300/60">
+        <table className="min-w-full divide-y divide-gray-200 table-auto">
+                            <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-3 sm:px-4 py-3 text-left text-[13px] font-semibold text-gray-600 uppercase tracking-wider w-[20%]">Título</th>
-                      <th className="px-3 sm:px-4 py-3 text-left text-[13px] font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell w-[30%]">Mensaje</th>
-                      <th className="px-3 sm:px-4 py-3 text-left text-[13px] font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell w-[12%]">Estado</th>
-                      <th className="px-3 sm:px-4 py-3 text-left text-[13px] font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell w-[18%]">Evento</th>
-                      <th className="px-3 sm:px-4 py-3 text-left text-[13px] font-semibold text-gray-600 uppercase tracking-wider hidden xl:table-cell w-[15%]">Fecha</th>
-                      <th className="px-3 sm:px-4 py-3 text-center text-[13px] font-semibold text-gray-600 uppercase tracking-wider w-[5%]">Ver</th>
+                      <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[200px] w-[30%]">Título</th>
+                      <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell min-w-[150px] w-[20%]">Mensaje</th>
+                      <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell min-w-[100px] w-[12%]">Estado</th>
+                      <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell min-w-[150px] w-[22%]">Evento</th>
+                      <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell min-w-[120px] w-[13%]">Fecha</th>
+                      <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-semibold text-gray-500 uppercase tracking-wider min-w-[60px] w-[3%]">Ver</th>
                     </tr>
                   </thead>
           <tbody className="bg-white divide-y divide-gray-200">

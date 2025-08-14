@@ -17,7 +17,9 @@ import {
   UserActions,
   UserTableView,
   UserModal,
-  UserFormInline
+  UserFormInline,
+  UserList,
+  LoadingStates
 } from "../../components/Users";
 
 /**
@@ -37,8 +39,7 @@ const UserManagement = () => {
     createUser,
     updateUser,
     deleteUser,
-    toggleUserActiveStatus,
-    exportUsers
+    toggleUserActiveStatus
   } = useUsers();
 
   // Estado del formulario inline
@@ -157,15 +158,7 @@ const UserManagement = () => {
     }
   }, [toggleUserActiveStatus]);
 
-  const handleExport = useCallback(async () => {
-    try {
-      await exportUsers();
-      toast.success('Usuarios exportados exitosamente');
-    } catch (error) {
-      console.error('Error al exportar usuarios:', error);
-      toast.error('Error al exportar usuarios');
-    }
-  }, [exportUsers]);
+
 
   const handleImport = useCallback(async (event) => {
     const file = event.target.files?.[0];
@@ -206,12 +199,12 @@ const UserManagement = () => {
 
 
 
-  // Mostrar loading siguiendo patrón KnowledgeBase
-  if (loading.users && users.length === 0) {
+  // Estado de carga general (igual que KnowledgeBase)
+  if (loading.users && !users?.length) {
     return (
       <div className="w-full bg-slate-50">
         <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="p-8 text-center">🔄 Cargando usuarios...</div>
+          <LoadingStates.UserListLoading />
         </div>
       </div>
     );
@@ -234,7 +227,7 @@ const UserManagement = () => {
             selectedGroup={selectedGroup}
             onGroupChange={setSelectedGroup}
             onCreateNew={handleCreateNew}
-            onExport={handleExport}
+
             onImport={handleImport}
             groups={groups}
             totalItems={filteredUsers.length}
@@ -246,37 +239,17 @@ const UserManagement = () => {
         </PermissionGate>
 
         {!showInlineForm ? (
-          <UserTableView
-            data={filteredUsers}
+          <UserList
+            users={filteredUsers}
             loading={loading.users}
+            error={loading.error}
             totalItems={filteredUsers.length}
-            sortField=""
-            sortDirection="asc"
-            expandedRows={new Set()}
-            pagination={{
-              current_page: 1,
-              total_pages: 1,
-              total: filteredUsers.length,
-              per_page: 10
-            }}
-            pageNumbers={[1]}
-            displayRange={{
-              start: 1,
-              end: Math.min(10, filteredUsers.length),
-              total: filteredUsers.length
-            }}
-            navigation={{
-              hasPrevious: false,
-              hasNext: false
-            }}
             onEdit={handleEdit}
-            onView={handleView}
             onDelete={handleDeleteUser}
+            onView={handleView}
             onToggleStatus={handleToggleStatus}
-            onCreateNew={handleCreateNew}
-            onSort={() => {}}
-            onPageChange={() => {}}
-            onToggleExpansion={() => {}}
+            onCreateFirst={handleCreateNew}
+            onRetry={fetchUsers}
           />
         ) : (
           <UserFormInline

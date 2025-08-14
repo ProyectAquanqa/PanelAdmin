@@ -1,10 +1,10 @@
 /**
  * Configuración de filtros para Almuerzos
- * Configuración declarativa para UniversalFilters - Basada en eventosFiltersConfig
+ * Configuración declarativa para UniversalFilters - COPIADA EXACTAMENTE DEL CHATBOT
  */
 
 /**
- * Configuración de filtros para la página de Almuerzos
+ * Configuración de filtros para la página de Almuerzos - IGUAL QUE KNOWLEDGE BASE
  */
 export const almuerzosFiltersConfig = {
   // Configuración de búsqueda
@@ -14,79 +14,66 @@ export const almuerzosFiltersConfig = {
     variant: 'default'
   },
 
-  // Grupos de filtros
+  // Grupos de filtros - ORDEN: Estado, Fecha, Dieta
   filterGroups: [
     {
       key: 'selectedStatus',
       title: 'Estado',
-      type: 'dropdown',
+      type: 'buttons',
       options: [
-        { value: '', label: 'Todos los estados', isDefault: true },
+        { value: '', label: 'Todos' },
         { value: 'true', label: 'Activos' },
         { value: 'false', label: 'Inactivos' }
-      ],
-      placeholder: 'Seleccionar estado...',
-      showIcon: true,
-      iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-      className: 'h-[42px]'
+      ]
     },
     {
-      key: 'selectedHoliday',
-      title: 'Feriado',
+      key: 'selectedDateRange',
+      title: 'Fecha',
       type: 'dropdown',
       options: [
-        { value: '', label: 'Todos', isDefault: true },
-        { value: 'true', label: 'Solo feriados' },
-        { value: 'false', label: 'Sin feriados' }
+        { value: '', label: 'Todas las fechas' },
+        { value: 'thisWeek', label: 'Esta semana' },
+        { value: 'lastWeek', label: 'Semana pasada' },
+        { value: 'thisMonth', label: 'Este mes' }
       ],
-      placeholder: 'Seleccionar...',
+      placeholder: 'Seleccionar período...',
       showIcon: true,
-      iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-      className: 'h-[42px]'
+      iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
     },
     {
       key: 'selectedDiet',
-      title: 'Menú Dieta',
-      type: 'dropdown',
+      title: 'Dieta',
+      type: 'buttons',
       options: [
-        { value: '', label: 'Todos', isDefault: true },
-        { value: 'with_diet', label: 'Con dieta' },
-        { value: 'without_diet', label: 'Sin dieta' }
-      ],
-      placeholder: 'Seleccionar...',
-      showIcon: true,
-      iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-      className: 'h-[42px]'
+        { value: '', label: 'Todos' },
+        { value: 'with', label: 'Con dieta' },
+        { value: 'without', label: 'Sin dieta' }
+      ]
     }
   ],
 
-  // Acciones disponibles
+  // Acciones disponibles - IGUAL QUE KNOWLEDGE BASE
   actions: [
     {
-      label: 'Crear Almuerzo',
+      label: 'Crear',
       variant: 'primary',
       icon: 'M12 4v16m8-8H4',
       onClick: null // Se asignará dinámicamente
     }
   ],
 
-  // Configuración adicional
+  // Configuración de etiquetas
   itemLabel: 'almuerzos'
 };
 
 /**
- * Función para preparar configuración con datos dinámicos
- * @param {Object} callbacks - Callbacks para acciones
- * @returns {Object} Configuración preparada
+ * Función helper para preparar la configuración con datos dinámicos - IGUAL QUE KNOWLEDGE BASE
  */
-export const prepareAlmuerzosFiltersConfig = (callbacks = {}) => {
+export const prepareAlmuerzosFiltersConfig = (handlers) => {
   const config = { ...almuerzosFiltersConfig };
 
-  // Configurar callbacks de acciones
-  config.actions = config.actions.map(action => ({
-    ...action,
-    onClick: callbacks[`on${action.label.replace(/\s+/g, '')}`] || callbacks.onCreateNew
-  }));
+  // Asignar handlers dinámicamente
+  config.actions[0].onClick = handlers.onCreateNew;
 
   return config;
 };

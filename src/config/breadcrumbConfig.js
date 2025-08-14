@@ -24,6 +24,8 @@ export const breadcrumbRoutes = {
   '/eventos/gestion': { section: 'Eventos', subsection: 'Gestión de Eventos' },
   '/eventos/categorias': { section: 'Eventos', subsection: 'Categorías' },
 
+  // ALMUERZOS - Gestión de almuerzos
+  '/almuerzos': { section: 'Almuerzos', subsection: 'Gestión de Almuerzos' },
   
   // USUARIOS - Todas las subcategorías
   '/usuarios': { section: 'Usuarios', subsection: 'Gestión de Usuarios' },
@@ -68,6 +70,11 @@ export const mainSections = {
     icon: 'CalendarIcon',
     color: '#2D728F',
     description: 'Administración de eventos'
+  },
+  'Almuerzos': {
+    icon: 'CakeIcon',
+    color: '#2D728F',
+    description: 'Gestión de almuerzos'
   },
   'Usuarios': {
     icon: 'UserGroupIcon',
