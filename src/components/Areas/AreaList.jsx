@@ -4,15 +4,14 @@ import { DataViewSwitcher } from '../Common';
 import { LoadingStates } from '.';
 
 /**
- * Componente contenedor para la lista de usuarios
- * Maneja los diferentes estados y la vista de datos
- * Basado en KnowledgeList y ProfileList
+ * Componente contenedor para la lista de áreas
+ * Maneja los diferentes estados y la vista de datos siguiendo el patrón de KnowledgeList
  */
-const UserList = ({
-  users = [],
-  loading = false,
-  error = null,
-  totalItems = 0,
+const AreaList = ({
+  areas,
+  loading,
+  error,
+  totalItems,
   onEdit,
   onDelete,
   onView,
@@ -21,8 +20,8 @@ const UserList = ({
   onRetry
 }) => {
   // Si está cargando y no hay datos
-  if (loading && !users?.length) {
-    return <LoadingStates.UserListLoading />;
+  if (loading && !areas?.length) {
+    return <LoadingStates.AreaListLoading />;
   }
 
   // Si hay error
@@ -31,47 +30,54 @@ const UserList = ({
   }
 
   // Si no hay datos
-  if (!users?.length) {
-    return <LoadingStates.EmptyState onCreateFirst={onCreateFirst} />;
+  if (!areas?.length) {
+    return <LoadingStates.EmptyState onCreateFirst={null} />;
   }
 
   // Función para manejar ordenamiento
   const handleSort = (field, direction) => {
     // Por ahora el ordenamiento se hace en el componente DataViewSwitcher
     // En el futuro podríamos llamar al backend para ordenamiento del servidor
+    console.log(`Ordenando por ${field} en dirección ${direction}`);
   };
 
   return (
     <div className="space-y-6">
       <DataViewSwitcher
-        data={users}
+        data={areas}
         onEdit={onEdit}
         onDelete={onDelete}
         onViewDetails={onView}
         onToggleStatus={onToggleStatus}
         onSort={handleSort}
-        itemType="user"
-        initialSortField="created_at"
-        initialSortDirection="desc"
-        enableSorting={true}
+        itemType="area"
       />
     </div>
   );
 };
 
-UserList.propTypes = {
-  users: PropTypes.array.isRequired,
+AreaList.propTypes = {
+  areas: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      nombre: PropTypes.string.isRequired,
+      descripcion: PropTypes.string,
+      is_active: PropTypes.bool,
+      total_cargos: PropTypes.number,
+      total_usuarios: PropTypes.number,
+      created_at: PropTypes.string,
+      updated_at: PropTypes.string
+    })
+  ),
   loading: PropTypes.bool,
   error: PropTypes.string,
   totalItems: PropTypes.number,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
-  onView: PropTypes.func.isRequired,
+  onView: PropTypes.func,
   onToggleStatus: PropTypes.func,
   onCreateFirst: PropTypes.func,
   onRetry: PropTypes.func
 };
 
-
-
-export default UserList;
+export default AreaList;

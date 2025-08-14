@@ -39,7 +39,7 @@ export const useUserForm = (initialData = {}, options = {}) => {
       first_name: '',
       last_name: '',
       email: '',
-      groups: [],
+      groups: '', // Cambiar a string vacío para evitar warning del select
       is_active: true,
       is_staff: false,
       ...initialData
@@ -208,6 +208,7 @@ export const useUserForm = (initialData = {}, options = {}) => {
       
       console.log('🔐 Datos completos antes de preparar:', formData);
       console.log('🔐 Tipo de formulario:', detectedFormType);
+      console.log('🔐 FormData groups antes de procesar:', formData.groups, typeof formData.groups);
       
       // Para formularios de creación, manejar validación de contraseñas
       if (detectedFormType === 'create') {
@@ -233,12 +234,11 @@ export const useUserForm = (initialData = {}, options = {}) => {
         delete dataToSubmit.confirmPassword;
       }
       
-      console.log('🔐 Datos a enviar al backend:', dataToSubmit);
-
-      // Convertir grupos a array si es string
-      if (dataToSubmit.groups && typeof dataToSubmit.groups === 'string') {
-        dataToSubmit.groups = [dataToSubmit.groups];
-      }
+      // IMPORTANTE: El backend espera nombres de grupo, no IDs
+      // No convertir aquí, dejar que el componente maneje esta conversión
+      
+      console.log('🔐 Datos finales a enviar al backend:', dataToSubmit);
+      console.log('🔐 Groups final:', dataToSubmit.groups, typeof dataToSubmit.groups);
 
       const result = await onSubmit(dataToSubmit);
       

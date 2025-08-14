@@ -7,15 +7,15 @@ import SortIcon from '../Common/DataView/SortIcon';
  * Diseño limpio y consistente con el resto de módulos
  */
 const UserTableViewNew = ({
-  data,
-  sortField,
-  sortDirection,
-  expandedRows,
+  data = [],
+  sortField = '',
+  sortDirection = 'asc',
+  expandedRows = new Set(),
   onSort,
   onEdit,
   onDelete,
   onView,
-  onToggleStatus,
+
   onToggleExpansion,
   className = ''
 }) => {
@@ -32,7 +32,7 @@ const UserTableViewNew = ({
             {item.first_name} {item.last_name}
           </h4>
           <span className="text-xs text-gray-500">
-            @{item.username}
+            {item.username}
           </span>
         </div>
 
@@ -55,14 +55,14 @@ const UserTableViewNew = ({
         </div>
 
         {/* Grupos/Roles */}
-        {item.groups && item.groups.length > 0 && (
+        {item.groups && Array.isArray(item.groups) && item.groups.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {item.groups.slice(0, 2).map((group, idx) => (
               <span 
                 key={idx} 
-                className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full border border-gray-200"
+                className="inline-block px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded-full border border-blue-200"
               >
-                {group.name}
+                {typeof group === 'string' ? group : (group.name || group.nombre)}
               </span>
             ))}
             {item.groups.length > 2 && (
@@ -71,6 +71,8 @@ const UserTableViewNew = ({
               </span>
             )}
           </div>
+        ) : (
+          <span className="text-xs text-gray-400 italic px-2 py-1">Sin perfil asignado</span>
         )}
 
         {/* Acciones */}
@@ -82,7 +84,7 @@ const UserTableViewNew = ({
               title="Ver detalles"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 6 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
             </button>
@@ -96,21 +98,7 @@ const UserTableViewNew = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </button>
-          {onToggleStatus && (
-            <button
-              onClick={() => onToggleStatus?.(item)}
-              className={`p-2 transition-colors rounded-lg ${
-                item.is_active
-                  ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
-                  : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
-              }`}
-              title={item.is_active ? "Desactivar" : "Activar"}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-              </svg>
-            </button>
-          )}
+
           <button
             onClick={() => onDelete?.(item.id)}
             className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
@@ -139,8 +127,8 @@ const UserTableViewNew = ({
                 {item.first_name} {item.last_name}
               </p>
             </div>
-            <p className="text-[12px] text-gray-500 truncate">
-              @{item.username}
+            <p className="text-[13px] text-gray-500 truncate">
+              {item.username}
             </p>
           </div>
         </td>
@@ -156,25 +144,20 @@ const UserTableViewNew = ({
         
         {/* Grupos/Roles */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden lg:table-cell">
-          <div className="max-w-[150px] min-w-0">
-            {item.groups && item.groups.length > 0 ? (
+          <div className="max-w-[200px] min-w-0">
+            {item.groups && Array.isArray(item.groups) && item.groups.length > 0 ? (
               <div className="flex flex-wrap gap-1">
-                {item.groups.slice(0, 2).map((group, idx) => (
+                {item.groups.map((group, idx) => (
                   <span 
                     key={idx} 
-                    className="inline-block px-2 py-1 text-[11px] bg-gray-100 text-gray-600 rounded-full border border-gray-200 truncate"
+                    className="inline-block px-2 py-1 text-[13px] bg-blue-50 text-blue-700 rounded-full border border-blue-200"
                   >
-                    {group.name}
+                    {typeof group === 'string' ? group : (group.name || group.nombre)}
                   </span>
                 ))}
-                {item.groups.length > 2 && (
-                  <span className="text-[11px] text-gray-400 px-1">
-                    +{item.groups.length - 2}
-                  </span>
-                )}
               </div>
             ) : (
-              <span className="text-[12px] text-gray-400">Sin roles</span>
+              <span className="text-[13px] text-gray-400 italic">Sin perfil asignado</span>
             )}
           </div>
         </td>
@@ -182,7 +165,7 @@ const UserTableViewNew = ({
         {/* Estado */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden sm:table-cell">
           <div className="w-full min-w-0">
-            <span className={`inline-flex items-center px-2 py-1 rounded-full border text-[12px] font-medium ${
+            <span className={`inline-flex items-center px-2 py-1 rounded-full border text-[13px] font-medium ${
               item.is_active 
                 ? 'bg-slate-50 text-slate-600 border-slate-200'
                 : 'bg-gray-50 text-gray-600 border-gray-200'
@@ -197,7 +180,7 @@ const UserTableViewNew = ({
 
         {/* Fecha de registro */}
         <td className="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 hidden xl:table-cell">
-          <span className="text-[12px] text-gray-500">
+          <span className="text-[13px] text-gray-500">
             {item.date_joined ? new Date(item.date_joined).toLocaleDateString('es-ES') : '-'}
           </span>
         </td>
@@ -212,7 +195,7 @@ const UserTableViewNew = ({
                 title="Ver detalles"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 6 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
@@ -226,21 +209,7 @@ const UserTableViewNew = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
-            {onToggleStatus && (
-              <button
-                onClick={() => onToggleStatus?.(item)}
-                className={`p-2 transition-colors rounded-lg ${
-                  item.is_active
-                    ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50'
-                    : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
-                }`}
-                title={item.is_active ? "Desactivar" : "Activar"}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                </svg>
-              </button>
-            )}
+
             <button
               onClick={() => onDelete?.(item.id)}
               className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
@@ -266,10 +235,10 @@ const UserTableViewNew = ({
       {/* Vista desktop */}
       <div className="hidden md:block">
         <table className="min-w-full divide-y divide-gray-200 table-auto">
-          <thead className="bg-gray-50">
+          <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
             <tr>
               <th 
-                className="px-3 sm:px-4 md:px-6 py-4 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors"
                 onClick={() => onSort?.('first_name')}
               >
                 <div className="flex items-center space-x-1">
@@ -277,14 +246,14 @@ const UserTableViewNew = ({
                   <SortIcon field="first_name" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
-              <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-bold text-gray-700 uppercase tracking-wider hidden md:table-cell">
                 Email
               </th>
-              <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                Roles
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-bold text-gray-700 uppercase tracking-wider hidden lg:table-cell">
+                Perfil
               </th>
               <th 
-                className="px-3 sm:px-4 md:px-6 py-4 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors hidden sm:table-cell"
+                className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors hidden sm:table-cell"
                 onClick={() => onSort?.('is_active')}
               >
                 <div className="flex items-center space-x-1">
@@ -293,7 +262,7 @@ const UserTableViewNew = ({
                 </div>
               </th>
               <th 
-                className="px-3 sm:px-4 md:px-6 py-4 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors hidden xl:table-cell"
+                className="px-3 sm:px-4 md:px-6 py-4 text-left text-[13px] font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors hidden xl:table-cell"
                 onClick={() => onSort?.('date_joined')}
               >
                 <div className="flex items-center space-x-1">
@@ -301,7 +270,7 @@ const UserTableViewNew = ({
                   <SortIcon field="date_joined" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
-              <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-4 md:px-6 py-4 text-center text-[13px] font-bold text-gray-700 uppercase tracking-wider">
                 Acciones
               </th>
             </tr>
@@ -324,17 +293,11 @@ UserTableViewNew.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onView: PropTypes.func,
-  onToggleStatus: PropTypes.func,
+
   onToggleExpansion: PropTypes.func,
   className: PropTypes.string
 };
 
-UserTableViewNew.defaultProps = {
-  data: [],
-  sortField: '',
-  sortDirection: 'asc',
-  expandedRows: new Set(),
-  className: ''
-};
+
 
 export default UserTableViewNew;

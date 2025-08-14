@@ -38,7 +38,6 @@ export const useUsers = () => {
   const fetchGroups = useCallback(async () => {
     try {
       const result = await groupService.list(1, 100); // Obtener todos los grupos
-      console.log('🔍 Resultado groupService.list:', result); // Debug temporal
       
       // Manejar diferentes formatos de respuesta
       let grupos = [];
@@ -71,7 +70,11 @@ export const useUsers = () => {
       // Manejar formato de respuesta según directrices: {status: "success", data: {...}}
       if (response.status === 'success') {
         const data = response.data;
-        setUsers(data.results || data);
+        const usuarios = data.results || data;
+        
+
+
+        setUsers(usuarios);
         setPagination(prev => ({
           ...prev,
           current: page,
@@ -80,7 +83,9 @@ export const useUsers = () => {
         }));
       } else {
         // Fallback para respuestas directas del DRF ViewSet
-        setUsers(response.results || response);
+        const usuarios = response.results || response;
+
+        setUsers(usuarios);
         setPagination(prev => ({
           ...prev,
           current: page,
@@ -136,7 +141,7 @@ export const useUsers = () => {
         await fetchUsers(pagination.current);
         return true;
       } else {
-        // Fallback para respuestas directas
+        // Fallback para respuestas directas sin status
         toast.success('Usuario creado exitosamente');
         await fetchUsers(pagination.current);
         return true;

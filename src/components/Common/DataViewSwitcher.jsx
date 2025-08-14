@@ -12,6 +12,7 @@ import EventoTableView from '../Eventos/EventoTableView';
 import ComentarioTableView from '../Eventos/ComentarioTableView';
 import ProfileTableView from '../Perfiles/ProfileTableView';
 import UserTableViewNew from '../Users/UserTableViewNew';
+import AreaTableView from '../Areas/AreaTableView';
 import Pagination from './DataView/Pagination';
 // import { EventoItem } from '../Eventos'; // Comentado para evitar dependencias circulares
 
@@ -25,6 +26,7 @@ const DataViewSwitcher = ({
   onEdit,
   onDelete,
   onViewDetails,
+  onToggleStatus,
   onSort,
   onTogglePublish,
   onPin,
@@ -83,6 +85,8 @@ const DataViewSwitcher = ({
       TableComponent = ProfileTableView;
     } else if (itemType === 'user') {
       TableComponent = UserTableViewNew;
+    } else if (itemType === 'area') {
+      TableComponent = AreaTableView;
     }
     
     return (
@@ -95,7 +99,9 @@ const DataViewSwitcher = ({
           onSort={handleSortWithCallback}
           onEdit={onEdit}
           onDelete={onDelete}
+          onView={onViewDetails}
           onViewDetails={onViewDetails}
+          onToggleStatus={onToggleStatus}
           onToggleExpansion={toggleRowExpansion}
           onTogglePublish={onTogglePublish}
           onPin={onPin}
@@ -132,6 +138,7 @@ DataViewSwitcher.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onViewDetails: PropTypes.func,
+  onToggleStatus: PropTypes.func,
   onSort: PropTypes.func,
   onTogglePublish: PropTypes.func,
   onTogglePin: PropTypes.func,

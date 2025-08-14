@@ -1,16 +1,17 @@
 /**
- * Modal para crear/editar/ver usuarios del sistema - VERSIÓN MEJORADA
- * Layout de 2 columnas con foto a la izquierda y checkboxes simples
+ * Modal para crear/editar usuarios del sistema - DISEÑO MEJORADO
+ * Siguiendo el patrón de los modales de "ver detalles" con sistema de pestañas limpio
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useUserForm } from '../../hooks/useUserForm';
+import { useAreas } from '../../hooks/useAreas';
 import userService from '../../services/userService';
 import toast from 'react-hot-toast';
 
 /**
- * Componente de modal para crear/editar/ver usuarios
+ * Componente principal del modal de usuarios con diseño mejorado
  */
 const UserModal = ({
   show,
@@ -19,16 +20,23 @@ const UserModal = ({
   editingUser,
   loading,
   availableRoles = [],
-  mode = 'edit' // 'create', 'edit', 'view'
+  availableCargos = [],
+  mode = 'create' // 'create', 'edit', 'view'
 }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
+  // Estados de UI
+  const [activeTab, setActiveTab] = useState('datos');
   const [loadingDni, setLoadingDni] = useState(false);
   const [fieldsFromDni, setFieldsFromDni] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Estados de datos
   const [groupsDisponibles, setGroupsDisponibles] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   
-  // Usar hook de formulario
+  // Hook de áreas para obtener cargos dinámicos
+  const { cargos, fetchCargos, fetchAreasWithCargos } = useAreas();
+  
+  // Hook de formulario
   const {
     formData,
     errors,
@@ -38,39 +46,72 @@ const UserModal = ({
     getCheckboxProps,
     getSelectProps,
     isValid,
-    setFieldValue
+    setFieldValue,
+    resetForm
   } = useUserForm(editingUser || {}, { 
     formType: mode === 'create' ? 'create' : 'edit' 
   });
 
-  // Limpiar estados cuando cambie el usuario a editar o el modo
-  useEffect(() => {
-    setFieldsFromDni(false);
-    setImagePreview(null);
-    setLoadingDni(false);
-  }, [editingUser, mode]);
+  // Configuración de pestañas sin emojis
+  const tabs = [
+    { 
+      id: 'datos', 
+      label: 'Datos Personales', 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      )
+    },
+    { 
+      id: 'acceso', 
+      label: 'Acceso y Perfil', 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      )
+    },
+    { 
+      id: 'organizacion', 
+      label: 'Organización', 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      )
+    }
+  ];
 
-  // Sin pre-selección automática de tipo_usuario (vista unificada)
+  // Estados derivados
+  const isViewMode = mode === 'view';
+  const isCreateMode = mode === 'create';
+  const isEditMode = mode === 'edit';
 
-  // Cargar grupos disponibles cuando cambie el tipo de usuario
+  // Función para obtener errores por pestaña
+  const getTabErrors = (tabId) => {
+    const tabFields = {
+      datos: ['username', 'first_name', 'last_name', 'email', 'foto_perfil'],
+      acceso: ['password', 'confirmPassword', 'groups', 'is_active'],
+      organizacion: ['cargo', 'empresa']
+    };
+    
+    return Object.keys(errors).filter(field => tabFields[tabId]?.includes(field));
+  };
+
+  // Cargar datos iniciales
   useEffect(() => {
-    const loadGroups = async () => {
-      if (!formData.tipo_usuario) {
-        setGroupsDisponibles([]);
-        return;
-      }
-      
+    if (!show) return;
+
+    const loadInitialData = async () => {
+      // Cargar grupos
       setLoadingGroups(true);
       try {
-        const response = await userService.users.getGroupsDisponibles(formData.tipo_usuario);
+        const response = await userService.groups.list();
         if (response.status === 'success') {
-          setGroupsDisponibles(response.data.results || response.data || []);
-        } else if (response.results) {
-          // Formato directo del backend sin wrapper
-          setGroupsDisponibles(response.results);
-        } else {
-          toast.error('Error al cargar grupos disponibles');
-          setGroupsDisponibles([]);
+          setGroupsDisponibles(response.data || []);
+        } else if (Array.isArray(response)) {
+          setGroupsDisponibles(response);
         }
       } catch (error) {
         toast.error('Error al cargar grupos: ' + error.message);
@@ -78,13 +119,37 @@ const UserModal = ({
       } finally {
         setLoadingGroups(false);
       }
+
+      // Cargar cargos dinámicamente de áreas
+      try {
+        await fetchCargos();
+        await fetchAreasWithCargos();
+      } catch (error) {
+        console.error('Error loading cargos:', error);
+      }
     };
 
-    loadGroups();
-  }, [formData.tipo_usuario]);
+    loadInitialData();
+  }, [show, fetchCargos, fetchAreasWithCargos]);
 
-  // Manejar envío del formulario
-  const handleFormSubmit = async (e) => {
+  // Limpiar estados cuando cambie el modo o usuario
+  useEffect(() => {
+    setFieldsFromDni(false);
+    setLoadingDni(false);
+    setActiveTab('datos');
+  }, [editingUser, mode]);
+
+  // Manejar cierre del modal
+  const handleClose = useCallback(() => {
+    setFieldsFromDni(false);
+    setLoadingDni(false);
+    setActiveTab('datos');
+    resetForm();
+    onClose();
+  }, [resetForm, onClose]);
+
+  // Manejar envío del formulario con corrección de grupos
+  const handleFormSubmit = useCallback(async (e) => {
     e.preventDefault();
     
     if (mode === 'view') {
@@ -97,20 +162,10 @@ const UserModal = ({
     if (result.success) {
       handleClose();
     }
-  };
+  }, [mode, handleSubmit, onSubmit, handleClose]);
 
-  // Manejar cierre del modal (limpiar estados)
-  const handleClose = () => {
-    setFieldsFromDni(false);
-    setImagePreview(null);
-    setLoadingDni(false);
-    onClose();
-  };
-
-
-
-  // Autocompletar datos desde DNI usando el servicio real
-  const handleDniBlur = async (dni) => {
+  // Consultar DNI
+  const handleDniBlur = useCallback(async (dni) => {
     if (!dni || dni.length !== 8 || !dni.match(/^\d+$/)) {
       setFieldsFromDni(false);
       return;
@@ -123,11 +178,8 @@ const UserModal = ({
       if (response.status === 'success') {
         const { nombres, apellido_paterno, apellido_materno } = response.data;
         
-        // Autocompletar campos
         setFieldValue('first_name', nombres);
         setFieldValue('last_name', `${apellido_paterno} ${apellido_materno}`.trim());
-        
-        // Marcar que los campos fueron autocompletados
         setFieldsFromDni(true);
         
         toast.success('DNI encontrado. Datos cargados automáticamente.');
@@ -135,54 +187,434 @@ const UserModal = ({
         toast.error(response.message || 'Error al consultar DNI');
         setFieldsFromDni(false);
       }
-      
     } catch (error) {
       toast.error(error.message || 'Error al consultar DNI');
       setFieldsFromDni(false);
     } finally {
       setLoadingDni(false);
     }
-  };
+  }, [setFieldValue]);
 
-  // Manejar upload de imagen
-  const handleImageUpload = (e, imageType = 'foto_perfil') => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImagePreview(event.target.result);
-        setFieldValue(imageType, file);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // Renderizado de pestaña Datos Personales
+  const renderDatosPersonales = () => (
+    <div className="space-y-4">
+      {/* Header de sección */}
+      <div className="pb-3 border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <h4 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">
+            Información Personal
+          </h4>
+        </div>
+      </div>
+
+      {/* DNI */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+          <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">DNI (Usuario)</h5>
+        </div>
+        <div className="p-3 space-y-2">
+          <div className="relative">
+            <input
+              {...getInputProps('username')}
+              type="text"
+              placeholder="12345678"
+              maxLength={8}
+              onBlur={(e) => handleDniBlur(e.target.value)}
+              className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+                errors.username ? 'border-red-300 bg-red-50' : 'bg-white'
+              } ${loadingDni ? 'pr-10' : ''}`}
+            />
+            {loadingDni && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+          </div>
+          {errors.username && (
+            <p className="text-[13px] text-red-600">{errors.username}</p>
+          )}
+          <p className="text-[13px] text-gray-500">
+            El DNI será usado como nombre de usuario para el sistema
+          </p>
+        </div>
+      </div>
+
+      {/* Nombres */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+            <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Nombres</h5>
+          </div>
+          <div className="p-3 space-y-2">
+            <input
+              {...getInputProps('first_name')}
+              type="text"
+              placeholder="Juan Carlos"
+              readOnly={fieldsFromDni}
+              className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+                errors.first_name ? 'border-red-300 bg-red-50' : 
+                fieldsFromDni ? 'bg-green-50 border-green-200' : 'bg-white'
+              }`}
+            />
+            {errors.first_name && (
+              <p className="text-[13px] text-red-600">{errors.first_name}</p>
+            )}
+            {fieldsFromDni && (
+              <p className="text-[13px] text-green-600 flex items-center">
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Obtenido del DNI
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+            <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Apellidos</h5>
+          </div>
+          <div className="p-3 space-y-2">
+            <input
+              {...getInputProps('last_name')}
+              type="text"
+              placeholder="Pérez García"
+              readOnly={fieldsFromDni}
+              className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+                errors.last_name ? 'border-red-300 bg-red-50' : 
+                fieldsFromDni ? 'bg-green-50 border-green-200' : 'bg-white'
+              }`}
+            />
+            {errors.last_name && (
+              <p className="text-[13px] text-red-600">{errors.last_name}</p>
+            )}
+            {fieldsFromDni && (
+              <p className="text-[13px] text-green-600 flex items-center">
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Obtenido del DNI
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Email */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+          <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Correo Electrónico</h5>
+        </div>
+        <div className="p-3 space-y-2">
+          <input
+            {...getInputProps('email')}
+            type="email"
+            placeholder="juan.perez@empresa.com"
+            className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+              errors.email ? 'border-red-300 bg-red-50' : 'bg-white'
+            }`}
+          />
+          {errors.email && (
+            <p className="text-[13px] text-red-600">{errors.email}</p>
+          )}
+          <p className="text-[13px] text-gray-500">
+            Correo para notificaciones del sistema
+          </p>
+        </div>
+      </div>
+
+      {fieldsFromDni && (
+        <div className="border border-green-200 bg-green-50 rounded-lg overflow-hidden">
+          <div className="bg-green-100 px-4 py-2 border-b border-green-200">
+            <h5 className="text-[13px] font-bold text-green-800 uppercase tracking-wider flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Datos Verificados
+            </h5>
+          </div>
+          <div className="p-3">
+            <p className="text-[13px] text-green-800 leading-relaxed">
+              Los nombres y apellidos han sido obtenidos automáticamente desde RENIEC. 
+              Puedes limpiar estos campos si necesitas modificarlos manualmente.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setFieldsFromDni(false);
+                setFieldValue('first_name', '');
+                setFieldValue('last_name', '');
+                toast.info('Campos liberados para edición manual');
+              }}
+              className="mt-2 px-3 py-1.5 text-[13px] font-medium text-green-700 bg-white border border-green-300 rounded hover:bg-green-50 transition-colors"
+            >
+              Limpiar y editar manualmente
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Renderizado de pestaña Acceso y Perfil
+  const renderAccesoPerfil = () => (
+    <div className="space-y-4">
+      {/* Header de sección */}
+      <div className="pb-3 border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <h4 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">
+            Configuración de Acceso
+          </h4>
+        </div>
+      </div>
+
+      {/* Contraseñas (solo para creación) */}
+      {isCreateMode && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+              <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Contraseña</h5>
+            </div>
+            <div className="p-3 space-y-2">
+              <div className="relative">
+                <input
+                  {...getInputProps('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Mínimo 6 caracteres"
+                  className={`w-full px-4 py-3 pr-10 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+                    errors.password ? 'border-red-300 bg-red-50' : 'bg-white'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {showPassword ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    )}
+                  </svg>
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-[13px] text-red-600">{errors.password}</p>
+              )}
+              <p className="text-[13px] text-gray-500">
+                Debe tener al menos 6 caracteres
+              </p>
+            </div>
+          </div>
+
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+              <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Confirmar Contraseña</h5>
+            </div>
+            <div className="p-3 space-y-2">
+              <input
+                {...getInputProps('confirmPassword')}
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Repetir contraseña"
+                className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+                  errors.confirmPassword ? 'border-red-300 bg-red-50' : 'bg-white'
+                }`}
+              />
+              {errors.confirmPassword && (
+                <p className="text-[13px] text-red-600">{errors.confirmPassword}</p>
+              )}
+              <p className="text-[13px] text-gray-500">
+                Debe coincidir con la contraseña
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Perfil/Rol */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+          <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Perfil del Usuario</h5>
+        </div>
+        <div className="p-3 space-y-2">
+          <select
+            name="groups"
+            disabled={isViewMode || loadingGroups}
+            value={
+              // Mostrar el ID del grupo seleccionado en el UI
+              Array.isArray(formData.groups) && formData.groups.length > 0 
+                ? (() => {
+                    // Si formData.groups contiene nombres, buscar el ID correspondiente
+                    const groupName = formData.groups[0];
+                    const group = groupsDisponibles.find(g => g.name === groupName);
+                    return group ? String(group.id) : '';
+                  })()
+                : ''
+            }
+            onChange={(e) => {
+              const groupId = e.target.value;
+              console.log('🔄 Grupo ID seleccionado:', groupId);
+              
+              if (groupId) {
+                // Buscar el nombre del grupo seleccionado
+                const selectedGroup = groupsDisponibles.find(g => g.id == groupId);
+                const groupName = selectedGroup ? selectedGroup.name : '';
+                console.log('🔄 Nombre del grupo encontrado:', groupName);
+                // El backend espera el NOMBRE del grupo, no el ID
+                setFieldValue('groups', [groupName]); // Enviar como array de nombres
+              } else {
+                setFieldValue('groups', []); // Array vacío si no hay selección
+              }
+            }}
+            className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+              errors.groups ? 'border-red-300 bg-red-50' : 'bg-white'
+            } ${(isViewMode || loadingGroups) ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+          >
+            <option value="">
+              {loadingGroups ? 'Cargando perfiles...' : 'Seleccionar perfil/rol'}
+            </option>
+            {groupsDisponibles.map(group => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+          {errors.groups && (
+            <p className="text-[13px] text-red-600">{errors.groups}</p>
+          )}
+          <p className="text-[13px] text-gray-500">
+            El perfil determina los permisos y accesos del usuario
+          </p>
+        </div>
+      </div>
+
+      {/* Estado del usuario */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+          <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Estado del Usuario</h5>
+        </div>
+        <div className="p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[13px] font-medium text-gray-700">Usuario Activo</span>
+              <p className="text-[13px] text-gray-500 mt-1">Determina si puede acceder al sistema</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                {...getCheckboxProps('is_active')}
+                type="checkbox"
+                disabled={isViewMode}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+              </div>
+              <span className="ml-3 text-[13px] font-medium text-gray-700">
+                {formData.is_active ? 'Activo' : 'Inactivo'}
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Renderizado de pestaña Organización
+  const renderOrganizacion = () => (
+    <div className="space-y-4">
+      {/* Header de sección */}
+      <div className="pb-3 border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <h4 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">
+            Información Organizacional
+          </h4>
+        </div>
+      </div>
+
+      {/* Cargo - DINÁMICO DESDE ÁREAS */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+          <h5 className="text-[13px] font-bold text-gray-700 uppercase tracking-wider">Cargo</h5>
+        </div>
+        <div className="p-3 space-y-2">
+          <select
+            {...getSelectProps('cargo')}
+            disabled={isViewMode}
+            className={`w-full px-4 py-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 ${
+              errors.cargo ? 'border-red-300 bg-red-50' : 'bg-white'
+            } ${isViewMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+          >
+            <option value="">Seleccionar cargo</option>
+            {cargos.map(cargo => (
+              <option key={cargo.id} value={cargo.id}>
+                {cargo.nombre} - {cargo.area_nombre || 'Sin área'}
+              </option>
+            ))}
+          </select>
+          {errors.cargo && (
+            <p className="text-[13px] text-red-600">{errors.cargo}</p>
+          )}
+          <p className="text-[13px] text-gray-500">
+            Los cargos se obtienen dinámicamente de las áreas configuradas
+          </p>
+        </div>
+      </div>
+
+      {/* Información sobre cargos */}
+      <div className="border border-blue-200 bg-blue-50 rounded-lg overflow-hidden">
+        <div className="bg-blue-100 px-4 py-2 border-b border-blue-200">
+          <h5 className="text-[13px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-2">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            Información de Cargos
+          </h5>
+        </div>
+        <div className="p-3">
+          <p className="text-[13px] text-blue-800 leading-relaxed">
+            Los cargos disponibles se cargan automáticamente desde las áreas organizacionales configuradas en el sistema.
+            Cada cargo está asociado a un área específica, lo que permite una mejor organización y asignación de responsabilidades.
+          </p>
+          {cargos.length === 0 && (
+            <p className="text-[13px] text-blue-700 mt-2">
+              <strong>Nota:</strong> No hay cargos disponibles. Asegúrate de que existan áreas con cargos configurados.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   if (!show) return null;
 
-  const isViewMode = mode === 'view';
-  const isCreateMode = mode === 'create';
-  const isEditMode = mode === 'edit';
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-[1px] z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
-        {/* Header Minimalista */}
-        <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-6 py-4">
+      <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-[1000px] h-[700px] flex flex-col max-w-[95vw] max-h-[95vh]">
+        {/* Header Profesional - siguiendo patrón de modales de detalles */}
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-6 py-4 rounded-t-xl flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-[15px] font-bold text-gray-900 uppercase tracking-wider">
+              <h3 className="text-[13px] font-bold text-gray-900 uppercase tracking-wider">
                 {isCreateMode && 'Crear Nuevo Usuario'}
                 {isEditMode && 'Editar Usuario'}
                 {isViewMode && 'Detalles del Usuario'}
               </h3>
               <p className="text-[13px] text-gray-500 mt-1">
-                {isCreateMode && 'Completa los campos para registrar un nuevo usuario'}
-                {isEditMode && 'Modifica los datos del usuario'}
-                {isViewMode && 'Información completa del usuario'}
+                {isCreateMode && 'Completa la información en las pestañas para registrar un nuevo usuario'}
+                {isEditMode && 'Modifica la información del usuario en las pestañas correspondientes'}
+                {isViewMode && 'Información completa del usuario organizada por categorías'}
               </p>
             </div>
             <button
-              type="button"
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-200 rounded-lg p-2 transition-colors"
             >
@@ -193,470 +625,87 @@ const UserModal = ({
           </div>
         </div>
 
-        {/* Contenido Principal */}
-        <div className="overflow-y-auto max-h-[calc(90vh-180px)]">
-          <div className="px-6 py-6">
-            <form onSubmit={handleFormSubmit}>
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                {/* Columna Izquierda - Foto y Estados */}
-                <div className="lg:col-span-1">
-                  <div className="bg-slate-50/50 rounded-xl p-6 h-full flex flex-col justify-between border border-slate-200/50">
-                    {/* Foto de perfil */}
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="relative group">
-                        <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 font-semibold text-sm overflow-hidden border-2 border-white shadow-lg transition-all duration-200 group-hover:shadow-xl">
-                          {imagePreview || editingUser?.foto_perfil ? (
-                            <img 
-                              src={imagePreview || editingUser?.foto_perfil} 
-                              alt="Foto de perfil"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <svg className="w-10 h-10 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            </svg>
-                          )}
-                        </div>
-                        {!isViewMode && (
-                          <label className="absolute -bottom-1 -right-1 bg-slate-600 hover:bg-slate-700 text-white rounded-xl p-2 cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleImageUpload(e, 'foto_perfil')}
-                              className="hidden"
-                            />
-                          </label>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-500 text-center">Foto de perfil</p>
-                    </div>
-
-                    {/* Estados - Minimalista */}
-                    <div className="space-y-4 mt-6">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between py-2">
-                          <div className="flex-1">
-                            <span className="text-[12px] font-medium text-slate-700">Usuario Activo</span>
-                            <p className="text-[10px] text-slate-500">Puede acceder al sistema</p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              {...getCheckboxProps('is_active')}
-                              type="checkbox"
+        {/* Sistema de Pestañas Mejorado */}
+        <div className="bg-gray-50/80 border-b border-gray-200 flex-shrink-0">
+          <div className="px-6">
+            <nav className="flex space-x-0" aria-label="Tabs">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
                               disabled={isViewMode}
-                              className="sr-only peer"
-                            />
-                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-600"></div>
-                          </label>
-                        </div>
-
-                        <div className="flex items-center justify-between py-2">
-                          <div className="flex-1">
-                            <span className="text-[12px] font-medium text-slate-700">Personal Staff</span>
-                            <p className="text-[10px] text-slate-500">Acceso al panel</p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              {...getCheckboxProps('is_staff')}
-                              type="checkbox"
-                              disabled={isViewMode}
-                              className="sr-only peer"
-                            />
-                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-600"></div>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Columna Derecha - Formulario */}
-                <div className="lg:col-span-4 space-y-6">
-                  {/* Información básica */}
-                  <div className="space-y-5">
-                    <h4 className="text-[14px] font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">Información Personal</h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* DNI (Username) */}
-                      <div className="space-y-2">
-                        <label htmlFor="username" className="block text-[13px] font-semibold text-gray-700">
-                          DNI <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <input
-                            {...getInputProps('username')}
-                            type="text"
-                            placeholder="12345678"
-                            maxLength="8"
-                            disabled={isViewMode || isEditMode}
-                            onBlur={(e) => {
-                              if (isCreateMode && e.target.value) {
-                                handleDniBlur(e.target.value);
-                              }
-                            }}
-                            className={`w-full px-3 py-2.5 pr-10 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                              errors.username ? 'border-red-500 bg-red-50' : 'bg-white'
-                            } ${(isViewMode || isEditMode) ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                          />
-                          {loadingDni && (
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-500 border-t-transparent"></div>
-                            </div>
-                          )}
-                        </div>
-                        {errors.username && (
-                          <p className="text-[12px] text-red-600">{errors.username}</p>
-                        )}
-                      </div>
-
-                      {/* Email */}
-                      <div className="space-y-2">
-                        <label htmlFor="email" className="block text-[13px] font-semibold text-gray-700">
-                          Email
-                        </label>
-                        <input
-                          {...getInputProps('email')}
-                          type="email"
-                          placeholder="usuario@empresa.com"
-                          disabled={isViewMode}
-                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                            errors.email ? 'border-red-500 bg-red-50' : 'bg-white'
-                          } ${isViewMode ? 'bg-gray-50' : ''}`}
-                        />
-                        {errors.email && (
-                          <p className="text-[12px] text-red-600">{errors.email}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Nombres */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label htmlFor="first_name" className="block text-[13px] font-semibold text-gray-700">
-                            Nombres <span className="text-red-500">*</span>
-                            {fieldsFromDni && <span className="text-green-600 text-[11px] ml-1">(Autocompletado)</span>}
-                          </label>
-                          {fieldsFromDni && !isViewMode && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFieldsFromDni(false);
-                                setFieldValue('first_name', '');
-                                setFieldValue('last_name', '');
-                                toast.info('Campos liberados para edición manual');
-                              }}
-                              className="text-[11px] text-slate-600 hover:text-slate-800 underline"
-                            >
-                              Editar manualmente
-                            </button>
-                          )}
-                        </div>
-                        <input
-                          {...getInputProps('first_name')}
-                          type="text"
-                          placeholder="Juan Carlos"
-                          disabled={isViewMode}
-                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                            errors.first_name ? 'border-red-500 bg-red-50' : 'bg-white'
-                          } ${isViewMode ? 'bg-gray-50' : ''}`}
-                        />
-                        {errors.first_name && (
-                          <p className="text-[12px] text-red-600">{errors.first_name}</p>
-                        )}
-                      </div>
-
-                      {/* Apellidos */}
-                      <div className="space-y-2">
-                        <label htmlFor="last_name" className="block text-[13px] font-semibold text-gray-700">
-                          Apellidos <span className="text-red-500">*</span>
-                          {fieldsFromDni && <span className="text-green-600 text-[11px] ml-1">(Autocompletado)</span>}
-                        </label>
-                        <input
-                          {...getInputProps('last_name')}
-                          type="text"
-                          placeholder="Pérez Rodríguez"
-                          disabled={isViewMode}
-                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                            errors.last_name ? 'border-red-500 bg-red-50' : 'bg-white'
-                          } ${isViewMode ? 'bg-gray-50' : ''}`}
-                        />
-                        {errors.last_name && (
-                          <p className="text-[12px] text-red-600">{errors.last_name}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Contraseñas (solo para crear) */}
-                  {isCreateMode && (
-                    <div className="space-y-5">
-                      <h4 className="text-[14px] font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">Seguridad</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label htmlFor="password" className="block text-[13px] font-semibold text-gray-700">
-                            Contraseña <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <input
-                              {...getInputProps('password')}
-                              type={showPassword ? 'text' : 'password'}
-                              placeholder="Mínimo 6 caracteres"
-                              className={`w-full px-3 py-2.5 pr-10 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                                errors.password ? 'border-red-500 bg-red-50' : 'bg-white'
-                              }`}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                {showPassword ? (
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                                ) : (
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                )}
-                              </svg>
-                            </button>
-                          </div>
-                          {errors.password && (
-                            <p className="text-[12px] text-red-600">{errors.password}</p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <label htmlFor="confirmPassword" className="block text-[13px] font-semibold text-gray-700">
-                            Confirmar Contraseña <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            {...getInputProps('confirmPassword')}
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="Repetir contraseña"
-                            className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                              errors.confirmPassword ? 'border-red-500 bg-red-50' : 'bg-white'
-                            }`}
-                          />
-                          {errors.confirmPassword && (
-                            <p className="text-[12px] text-red-600">{errors.confirmPassword}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  className={`
+                    flex items-center px-5 py-3 text-[13px] font-medium border-b-2 transition-all duration-200
+                    ${activeTab === tab.id 
+                      ? 'border-blue-600 text-blue-700 bg-white shadow-sm' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-white/60'
+                    }
+                    ${isViewMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
+                  `}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                  {errors && Object.keys(errors).length > 0 && getTabErrors(tab.id).length > 0 && (
+                    <span className="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                   )}
-
-
-
-                  {/* Sistema de Grupos - Nuevo sistema basado en backend */}
-                  <div className="space-y-5">
-                    <h4 className="text-[14px] font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">Sistema de Perfiles</h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Tipo de Usuario */}
-                      <div className="space-y-2">
-                        <label htmlFor="tipo_usuario" className="block text-[13px] font-semibold text-gray-700">
-                          Tipo de Usuario <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          {...getSelectProps('tipo_usuario')}
-                                  disabled={isViewMode}
-                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                            errors.tipo_usuario ? 'border-red-500 bg-red-50' : 'bg-white'
-                          } ${isViewMode ? 'bg-gray-50' : ''}`}
-                        >
-                          <option value="">Seleccionar tipo</option>
-                          <option value="ADMIN">Administrativo</option>
-                          <option value="TRABAJADOR">Trabajador</option>
-                        </select>
-                        {errors.tipo_usuario && (
-                          <p className="text-[12px] text-red-600">{errors.tipo_usuario}</p>
-                        )}
-                      </div>
-
-                      {/* Grupo (perfil) */}
-                      <div className="space-y-2">
-                        <label htmlFor="groups" className="block text-[13px] font-semibold text-gray-700">
-                          Perfil <span className="text-red-500">*</span>
-                              </label>
-                        <select
-                          {...getSelectProps('groups_ids')}
-                          disabled={isViewMode || !formData.tipo_usuario || loadingGroups}
-                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                            errors.groups ? 'border-red-500 bg-red-50' : 'bg-white'
-                          } ${(isViewMode || !formData.tipo_usuario) ? 'bg-gray-50' : ''}`}
-                        >
-                          <option value="">
-                            {loadingGroups ? 'Cargando perfiles...' : 
-                             !formData.tipo_usuario ? 'Selecciona tipo de usuario primero' : 
-                             'Seleccionar perfil'}
-                          </option>
-                          {groupsDisponibles.map(group => (
-                            <option key={group.id} value={group.id}>
-                              {group.nombre || group.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.groups_ids && (
-                          <p className="text-[12px] text-red-600">{errors.groups_ids}</p>
-                        )}
-                      </div>
-                          </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Empresa */}
-                      <div className="space-y-2">
-                        <label htmlFor="empresa" className="block text-[13px] font-semibold text-gray-700">
-                          Empresa
-                        </label>
-                        <input
-                          {...getInputProps('empresa')}
-                          type="text"
-                          placeholder="Nombre de la empresa"
-                          disabled={isViewMode}
-                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                            errors.empresa ? 'border-red-500 bg-red-50' : 'bg-white'
-                          } ${isViewMode ? 'bg-gray-50' : ''}`}
-                        />
-                        {errors.empresa && (
-                          <p className="text-[12px] text-red-600">{errors.empresa}</p>
-                        )}
-                          </div>
-
-                      {/* Departamento */}
-                      <div className="space-y-2">
-                        <label htmlFor="departamento" className="block text-[13px] font-semibold text-gray-700">
-                          Departamento
-                        </label>
-                        <input
-                          {...getInputProps('departamento')}
-                          type="text"
-                          placeholder="Departamento"
-                          disabled={isViewMode}
-                          className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                            errors.departamento ? 'border-red-500 bg-red-50' : 'bg-white'
-                          } ${isViewMode ? 'bg-gray-50' : ''}`}
-                        />
-                        {errors.departamento && (
-                          <p className="text-[12px] text-red-600">{errors.departamento}</p>
-                        )}
+                </button>
+              ))}
+            </nav>
                       </div>
                     </div>
 
-                    {/* Código de Empleado */}
-                    <div className="space-y-2">
-                      <label htmlFor="codigo_empleado" className="block text-[13px] font-semibold text-gray-700">
-                        Código de Empleado
-                      </label>
-                      <input
-                        {...getInputProps('codigo_empleado')}
-                        type="text"
-                        placeholder="Código único del empleado"
-                        disabled={isViewMode}
-                        className={`w-full px-3 py-2.5 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all ${
-                          errors.codigo_empleado ? 'border-red-500 bg-red-50' : 'bg-white'
-                        } ${isViewMode ? 'bg-gray-50' : ''}`}
-                      />
-                      {errors.codigo_empleado && (
-                        <p className="text-[12px] text-red-600">{errors.codigo_empleado}</p>
-                      )}
-                    </div>
-
-                    {/* Accesos Web y Móvil */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center justify-between py-2">
-                        <div className="flex-1">
-                          <span className="text-[12px] font-medium text-slate-700">Acceso Web</span>
-                          <p className="text-[10px] text-slate-500">Puede acceder vía interfaz web</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            {...getCheckboxProps('acceso_web_activo')}
-                            type="checkbox"
-                            disabled={isViewMode}
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-600"></div>
-                        </label>
-                      </div>
-
-                      <div className="flex items-center justify-between py-2">
-                        <div className="flex-1">
-                          <span className="text-[12px] font-medium text-slate-700">Acceso Móvil</span>
-                          <p className="text-[10px] text-slate-500">Puede acceder vía app móvil</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            {...getCheckboxProps('acceso_movil_activo')}
-                            type="checkbox"
-                            disabled={isViewMode}
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-600"></div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Información adicional (solo vista) */}
-                  {isViewMode && editingUser && (
-                    <div className="space-y-5">
-                      <h4 className="text-[14px] font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-4">Información del Sistema</h4>
-                      <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
-                          <div className="flex justify-between">
-                            <span className="text-slate-600 font-medium">Registrado:</span>
-                            <span className="text-slate-800">
-                              {editingUser.date_joined_formatted || new Date(editingUser.date_joined).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-600 font-medium">Último acceso:</span>
-                            <span className="text-slate-800">
-                              {editingUser.last_login_formatted || 'Nunca'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-600 font-medium">ID:</span>
-                            <span className="text-slate-800">#{editingUser.id}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-600 font-medium">Tipo:</span>
-                            <span className="text-slate-800">{editingUser.tipo_usuario === 'ADMIN' ? 'Administrativo' : 'Trabajador'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+        {/* Contenido de las pestañas */}
+        <div className="flex-1 overflow-y-auto px-6 py-4" style={{minHeight: '0'}}>
+          <form onSubmit={handleFormSubmit}>
+            {activeTab === 'datos' && renderDatosPersonales()}
+            {activeTab === 'acceso' && renderAccesoPerfil()}
+            {activeTab === 'organizacion' && renderOrganizacion()}
             </form>
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-gray-50 border-t border-gray-200 px-6 py-4">
-          <div className="flex justify-end space-x-3">
+        {/* Footer - siguiendo patrón de modales de detalles */}
+        <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-xl flex-shrink-0">
+          <div className="flex items-center justify-between">
+            {/* Indicador de pestaña con estado */}
+            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+                <span className="text-[13px] text-gray-600 font-medium">
+                Pestaña {tabs.findIndex(tab => tab.id === activeTab) + 1} de {tabs.length}
+              </span>
+                <span className="text-[13px] text-gray-500">
+                ({tabs.find(tab => tab.id === activeTab)?.label})
+              </span>
+              </div>
+              {/* Indicador de validación */}
+              {!isValid && (
+                <div className="flex items-center text-[13px] text-red-600">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Faltan campos obligatorios
+                </div>
+              )}
+            </div>
+
+            {/* Botones */}
+            <div className="flex items-center space-x-3">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2.5 text-[13px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-colors"
+                className="px-5 py-2.5 text-[13px] font-medium text-gray-700 bg-white hover:bg-gray-100 hover:text-gray-900 hover:border-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all duration-200"
             >
-              {isViewMode ? 'Cerrar' : 'Cancelar'}
+                Cancelar
             </button>
             
             {!isViewMode && (
               <button
                 type="submit"
-                onClick={handleFormSubmit}
                 disabled={loading || !isValid}
-                className={`px-5 py-2.5 text-[13px] font-medium text-white rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-slate-300 ${
+                  onClick={handleFormSubmit}
+                  className={`px-6 py-2.5 text-[13px] font-medium text-white rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200 ${
                   loading || !isValid
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-slate-500 hover:bg-slate-600 shadow-sm hover:shadow-md'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
                 {loading ? (
@@ -665,10 +714,13 @@ const UserModal = ({
                     <span>Guardando...</span>
                   </div>
                 ) : (
-                  isCreateMode ? 'Crear Usuario' : 'Guardar Cambios'
+                    <>
+                      {isCreateMode ? 'Crear Usuario' : 'Guardar Cambios'}
+                    </>
                 )}
               </button>
             )}
+            </div>
           </div>
         </div>
       </div>
@@ -683,6 +735,7 @@ UserModal.propTypes = {
   editingUser: PropTypes.object,
   loading: PropTypes.bool,
   availableRoles: PropTypes.array,
+  availableCargos: PropTypes.array,
   mode: PropTypes.oneOf(['create', 'edit', 'view'])
 };
 

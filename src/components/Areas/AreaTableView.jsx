@@ -1,6 +1,6 @@
 /**
  * Componente de tabla para Areas
- * Siguiendo el patrón de ProfileTableView para consistencia
+ * Diseño optimizado con fuente 13px y columnas bien distribuidas
  */
 
 import React from 'react';
@@ -31,14 +31,14 @@ const AreaTableView = ({
       <div key={area.id} className="bg-white border-l-4 border-l-blue-500 p-4 space-y-3 hover:bg-gray-50 transition-colors">
         {/* Nombre del área */}
         <div>
-          <h4 className="text-sm font-medium text-gray-900 mb-1">
+          <h4 className="text-[13px] font-medium text-gray-900 mb-1">
             {area.nombre}
           </h4>
-          <span className="text-xs text-gray-500 font-mono">
+          <span className="text-[13px] text-gray-500 font-mono">
             #{area.id}
           </span>
           {area.descripcion && (
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-[13px] text-gray-600 mt-1">
               {area.descripcion}
             </p>
           )}
@@ -46,18 +46,18 @@ const AreaTableView = ({
 
         {/* Estado */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Estado:</span>
-          <span className={`text-xs px-2 py-1 rounded-full ${
+          <span className="text-[13px] text-gray-500">Estado:</span>
+          <span className={`text-[13px] px-2 py-1 rounded-full ${
             area.is_active 
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
           }`}>
-            {area.is_active ? 'Activo' : 'Inactivo'}
+            {area.is_active ? 'Activa' : 'Inactiva'}
           </span>
         </div>
 
         {/* Stats */}
-        <div className="flex gap-4 text-sm">
+        <div className="flex gap-4 text-[13px]">
           <div className="flex items-center gap-1">
             <span className="text-gray-500">Cargos:</span>
             <span className="font-medium text-gray-900">{area.total_cargos || 0}</span>
@@ -90,23 +90,6 @@ const AreaTableView = ({
             </svg>
           </button>
           <button
-            onClick={() => onToggleStatus?.(area.id)}
-            className={`p-2 transition-colors rounded-lg ${
-              area.is_active 
-                ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50' 
-                : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
-            }`}
-            title={area.is_active ? "Desactivar" : "Activar"}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {area.is_active ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              )}
-            </svg>
-          </button>
-          <button
             onClick={() => onDelete?.(area.id)}
             disabled={!canDelete}
             className={`p-2 transition-colors rounded-lg ${
@@ -134,51 +117,64 @@ const AreaTableView = ({
     return (
       <tr key={area.id} className="hover:bg-gray-50 transition-colors">
         {/* ID */}
-        <td className="px-4 py-3 border-b border-gray-100 text-center">
-          <span className="text-[12px] text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
+        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
+          <span className="text-[13px] text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
             #{String(area.id).padStart(3, '0')}
           </span>
         </td>
         
         {/* Nombre */}
-        <td className="px-4 py-3 border-b border-gray-100 text-center">
-          <p className="text-[13px] text-gray-900 font-medium">
-            {area.nombre}
-          </p>
-          {area.descripcion && (
-            <p className="text-[11px] text-gray-500 mt-1">
-              {area.descripcion.length > 50 ? `${area.descripcion.substring(0, 50)}...` : area.descripcion}
+        <td className="px-3 py-2.5 border-b border-gray-100 text-left">
+          <div className="w-full overflow-hidden">
+            <p className="text-[13px] text-gray-900 font-medium truncate">
+              {area.nombre}
             </p>
-          )}
+            {area.descripcion && (
+              <p className="text-[13px] text-gray-500 mt-0.5 truncate">
+                {area.descripcion.length > 30 ? `${area.descripcion.substring(0, 30)}...` : area.descripcion}
+              </p>
+            )}
+          </div>
         </td>
         
         {/* Estado */}
-        <td className="px-4 py-3 border-b border-gray-100 text-center">
-          <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${
+        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
+          <span className={`text-[13px] px-2 py-1 rounded-full font-medium ${
             area.is_active 
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
           }`}>
-            {area.is_active ? 'Activo' : 'Inactivo'}
+            {area.is_active ? 'Activa' : 'Inactiva'}
           </span>
         </td>
 
         {/* Cargos */}
-        <td className="px-4 py-3 border-b border-gray-100 text-center">
-          <span className="text-[13px] text-gray-900">
+        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
+          <span className="text-[13px] text-gray-900 font-medium">
             {area.total_cargos || 0}
           </span>
         </td>
 
         {/* Usuarios */}
-        <td className="px-4 py-3 border-b border-gray-100 text-center">
-          <span className="text-[13px] text-gray-900">
+        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
+          <span className="text-[13px] text-gray-900 font-medium">
             {area.total_usuarios || 0}
           </span>
         </td>
 
+        {/* Fecha de creación */}
+        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
+          <span className="text-[13px] text-gray-500">
+            {area.created_at ? new Date(area.created_at).toLocaleDateString('es-ES', {
+              year: '2-digit',
+              month: 'short',
+              day: 'numeric'
+            }) : '-'}
+          </span>
+        </td>
+
         {/* Acciones */}
-        <td className="px-4 py-3 border-b border-gray-100 text-center">
+        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
           <div className="flex items-center justify-center gap-1">
             <button
               onClick={() => onView?.(area)}
@@ -197,23 +193,6 @@ const AreaTableView = ({
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => onToggleStatus?.(area.id)}
-              className={`p-1.5 transition-colors rounded ${
-                area.is_active 
-                  ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50' 
-                  : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
-              }`}
-              title={area.is_active ? "Desactivar" : "Activar"}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {area.is_active ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                )}
               </svg>
             </button>
             <button
@@ -245,20 +224,26 @@ const AreaTableView = ({
 
       {/* Vista desktop - Tabla */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full min-w-full table-auto">
+        <table className="w-full table-fixed">
           <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider w-[80px]">
+              <th className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider w-16">
                 ID
               </th>
-              <th className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider">
-                Nombre
+              <th 
+                className="px-3 py-3 text-left text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-64"
+                onClick={() => onSort('nombre')}
+              >
+                <div className="flex items-center gap-1">
+                  Área
+                  <SortIcon field="nombre" currentField={sortField} direction={sortDirection} />
+                </div>
               </th>
-              <th className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider w-[100px]">
+              <th className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider w-20">
                 Estado
               </th>
               <th 
-                className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[100px]"
+                className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-16"
                 onClick={() => onSort('total_cargos')}
               >
                 <div className="flex items-center justify-center gap-1">
@@ -267,7 +252,7 @@ const AreaTableView = ({
                 </div>
               </th>
               <th 
-                className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-[100px]"
+                className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-20"
                 onClick={() => onSort('total_usuarios')}
               >
                 <div className="flex items-center justify-center gap-1">
@@ -275,7 +260,16 @@ const AreaTableView = ({
                   <SortIcon field="total_usuarios" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
-              <th className="px-4 py-3 text-center text-[12px] text-gray-600 uppercase tracking-wider w-[140px]">
+              <th 
+                className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-24"
+                onClick={() => onSort('created_at')}
+              >
+                <div className="flex items-center justify-center gap-1">
+                  Creado
+                  <SortIcon field="created_at" currentField={sortField} direction={sortDirection} />
+                </div>
+              </th>
+              <th className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider w-24">
                 Acciones
               </th>
             </tr>

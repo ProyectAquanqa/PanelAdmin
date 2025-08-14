@@ -83,8 +83,8 @@ export const useAreas = () => {
     try {
       setLoading(prev => ({ ...prev, cargos: true }));
       
-      const result = await areasService.cargos.list(1, 100, filters);
-      console.log('👔 Resultado areasService.cargos.list:', result);
+      const result = await areasService.cargos.simple(); // Usar simple en lugar de list
+      console.log('👔 Resultado areasService.cargos.simple:', result);
       
       // Manejar diferentes formatos de respuesta
       let cargosData = [];

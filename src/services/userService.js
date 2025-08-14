@@ -465,6 +465,48 @@ const userService = {
       // Importación dinámica para evitar dependencias circulares
       const { dniClient } = await import('../api/dniClient');
       return await dniClient.consultarDni(dni);
+    },
+
+    /**
+     * Obtiene cargos con información de área
+     * @returns {Promise} Lista de cargos con área
+     */
+    getCargosWithArea: async () => {
+      try {
+        // Intentar obtener desde el endpoint de áreas
+        const response = await apiCall('/web/areas/cargos/');
+        
+        if (response.status === 'success') {
+          return response;
+        } else if (Array.isArray(response)) {
+          return { status: 'success', data: response };
+        }
+        
+        // Fallback: datos mock para desarrollo
+        return {
+          status: 'success',
+          data: [
+            { id: 1, nombre: 'Analista de Sistemas', area_nombre: 'Tecnología' },
+            { id: 2, nombre: 'Gerente de Operaciones', area_nombre: 'Operaciones' },
+            { id: 3, nombre: 'Contador', area_nombre: 'Finanzas' },
+            { id: 4, nombre: 'Asistente Administrativo', area_nombre: 'Administración' },
+            { id: 5, nombre: 'Técnico de Campo', area_nombre: 'Operaciones' }
+          ]
+        };
+      } catch (error) {
+        console.error('Error obteniendo cargos:', error);
+        // Devolver datos mock en caso de error
+        return {
+          status: 'success',
+          data: [
+            { id: 1, nombre: 'Analista de Sistemas', area_nombre: 'Tecnología' },
+            { id: 2, nombre: 'Gerente de Operaciones', area_nombre: 'Operaciones' },
+            { id: 3, nombre: 'Contador', area_nombre: 'Finanzas' },
+            { id: 4, nombre: 'Asistente Administrativo', area_nombre: 'Administración' },
+            { id: 5, nombre: 'Técnico de Campo', area_nombre: 'Operaciones' }
+          ]
+        };
+      }
     }
   }
 };

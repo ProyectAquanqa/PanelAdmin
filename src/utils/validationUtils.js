@@ -470,9 +470,21 @@ export const validateUserForm = (formData, formType = 'user') => {
     }
   }
 
-  // Validación de grupos (opcional pero debe ser array si existe)
-  if (formData.groups && !Array.isArray(formData.groups)) {
-    errors.groups = 'Grupos debe ser una lista válida';
+  // Validación de grupos (opcional, puede ser array, string o number)
+  if (formData.groups) {
+    // Permitir que sea array, string o number, pero validar que no esté vacío
+    if (Array.isArray(formData.groups)) {
+      if (formData.groups.length === 0) {
+        errors.groups = 'Debe seleccionar al menos un grupo';
+      }
+    } else if (typeof formData.groups === 'string' || typeof formData.groups === 'number') {
+      // Si es string o number, validar que no sea vacío/0
+      if (!formData.groups || (typeof formData.groups === 'string' && formData.groups.trim() === '')) {
+        errors.groups = 'Debe seleccionar un grupo válido';
+      }
+    } else {
+      errors.groups = 'Grupo debe ser una selección válida';
+    }
   }
 
   return errors;

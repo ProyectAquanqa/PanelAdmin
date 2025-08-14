@@ -17,7 +17,7 @@ import {
   UserActions,
   UserTableView,
   UserModal,
-  UserFormInline,
+  UserDetailModal,
   UserList,
   LoadingStates
 } from "../../components/Users";
@@ -42,10 +42,12 @@ const UserManagement = () => {
     toggleUserActiveStatus
   } = useUsers();
 
-  // Estado del formulario inline
-  const [showInlineForm, setShowInlineForm] = useState(false);
-  const [formMode, setFormMode] = useState('create'); // 'create' | 'edit'
+  // Estado del modal
+  const [showModal, setShowModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [formMode, setFormMode] = useState('create'); // 'create' | 'edit' | 'view'
   const [editingUser, setEditingUser] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
 
   // Estados de filtros para sistema de permisos dinámicos
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,8 +83,11 @@ const UserManagement = () => {
     // Filtro por grupo dinámico 
     if (selectedGroup) {
       filtered = filtered.filter(user => 
-        user.groups && user.groups.some(group => 
-          group.id?.toString() === selectedGroup || group.name === selectedGroup
+        user.groups && Array.isArray(user.groups) && user.groups.some(group => 
+          // Manejar grupos como strings directos o como objetos
+          typeof group === 'string' 
+            ? group === selectedGroup 
+            : (group.name === selectedGroup || group.nombre === selectedGroup)
         )
       );
     }
@@ -94,43 +99,51 @@ const UserManagement = () => {
   const handleCreateNew = useCallback(() => {
     setEditingUser(null);
     setFormMode('create');
-    setShowInlineForm(true);
+    setShowModal(true);
   }, []);
 
   const handleEdit = useCallback((user) => {
     setEditingUser(user);
     setFormMode('edit');
-    setShowInlineForm(true);
+    setShowModal(true);
   }, []);
 
   const handleView = useCallback((user) => {
-    setEditingUser(user);
-    setFormMode('edit');
-    setShowInlineForm(true);
+    setViewingUser(user);
+    setShowDetailModal(true);
   }, []);
 
-  const handleCloseInline = useCallback(() => {
-    setShowInlineForm(false);
+  const handleCloseModal = useCallback(() => {
+    setShowModal(false);
     setEditingUser(null);
     setFormMode('create');
+  }, []);
+
+  const handleCloseDetailModal = useCallback(() => {
+    setShowDetailModal(false);
+    setViewingUser(null);
   }, []);
 
   // Handlers de acciones
   const handleSaveUser = useCallback(async (userData) => {
     try {
       if (formMode === 'create') {
-        await createUser(userData);
-        toast.success('Usuario creado exitosamente');
+        const result = await createUser(userData);
+        if (result) {
+          handleCloseModal(); // Solo cerrar si fue exitoso
+        }
       } else if (formMode === 'edit') {
-        await updateUser(editingUser.id, userData);
-        toast.success('Usuario actualizado exitosamente');
+        const result = await updateUser(editingUser.id, userData);
+        if (result) {
+          toast.success('Usuario actualizado exitosamente');
+          handleCloseModal(); // Solo cerrar si fue exitoso
+        }
       }
-      handleCloseInline();
     } catch (error) {
       console.error('Error al guardar usuario:', error);
-      toast.error(formMode === 'create' ? 'Error al crear usuario' : 'Error al actualizar usuario');
+      // El toast de error ya se maneja en el hook useUsers
     }
-  }, [formMode, editingUser, createUser, updateUser, handleCloseInline]);
+  }, [formMode, editingUser, createUser, updateUser, handleCloseModal]);
 
   const handleDeleteUser = useCallback(async (userId) => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
@@ -227,40 +240,48 @@ const UserManagement = () => {
             selectedGroup={selectedGroup}
             onGroupChange={setSelectedGroup}
             onCreateNew={handleCreateNew}
-
             onImport={handleImport}
             groups={groups}
             totalItems={filteredUsers.length}
-            isFormMode={showInlineForm}
-            onBack={handleCloseInline}
+            isFormMode={showModal}
+            onBack={handleCloseModal}
             formTitle={formMode === 'edit' ? 'Editando usuario' : 'Nuevo usuario'}
             userPermissions={userPermissions}
           />
         </PermissionGate>
 
-        {!showInlineForm ? (
-          <UserList
-            users={filteredUsers}
-            loading={loading.users}
-            error={loading.error}
-            totalItems={filteredUsers.length}
-            onEdit={handleEdit}
-            onDelete={handleDeleteUser}
-            onView={handleView}
-            onToggleStatus={handleToggleStatus}
-            onCreateFirst={handleCreateNew}
-            onRetry={fetchUsers}
-          />
-        ) : (
-          <UserFormInline
-            mode={formMode}
-            initialData={editingUser}
-            groups={groups}
-            loading={loading.create || loading.update}
-            onSubmit={handleSaveUser}
-            onCancel={handleCloseInline}
-          />
-        )}
+        <UserList
+          users={filteredUsers}
+          loading={loading.users}
+          error={loading.error}
+          totalItems={filteredUsers.length}
+          onEdit={handleEdit}
+          onDelete={handleDeleteUser}
+          onView={handleView}
+          onToggleStatus={handleToggleStatus}
+          onCreateFirst={handleCreateNew}
+          onRetry={fetchUsers}
+        />
+
+        {/* Modal de usuario */}
+        <UserModal
+          show={showModal}
+          onClose={handleCloseModal}
+          onSubmit={handleSaveUser}
+          editingUser={editingUser}
+          loading={loading.create || loading.update}
+          availableRoles={groups}
+          availableCargos={[]}
+          mode={formMode}
+        />
+
+        {/* Modal de detalles de usuario */}
+        <UserDetailModal
+          show={showDetailModal}
+          onClose={handleCloseDetailModal}
+          user={viewingUser}
+          loading={loading.users}
+        />
 
       </div>
     </div>

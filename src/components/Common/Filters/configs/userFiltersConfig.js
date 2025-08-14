@@ -67,7 +67,7 @@ export const prepareUserFiltersConfig = (groups = [], handlers) => {
   config.filterGroups[0].options = [
     { value: '', label: 'Todos los perfiles' },
     ...validGroups.map(group => ({ 
-      value: group.id?.toString(), 
+      value: group.name || group.nombre, // Filtrar por nombre, no por ID
       label: group.nombre || group.name 
     }))
   ];
