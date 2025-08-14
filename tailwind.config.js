@@ -6,55 +6,29 @@ export default {
   ],
   darkMode: 'class',
   theme: {
+    fontSize: {
+      xs: ['11px', { lineHeight: '16px' }],
+      sm: ['13px', { lineHeight: '18px' }], // Tamaño base 13px
+      base: ['13px', { lineHeight: '19px' }], // Base del sistema en 13px
+      lg: ['15px', { lineHeight: '22px' }],
+      xl: ['18px', { lineHeight: '26px' }],
+      '2xl': ['22px', { lineHeight: '30px' }],
+      '3xl': ['26px', { lineHeight: '34px' }],
+      '4xl': ['32px', { lineHeight: '40px' }],
+      '5xl': ['40px', { lineHeight: '48px' }],
+      '6xl': ['48px', { lineHeight: '56px' }],
+    },
     extend: {
       colors: {
-        // Paleta moderna de azules más elegante
-        blue: {
-          50: '#eef5ff',
-          100: '#d9e9ff',
-          200: '#bcd9ff',
-          300: '#8fc0ff',
-          400: '#599eff',
-          500: '#2e7cf2', // Azul principal (más elegante que #0074BD)
-          600: '#1b62db',
-          700: '#1650b8',
-          800: '#174496',
-          900: '#193b7a',
-        },
-        // Azul más brillante para acentos/highlights
-        accent: {
-          100: '#e6f2ff',
-          200: '#c5e1ff',
-          300: '#94c8ff',
-          400: '#5fa5ff',
-          500: '#3b82f6', // Acento principal
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-        },
-        // Azul oscuro para fondos
-        blueDark: {
-          50: '#eef3ff',
-          100: '#d9e4ff',
-          200: '#bccef5',
-          300: '#8aa7e0',
-          400: '#5c7ec9',
-          500: '#3b5998', // Azul oscuro principal (más elegante)
-          600: '#2d4373',
-          700: '#1e2e4f',
-          800: '#172038',
-          900: '#101726',
-        },
-        // Neutros
-        neutral: {
+        // Paleta slate (pizarra) principal - moderna y profesional
+        slate: {
           50: '#f8fafc',
           100: '#f1f5f9',
           150: '#e9eef5',
           200: '#e2e8f0',
           300: '#cbd5e1',
           400: '#94a3b8',
-          500: '#64748b',
+          500: '#64748b', // Color principal pizarra
           600: '#475569',
           700: '#334155',
           750: '#243141',
@@ -62,6 +36,32 @@ export default {
           850: '#172033',
           900: '#0f172a',
           950: '#020617',
+        },
+        // Accent slate más intenso para elementos destacados
+        accent: {
+          50: '#f8fafc',
+          100: '#e2e8f0',
+          200: '#cbd5e1',
+          300: '#94a3b8',
+          400: '#64748b',
+          500: '#475569', // Acento principal en slate
+          600: '#334155',
+          700: '#1e293b',
+          800: '#0f172a',
+          900: '#020617',
+        },
+        // Colores complementarios para estados (éxito, error, etc.)
+        blue: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
       },
       fontFamily: {

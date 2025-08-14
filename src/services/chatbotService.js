@@ -61,7 +61,7 @@ const chatbotService = {
     });
   },
 
-  // 📊 Obtener estadísticas del chatbot (usando el endpoint correcto)
+  // 📊 Obtener estadísticas del chatbot
   getStats: async () => {
     return await apiCall('/web/chatbot-knowledge/statistics/');
   },

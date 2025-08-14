@@ -13,7 +13,8 @@
   }
 
   body {
-    @apply bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-white;
+    @apply bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white text-base;
+    font-size: 13px; /* Tamaño base 13px */
   }
 
   /* Optimización para evitar CLS (Cumulative Layout Shift) */
