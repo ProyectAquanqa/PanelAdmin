@@ -59,9 +59,10 @@ export const prepareDeviceFiltersConfig = (deviceTypes, handlers) => {
   const config = { ...deviceFiltersConfig };
   
   // Agregar tipos de dispositivos dinámicamente
+  const safeTypes = Array.isArray(deviceTypes) ? deviceTypes : [];
   config.filterGroups[0].options = [
     { value: '', label: 'Todos los tipos' },
-    ...deviceTypes.map(type => ({ 
+    ...safeTypes.map(type => ({ 
       value: type.id, // Ya es string, no necesita conversión
       label: type.name 
     }))

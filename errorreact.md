@@ -44,7 +44,7 @@ VM386:1  Warning: Failed prop type: The prop `devices[0].name` is marked as requ
     at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=21960174:9149:3)
     at App (http://localhost:5173/src/App.jsx?t=1755206641229:26:3)
 eval @ VM386:1
-127.0.0.1:8000/api/web/devices/37/:1   Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+127.0.0.1:http://192.168.18.13:8000/api/web/devices/37/:1   Failed to load resource: the server responded with a status of 500 (Internal Server Error)
 VM386:1  API Error: Error: HTTP 500
     at apiCall (devicesService.js:33:13)
     at async Object.delete (devicesService.js:82:14)

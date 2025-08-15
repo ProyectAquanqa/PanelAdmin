@@ -3,7 +3,7 @@
  * Siguiendo el mismo patrón que chatbotService.js
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Configuración base para fetch
@@ -57,27 +57,72 @@ const devicesService = {
         limit: limit.toString(),
         ...(search && { search }),
         ...(deviceType && { device_type: deviceType }),
-        ...(status && { status: status }),
+        ...(status && { is_active: status === 'active' ? 'true' : status === 'inactive' ? 'false' : '' }),
       });
-      return await apiCall(`/web/devices/?${params}`);
+      const response = await apiCall(`/web/devices/?${params}`);
+      
+      // Normalizar la respuesta del backend customizado
+      let normalizedResponse;
+      
+      if (response?.data && Array.isArray(response.data)) {
+        // Formato del backend customizado: { status: 'success', data: [...], pagination: {...} }
+        normalizedResponse = {
+          results: response.data.map(device => ({
+            ...device,
+            user: device.user_info || null
+          })),
+          count: response.pagination?.count || response.data.length,
+          next: response.pagination?.next || null,
+          previous: response.pagination?.previous || null
+        };
+      } else if (response?.results) {
+        // Formato estándar DRF: { count: X, results: [...] }
+        normalizedResponse = {
+          ...response,
+          results: response.results.map(device => ({
+            ...device,
+            user: device.user_info || null
+          }))
+        };
+      } else {
+        // Fallback
+        normalizedResponse = response;
+      }
+      
+      return normalizedResponse;
     },
     
     get: async (id) => {
-      return await apiCall(`/web/devices/${id}/`);
+      const device = await apiCall(`/web/devices/${id}/`);
+      // Normalizar user_info a user
+      if (device?.user_info) {
+        device.user = device.user_info;
+      }
+      return device;
     },
     
     create: async (data) => {
-      return await apiCall('/web/devices/', {
+      const device = await apiCall('/web/devices/', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      // Normalizar user_info a user
+      if (device?.user_info) {
+        device.user = device.user_info;
+      }
+      return device;
     },
     
     update: async (id, data) => {
-      return await apiCall(`/web/devices/${id}/`, {
+      const device = await apiCall(`/web/devices/${id}/`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      // Normalizar user_info a user
+      if (device?.user_info) {
+        device.user = device.user_info;
+      }
+      return device;
     },
     
     delete: async (id) => {
@@ -144,12 +189,57 @@ const devicesService = {
     getStats: async () => {
       return await apiCall('/web/devices/statistics/');
     },
+
+    // Exportar dispositivos
+    export: async (format = 'csv', filters = {}) => {
+      const params = new URLSearchParams({
+        format,
+        ...(filters.search && { search: filters.search }),
+        ...(filters.type && { device_type: filters.type }),
+        ...(filters.status && { is_active: filters.status === 'active' ? 'true' : filters.status === 'inactive' ? 'false' : '' }),
+      });
+      
+      const response = await fetch(`${API_BASE}/web/devices/export/?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      // Si es CSV o Excel, retornar blob
+      if (format === 'csv' || format === 'excel') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `dispositivos_${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true, message: 'Archivo descargado exitosamente' };
+      }
+
+      // Si es JSON, retornar los datos
+      return await response.json();
+    },
   },
 
   // 📂 Gestión de tipos de dispositivos
   deviceTypes: {
     list: async () => {
-      return await apiCall('/web/device-types/');
+      const res = await apiCall('/web/device-types/');
+      // Normalizar para siempre devolver un arreglo
+      const arr = Array.isArray(res)
+        ? res
+        : (Array.isArray(res?.data)
+            ? res.data
+            : (Array.isArray(res?.results) ? res.results : []));
+      return arr;
     },
     
     create: async (data) => {

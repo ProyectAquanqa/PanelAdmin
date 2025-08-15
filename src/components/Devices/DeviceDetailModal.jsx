@@ -214,27 +214,19 @@ DeviceDetailModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   device: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    name: PropTypes.string,
-    device_id: PropTypes.string.isRequired,
-    brand: PropTypes.string,
-    model: PropTypes.string,
-    os_version: PropTypes.string,
-    app_version: PropTypes.string,
+    token: PropTypes.string.isRequired,
+    device_type: PropTypes.string.isRequired,
+    device_type_display: PropTypes.string,
     is_active: PropTypes.bool,
-    last_activity: PropTypes.string,
     created_at: PropTypes.string,
     updated_at: PropTypes.string,
-    notes: PropTypes.string,
     user: PropTypes.shape({
       id: PropTypes.number,
+      username: PropTypes.string,
+      full_name: PropTypes.string,
+      email: PropTypes.string,
       first_name: PropTypes.string,
-      last_name: PropTypes.string,
-      email: PropTypes.string
-    }),
-    device_type: PropTypes.shape({
-      id: PropTypes.number,
-      name: PropTypes.string,
-      description: PropTypes.string
+      last_name: PropTypes.string
     })
   }),
   onEdit: PropTypes.func,

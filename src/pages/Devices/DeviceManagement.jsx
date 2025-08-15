@@ -31,6 +31,7 @@ const DeviceManagement = () => {
     deleteDevice,
     toggleDeviceStatus,
     bulkImportDevices,
+    exportDevices,
     isCreateModalOpen,
     isEditModalOpen,
     isDetailModalOpen,
@@ -98,9 +99,12 @@ const DeviceManagement = () => {
     }
   };
 
-  const handleExportData = () => {
-    // Implementar exportación de datos
-    console.log('Exportando datos de dispositivos...');
+  const handleExportData = async () => {
+    try {
+      await exportDevices('csv');
+    } catch (error) {
+      console.error('Error al exportar:', error);
+    }
   };
 
   // Manejar edición desde modal de detalles

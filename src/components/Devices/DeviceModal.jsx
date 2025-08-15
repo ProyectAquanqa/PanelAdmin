@@ -167,7 +167,7 @@ const DeviceModal = ({
                 }`}
               >
                 <option value="">Seleccionar tipo...</option>
-                {deviceTypes.map(type => (
+                {(Array.isArray(deviceTypes) ? deviceTypes : []).map(type => (
                   <option key={type.id} value={type.id}>
                     {type.name}
                   </option>
@@ -232,8 +232,18 @@ DeviceModal.propTypes = {
     id: PropTypes.number,
     token: PropTypes.string,
     device_type: PropTypes.string,
+    device_type_display: PropTypes.string,
     is_active: PropTypes.bool,
-    user: PropTypes.object
+    created_at: PropTypes.string,
+    updated_at: PropTypes.string,
+    user: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      full_name: PropTypes.string,
+      email: PropTypes.string,
+      first_name: PropTypes.string,
+      last_name: PropTypes.string
+    })
   }),
   deviceTypes: PropTypes.arrayOf(
     PropTypes.shape({

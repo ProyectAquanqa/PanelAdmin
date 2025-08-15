@@ -147,12 +147,27 @@ export const useDashboard = () => {
       
       let notificationData = { total: 0, sent: 0 };
       
-      if (statsResponse.status === 'success' && statsResponse.data) {
+      console.log('📊 Stats Response:', statsResponse);
+      
+      if (statsResponse && statsResponse.status === 'success' && statsResponse.data) {
+        const data = statsResponse.data;
+        // El backend devuelve total/sent; además dejamos fallback a campos legacy
         notificationData = {
-          total: statsResponse.data.total || 0,
-          sent: statsResponse.data.sent || 0
+          total: Number(data.total ?? data.total_notifications ?? 0),
+          sent: Number(data.sent ?? data.sent_notifications ?? 0)
         };
+        
+        console.log('✅ Notification data mapped:', notificationData);
+      } else if (statsResponse && statsResponse.data) {
+        const data = statsResponse.data;
+        notificationData = {
+          total: Number(data.total ?? data.total_notifications ?? 0),
+          sent: Number(data.sent ?? data.sent_notifications ?? 0)
+        };
+        
+        console.log('✅ Direct notification data:', notificationData);
       } else {
+        console.log('⚠️ No stats endpoint, fallback to list');
         // Si no hay endpoint de estadísticas, usar lista general
         const notificationsResponse = await notificationsService.getNotifications({ page_size: 1 });
         if (notificationsResponse.status === 'success') {
@@ -163,8 +178,23 @@ export const useDashboard = () => {
       
       setDashboardData(prev => ({ ...prev, notifications: notificationData }));
     } catch (error) {
-      console.error('Error fetching notification stats:', error);
-      throw error; // Re-throw para manejo en refreshData
+      console.error('❌ Error fetching notification stats:', error);
+      
+      // En caso de error, intentar obtener al menos el count básico
+      try {
+        const fallbackResponse = await notificationsService.getNotifications({ page_size: 1 });
+        if (fallbackResponse.status === 'success') {
+          const fallbackData = {
+            total: fallbackResponse.data.count || 0,
+            sent: fallbackResponse.data.count || 0
+          };
+          setDashboardData(prev => ({ ...prev, notifications: fallbackData }));
+          console.log('🔄 Using fallback notification data:', fallbackData);
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+        throw error; // Re-throw original error para manejo en refreshData
+      }
     } finally {
       setLoading(prev => ({ ...prev, notifications: false }));
     }

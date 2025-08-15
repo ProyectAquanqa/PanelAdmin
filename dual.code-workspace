@@ -1,13 +1,13 @@
 {
   "folders": [
     {
-      "path": "../PanelAdmin"
+      "path": "../Aquanqa_noticias_web"
     },
     {
       "path": "."
     },
 {
-  "path":"../Aquanqa_noticias"
+  "path":"../AppAquanqa"
   }
     
   ],

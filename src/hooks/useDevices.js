@@ -55,6 +55,7 @@ const useDevices = () => {
         filters.status
       );
 
+      // El service ya normaliza la respuesta al formato estándar DRF
       setDevices(response.results || []);
       setPagination({
         total: response.count || 0,
@@ -78,10 +79,11 @@ const useDevices = () => {
    */
   const loadDeviceTypes = useCallback(async () => {
     try {
-      const response = await devicesService.deviceTypes.list();
-      setDeviceTypes(response.results || response || []);
+      const list = await devicesService.deviceTypes.list();
+      setDeviceTypes(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error('Error cargando tipos de dispositivos:', error);
+      setDeviceTypes([]);
     }
   }, []);
 
@@ -105,7 +107,8 @@ const useDevices = () => {
   const loadStats = useCallback(async () => {
     try {
       const response = await devicesService.devices.getStats();
-      setStats(response);
+      // El backend puede devolver { status: 'success', data: {...} } o directamente {...}
+      setStats(response.data || response);
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
     }
@@ -117,7 +120,8 @@ const useDevices = () => {
   const createDevice = async (deviceData) => {
     try {
       setModalLoading(true);
-      const newDevice = await devicesService.devices.create(deviceData);
+      const response = await devicesService.devices.create(deviceData);
+      const newDevice = response.data || response;
       
       // Actualizar lista local
       setDevices(prev => [newDevice, ...prev]);
@@ -145,7 +149,8 @@ const useDevices = () => {
   const updateDevice = async (id, deviceData) => {
     try {
       setModalLoading(true);
-      const updatedDevice = await devicesService.devices.update(id, deviceData);
+      const response = await devicesService.devices.update(id, deviceData);
+      const updatedDevice = response.data || response;
       
       // Actualizar lista local
       setDevices(prev => 
@@ -244,6 +249,28 @@ const useDevices = () => {
   };
 
   /**
+   * Exportar dispositivos
+   */
+  const exportDevices = async (format = 'csv') => {
+    try {
+      setLoading(true);
+      const response = await devicesService.devices.export(format, filters);
+      
+      if (response.success) {
+        toast.success(response.message || 'Datos exportados exitosamente');
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error exportando dispositivos:', error);
+      toast.error(error.message || 'Error al exportar dispositivos');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * Actualizar filtros
    */
   const updateFilters = (newFilters) => {
@@ -335,6 +362,7 @@ const useDevices = () => {
     deleteDevice,
     toggleDeviceStatus,
     bulkImportDevices,
+    exportDevices,
 
     // Funciones de carga
     loadDevices,

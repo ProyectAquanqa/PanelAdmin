@@ -173,10 +173,13 @@ class NotificationsService {
   async getStatistics() {
     try {
       const response = await apiClient.get(endpoints.notifications.statistics);
-      
+      // Normalizar: el backend devuelve { status, data: { total, sent, ... } }
+      const normalized = (response && response.status === 'success' && response.data)
+        ? response.data
+        : response;
       return {
         status: 'success',
-        data: response
+        data: normalized
       };
     } catch (error) {
       console.error('❌ Error obteniendo estadísticas:', error);
