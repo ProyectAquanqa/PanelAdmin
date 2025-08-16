@@ -246,6 +246,9 @@ const UniversalFilters = ({
         {Object.entries(activeFilters).map(([key, value]) => {
           if (!value || value === '') return null;
           
+          // Omitir filtros de rango de fechas individuales (se manejan por separado)
+          if (key.endsWith('_start') || key.endsWith('_end')) return null;
+          
           // Buscar la configuración del filtro para obtener el label
           const filterGroup = filterGroups.find(group => group.key === key);
           let displayValue = value;
@@ -260,12 +263,19 @@ const UniversalFilters = ({
             displayValue = `"${value.length > 15 ? `${value.substring(0, 15)}...` : value}"`;
           }
           
-          // Para rango de fechas, mostrar formato especial
-          if (typeof value === 'object' && (value.from || value.to)) {
-            const fromStr = value.from ? new Date(value.from).toLocaleDateString() : '';
-            const toStr = value.to ? new Date(value.to).toLocaleDateString() : '';
-            displayValue = `${fromStr} - ${toStr}`.replace(/^-\s/, '').replace(/\s-$/, '');
+          // Para rango de fechas como objeto, mostrar formato especial
+          if (typeof value === 'object' && value && (value.from || value.to || value.start || value.end)) {
+            const startStr = value.from || value.start;
+            const endStr = value.to || value.end;
+            const fromFormatted = startStr ? new Date(startStr).toLocaleDateString() : '';
+            const toFormatted = endStr ? new Date(endStr).toLocaleDateString() : '';
+            displayValue = `${fromFormatted} - ${toFormatted}`.replace(/^-\s/, '').replace(/\s-$/, '');
             if (!displayValue.trim()) return null;
+          }
+          
+          // Verificación adicional para evitar renderizar objetos como strings
+          if (typeof displayValue === 'object') {
+            return null;
           }
 
           return (
@@ -284,6 +294,19 @@ const UniversalFilters = ({
             </span>
           );
         })}
+        
+        {/* Mostrar rango de fechas si existe */}
+        {(activeFilters.dateRange_start || activeFilters.dateRange_end) && (
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 text-[13px] font-medium rounded-md">
+            <div className="w-1 h-1 rounded-full bg-slate-500"></div>
+            {activeFilters.dateRange_start && activeFilters.dateRange_end 
+              ? `${activeFilters.dateRange_start} - ${activeFilters.dateRange_end}`
+              : activeFilters.dateRange_start 
+                ? `Desde ${activeFilters.dateRange_start}`
+                : `Hasta ${activeFilters.dateRange_end}`
+            }
+          </span>
+        )}
       </div>
     );
   };

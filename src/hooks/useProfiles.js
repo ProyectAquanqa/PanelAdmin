@@ -57,7 +57,7 @@ const useProfiles = () => {
     setLoading(prev => ({ ...prev, profiles: true }));
     try {
       const result = await groupService.list(1, 100); // Obtener todos los perfiles
-      console.log('🔍 Resultado groupService.list (perfiles):', result);
+
       
       // Manejar diferentes formatos de respuesta
       let perfiles = [];
@@ -70,7 +70,7 @@ const useProfiles = () => {
         // Formato DRF paginado: {results: [...], count: ...}
         perfiles = result.results;
       } else {
-        console.warn('⚠️ Formato inesperado de perfiles:', result);
+
         perfiles = [];
       }
       
@@ -78,7 +78,7 @@ const useProfiles = () => {
       const perfilesOrdenados = ordenarPerfilesPorFecha(perfiles);
       setProfiles(perfilesOrdenados);
     } catch (error) {
-      console.error('❌ Error al obtener perfiles:', error);
+
       toast.error('Error al cargar perfiles');
       setProfiles([]); // Asegurar que profiles sea siempre un array
     } finally {
@@ -89,28 +89,28 @@ const useProfiles = () => {
   // Función para crear perfil
   const createProfile = useCallback(async (profileData) => {
     if (!profileData || !profileData.name) {
-      console.error('❌ Nombre del grupo requerido');
+
       toast.error('El nombre del grupo es requerido');
       return false;
     }
 
     setLoading(prev => ({ ...prev, create: true }));
     try {
-      console.log('📝 Creando grupo:', profileData);
+
       
       const result = await groupService.create({
         name: profileData.name,
         permissions: profileData.permissions || []
       });
       
-      console.log('✅ Grupo creado exitosamente:', result);
+
       toast.success('Grupo creado exitosamente');
       
       // Recargar lista de perfiles
       await fetchProfiles();
       return true;
     } catch (error) {
-      console.error('❌ Error al crear grupo:', error);
+
       
       // Manejar errores específicos del backend
       if (error.message && error.message.includes('already exists')) {
@@ -134,7 +134,7 @@ const useProfiles = () => {
       // Recargar lista de perfiles
       await fetchProfiles();
     } catch (error) {
-      console.error('❌ Error al actualizar perfil:', error);
+
       toast.error('Error al actualizar perfil');
       throw error;
     } finally {
@@ -152,7 +152,7 @@ const useProfiles = () => {
       // Recargar lista de perfiles
       await fetchProfiles();
     } catch (error) {
-      console.error('❌ Error al eliminar perfil:', error);
+
       toast.error('Error al eliminar perfil');
       throw error;
     } finally {
@@ -165,10 +165,10 @@ const useProfiles = () => {
     setLoading(prev => ({ ...prev, export: true }));
     try {
       // Implementar exportación cuando esté disponible en groupService
-      console.log('📄 Exportando perfiles...');
+
       toast.success('Exportación iniciada');
     } catch (error) {
-      console.error('❌ Error al exportar perfiles:', error);
+
       toast.error('Error al exportar perfiles');
       throw error;
     } finally {
@@ -185,7 +185,7 @@ const useProfiles = () => {
       }
       return [];
     } catch (error) {
-      console.error('❌ Error al obtener opciones de permisos:', error);
+
       return [];
     }
   }, []);

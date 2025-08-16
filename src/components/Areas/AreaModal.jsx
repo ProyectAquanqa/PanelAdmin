@@ -187,14 +187,14 @@ const AreaModal = ({
                 onBlur={(e) => validateUniqueName(e.target.value)}
                 disabled={isViewMode || loading}
                 required
-                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#2D728F]/20 focus:border-[#2D728F] transition-all duration-200 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-500"
+                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 transition-all duration-200 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="Ingrese el nombre del área..."
               />
               {errors.nombre && (
                 <p className="text-[13px] text-red-600">{errors.nombre}</p>
               )}
               {validating && (
-                <p className="text-[13px] text-[#2D728F]">Validando nombre...</p>
+                <p className="text-[13px] text-slate-600">Validando nombre...</p>
               )}
             </div>
             
@@ -209,7 +209,7 @@ const AreaModal = ({
                 value={formData.descripcion}
                 onChange={(e) => handleChange('descripcion', e.target.value)}
                 disabled={isViewMode || loading}
-                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#2D728F]/20 focus:border-[#2D728F] transition-all duration-200 placeholder:text-gray-400 resize-none disabled:bg-gray-50 disabled:text-gray-500"
+                className="block w-full px-4 py-3 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 transition-all duration-200 placeholder:text-gray-400 resize-none disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="Ingrese la descripción del área..."
               />
               {errors.descripcion && (
@@ -225,7 +225,7 @@ const AreaModal = ({
                 checked={formData.is_active}
                 onChange={(e) => handleChange('is_active', e.target.checked)}
                 disabled={isViewMode || loading}
-                className="h-4 w-4 text-[#2D728F] focus:ring-[#2D728F] border-gray-300 rounded transition-all"
+                className="h-4 w-4 text-slate-600 focus:ring-slate-500 border-gray-300 rounded transition-all"
               />
               <label htmlFor="is_active" className="text-[13px] font-medium text-gray-700">
                 Activar área (estará disponible para asignar cargos y usuarios)
@@ -280,7 +280,7 @@ const AreaModal = ({
                 type="submit"
                 onClick={handleFormSubmit}
                 disabled={loading || !isValid()}
-                className="px-5 py-2.5 text-[13px] font-medium text-white bg-[#2D728F] hover:bg-[#235A6F] border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D728F]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                className="px-5 py-2.5 text-[13px] font-medium text-white bg-slate-600 hover:bg-slate-700 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
               >
                 {loading ? 'Guardando...' : (isCreateMode ? 'Crear' : 'Actualizar')} Área
               </button>

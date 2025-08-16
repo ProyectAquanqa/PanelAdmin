@@ -1,10 +1,9 @@
 /**
- * Servicio de Permisos Dinámicos Mejorado - AquanQ
+ * Servicio de Permisos Dinámicos Optimizado - AquanQ
  * Sistema completamente dinámico que se adapta automáticamente a nuevos permisos del backend
- * Sin hardcodear permisos específicos - Todo viene del backend Django
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Configuración base para fetch con manejo automático de token refresh
@@ -87,10 +86,7 @@ const apiCall = async (url, options = {}) => {
   }
 };
 
-/**
- * Cache para permisos obtenidos del backend
- * Se actualiza automáticamente cada vez que se obtienen nuevos permisos
- */
+// Cache para permisos obtenidos del backend
 let permissionsCache = {
   structure: null,
   byApp: null,
@@ -99,47 +95,140 @@ let permissionsCache = {
   ttl: 5 * 60 * 1000 // 5 minutos
 };
 
+// Configuración de apps y modelos del sistema
+const SYSTEM_CONFIG = {
+  apps: {
+    eventos: {
+      verbose_name: 'Eventos',
+      models: ['evento', 'categoria', 'comentario', 'like']
+    },
+    chatbot: {
+      verbose_name: 'Chatbot', 
+      models: ['chatbotknowledgebase', 'chatbotcategory', 'chatconversation']
+    },
+    auth: {
+      verbose_name: 'Autenticación',
+      models: ['user', 'group', 'permission']
+    },
+    areas: {
+      verbose_name: 'Áreas',
+      models: ['area', 'cargo']
+    },
+    notificaciones: {
+      verbose_name: 'Notificaciones',
+      models: ['notificacion', 'devicetoken']
+    },
+    almuerzos: {
+      verbose_name: 'Almuerzos',
+      models: ['almuerzo']
+    }
+  },
+  actions: ['view', 'add', 'change', 'delete'],
+  translations: {
+    // Traducciones de acciones
+    actions: {
+      'add': 'Crear', 'change': 'Editar', 'delete': 'Eliminar', 'view': 'Ver',
+      'publish': 'Publicar', 'pin': 'Destacar', 'feature': 'Promover', 'manage': 'Gestionar'
+    },
+    // Traducciones de modelos
+    models: {
+      'evento': 'eventos', 'categoria': 'categorías', 'comentario': 'comentarios', 'like': 'likes',
+      'user': 'usuarios', 'usuario': 'usuarios', 'group': 'grupos', 'grupo': 'grupos',
+      'chatbotknowledgebase': 'conocimiento del chatbot', 'chatbotcategory': 'categorías del chatbot',
+      'chatconversation': 'conversaciones', 'notificacion': 'notificaciones', 'devicetoken': 'dispositivos',
+      'permission': 'permission', 'almuerzo': 'almuerzos', 'area': 'áreas', 'cargo': 'cargos'
+    }
+  }
+};
+
+const transformGroupsResponseToPermissions = async (groupsResponse) => {
+  try {
+    let groups = [];
+    if (groupsResponse.status === 'success' && Array.isArray(groupsResponse.data)) {
+      groups = groupsResponse.data;
+    } else if (Array.isArray(groupsResponse)) {
+      groups = groupsResponse;
+    } else {
+      console.log('⚠️ Respuesta de grupos no es válida para transformar');
+      return null;
+    }
+    
+    if (groups.length === 0) {
+      console.log('⚠️ No hay grupos disponibles, no se puede extraer estructura de permisos');
+      return null;
+    }
+    
+    return {
+      status: 'fallback_required',
+      reason: 'user_has_limited_permissions',
+      message: 'Usuario tiene permisos de grupos pero no permisos completos del sistema'
+    };
+    
+  } catch (error) {
+    return null;
+  }
+};
+
 /**
  * Obtiene la estructura completa de permisos desde el backend de forma dinámica
- * @returns {Promise} Estructura organizada por apps, modelos y permisos
  */
 const getPermissionsStructure = async () => {
   // Verificar cache
   if (permissionsCache.structure && 
       permissionsCache.lastUpdated && 
       (Date.now() - permissionsCache.lastUpdated) < permissionsCache.ttl) {
+    console.log('📦 Usando permisos desde cache');
     return permissionsCache.structure;
   }
 
   try {
-    console.log('🔄 Obteniendo estructura de permisos del backend...');
-    
-    // Intentar diferentes endpoints que podrían existir
     let response = null;
     const endpoints = [
       '/admin/system/permissions/',
-      '/web/admin/permissions/',
-      '/admin/permissions/',
-      '/api/permissions/'
+      '/web/groups/'
     ];
 
     for (const endpoint of endpoints) {
       try {
         response = await apiCall(endpoint);
-        if (response && (response.status === 'success' || response.data)) {
-          break;
+        
+        if (endpoint === '/web/groups/') {
+          if (response && (response.status === 'success' || Array.isArray(response.data) || Array.isArray(response))) {
+            console.log(`✅ Endpoint ${endpoint} (grupos) respondió correctamente`);
+            response = await transformGroupsResponseToPermissions(response);
+            if (response) {
+              break;
+            }
+          }
+        } else {
+          if (response && (response.status === 'success' || response.data || Array.isArray(response))) {
+            console.log(`✅ Endpoint ${endpoint} respondió correctamente`);
+            break;
+          }
         }
       } catch (error) {
-        console.log(`⚠️ Endpoint ${endpoint} no disponible`);
+        console.log(`❌ Endpoint ${endpoint} falló: ${error.message}`);
         continue;
       }
     }
 
     if (!response) {
+      console.log('⚠️ Todos los endpoints fallaron, usando estructura de respaldo');
       throw new Error('No se pudieron obtener permisos de ningún endpoint');
     }
+    
+    if (response.status === 'fallback_required') {
+      console.log(`✅ ${response.message}`);
+      console.log('🔄 Usando estructura de respaldo para usuario con permisos válidos pero limitados');
+      throw new Error('fallback_required_for_limited_user');
+    }
 
-    // Normalizar respuesta según diferentes formatos posibles
+    if (response && Array.isArray(response) && response.length > 0) {
+      console.log('⚠️ Endpoint devolvió grupos, no estructura de permisos');
+      throw new Error('Endpoint devolvió grupos, no estructura de permisos');
+    }
+
+    // Normalizar respuesta
     let permissionsData = null;
     if (response.status === 'success' && response.data) {
       permissionsData = response.data;
@@ -149,132 +238,95 @@ const getPermissionsStructure = async () => {
       permissionsData = response;
     }
 
-    // Procesar estructura de permisos
+    if (!permissionsData || (!permissionsData.permissions_by_app && !permissionsData.applications)) {
+      console.log('⚠️ Respuesta no contiene estructura de permisos válida');
+      throw new Error('Respuesta no contiene estructura de permisos válida');
+    }
+
     const structure = await processPermissionsStructure(permissionsData);
     
-    // Actualizar cache
     permissionsCache.structure = structure;
     permissionsCache.lastUpdated = Date.now();
     
     return structure;
 
   } catch (error) {
-    console.error('❌ Error obteniendo estructura de permisos:', error);
+    if (error.message === 'fallback_required_for_limited_user') {
+      console.log('✅ Usuario autenticado con permisos limitados - usando estructura de respaldo');
+    } else {
+      console.error('❌ Error obteniendo estructura de permisos:', error);
+    }
     
-    // Si falla, devolver estructura mínima basada en apps conocidas
-    return getFallbackPermissionsStructure();
+    const fallbackStructure = getFallbackPermissionsStructure();
+    permissionsCache.structure = fallbackStructure;
+    permissionsCache.lastUpdated = Date.now();
+    
+    return fallbackStructure;
   }
 };
 
 /**
- * Procesa la estructura de permisos del backend en un formato uniforme
- * @param {Object} rawData - Datos crudos del backend
- * @returns {Object} Estructura procesada
+ * Procesa la estructura de permisos del backend en un formato uniforme (optimizada)
  */
 const processPermissionsStructure = async (rawData) => {
-  const structure = {
-    apps: {},
-    byModel: {},
-    allPermissions: []
+  const structure = { apps: {}, byModel: {}, allPermissions: [] };
+
+  const processPermissions = (permissions, appName, modelName) => {
+    const cleanPermissions = [];
+    const seenCodenames = new Set();
+    
+    permissions.forEach(p => {
+      const cleanCodename = p.codename?.replace(/^can_/, '') || p.split('.')[1]?.replace(/^can_/, '');
+      const action = extractActionFromCodename(cleanCodename);
+      
+      if (SYSTEM_CONFIG.actions.includes(action) && !seenCodenames.has(cleanCodename)) {
+        seenCodenames.add(cleanCodename);
+        cleanPermissions.push({
+          id: p.id || p,
+          name: p.name || cleanCodename,
+          codename: cleanCodename,
+          originalCodename: p.codename || p.split('.')[1],
+          content_type: p.content_type || null,
+          app_label: appName,
+          model: modelName,
+          action: action,
+          translatedName: translatePermissionDynamically(cleanCodename, modelName, appName)
+        });
+      }
+    });
+
+    return cleanPermissions;
   };
 
-  // Procesar diferentes formatos posibles de respuesta
-  if (rawData.permissions_by_app) {
-    // Formato: {permissions_by_app: {app1: {model1: [permissions]}}}
-    for (const [appName, appModels] of Object.entries(rawData.permissions_by_app)) {
+  // Procesar formato permissions_by_app o applications
+  const dataSource = rawData.permissions_by_app || 
+    (rawData.applications && rawData.applications.reduce((acc, app) => {
+      acc[app.app_label] = {};
+      app.models?.forEach(model => {
+        acc[app.app_label][model.model] = model.permissions || [];
+      });
+      return acc;
+    }, {}));
+
+  if (dataSource) {
+    for (const [appName, appModels] of Object.entries(dataSource)) {
       structure.apps[appName] = {
         name: appName,
-        verbose_name: getAppVerboseName(appName),
+        verbose_name: SYSTEM_CONFIG.apps[appName]?.verbose_name || appName.charAt(0).toUpperCase() + appName.slice(1),
         models: {}
       };
 
       for (const [modelName, permissions] of Object.entries(appModels)) {
-        // Filtrar permisos duplicados y limpiar datos
-        const cleanPermissions = [];
-        const seenCodenames = new Set();
-        
-        permissions.forEach(p => {
-          const cleanCodename = p.codename.replace(/^can_/, '');
-          const action = extractActionFromCodename(cleanCodename);
-          
-          // FILTRAR SOLO ACCIONES CRUD PRINCIPALES
-          const allowedActions = ['view', 'add', 'change', 'delete'];
-          
-          if (allowedActions.includes(action) && !seenCodenames.has(cleanCodename)) {
-            seenCodenames.add(cleanCodename);
-            cleanPermissions.push({
-              id: p.id,
-              name: p.name,
-              codename: cleanCodename,
-              originalCodename: p.codename,
-              content_type: p.content_type,
-              app_label: appName,
-              model: modelName,
-              action: action,
-              translatedName: translatePermissionDynamically(cleanCodename, modelName, appName)
-            });
-          }
-        });
+        const cleanPermissions = processPermissions(permissions, appName, modelName);
 
         structure.apps[appName].models[modelName] = {
           name: modelName,
-          verbose_name: getModelVerboseName(modelName),
+          verbose_name: SYSTEM_CONFIG.translations.models[modelName] || modelName,
           permissions: cleanPermissions
         };
 
-        // Agregar al índice por modelo
         structure.byModel[modelName] = structure.apps[appName].models[modelName];
-        
-        // Agregar al array de todos los permisos
-        structure.allPermissions.push(...structure.apps[appName].models[modelName].permissions);
-      }
-    }
-  } else if (rawData.applications) {
-    // Formato: {applications: [{app_label, models: []}]}
-    for (const app of rawData.applications) {
-      structure.apps[app.app_label] = {
-        name: app.app_label,
-        verbose_name: app.app_name || getAppVerboseName(app.app_label),
-        models: {}
-      };
-
-      for (const model of (app.models || [])) {
-        // Filtrar permisos duplicados para formato applications
-        const cleanPermissions = [];
-        const seenCodenames = new Set();
-        
-        (model.permissions || []).forEach(permCode => {
-          const [appLabel, codename] = permCode.split('.');
-          const cleanCodename = codename.replace(/^can_/, '');
-          const action = extractActionFromCodename(cleanCodename);
-          
-          // FILTRAR SOLO ACCIONES CRUD PRINCIPALES
-          const allowedActions = ['view', 'add', 'change', 'delete'];
-          
-          if (allowedActions.includes(action) && !seenCodenames.has(cleanCodename)) {
-            seenCodenames.add(cleanCodename);
-            cleanPermissions.push({
-              id: permCode,
-              name: codename,
-              codename: cleanCodename,
-              originalCodename: codename,
-              content_type: null,
-              app_label: appLabel,
-              model: model.model,
-              action: action,
-              translatedName: translatePermissionDynamically(cleanCodename, model.model, appLabel)
-            });
-          }
-        });
-
-        structure.apps[app.app_label].models[model.model] = {
-          name: model.model,
-          verbose_name: model.verbose_name || getModelVerboseName(model.model),
-          permissions: cleanPermissions
-        };
-
-        structure.byModel[model.model] = structure.apps[app.app_label].models[model.model];
-        structure.allPermissions.push(...structure.apps[app.app_label].models[model.model].permissions);
+        structure.allPermissions.push(...cleanPermissions);
       }
     }
   }
@@ -283,325 +335,161 @@ const processPermissionsStructure = async (rawData) => {
 };
 
 /**
- * Traduce dinámicamente cualquier permiso basado en patrones
- * Evita duplicados y proporciona traducciones limpias
- * @param {string} codename - Codename del permiso (ej: 'add_evento')
- * @param {string} modelName - Nombre del modelo
- * @param {string} appName - Nombre de la app
- * @returns {string} Traducción en español
+ * Traduce dinámicamente cualquier permiso (optimizada)
  */
 const translatePermissionDynamically = (codename, modelName, appName) => {
-  // Limpiar codename de prefijos problemáticos
   const cleanCodename = codename.replace(/^can_/, '');
-  
-  // Extraer acción del codename limpio
   const action = extractActionFromCodename(cleanCodename);
-  const modelVerbose = getModelVerboseName(modelName);
+  const modelVerbose = SYSTEM_CONFIG.translations.models[modelName] || modelName;
   
-  // Diccionario de traducciones específicas para evitar problemas
+  // Traducciones específicas para casos especiales
+  const specificKey = `${action}_${modelName}`;
   const specificTranslations = {
-    // Eventos
-    'add_evento': 'Crear eventos',
-    'change_evento': 'Editar eventos',
-    'delete_evento': 'Eliminar eventos', 
-    'view_evento': 'Ver eventos',
-    'publish_evento': 'Publicar eventos',
-    'pin_evento': 'Destacar eventos',
-    'feature_evento': 'Promover eventos',
-    
-    // Categorías
-    'add_categoria': 'Crear categorías',
-    'change_categoria': 'Editar categorías',
-    'delete_categoria': 'Eliminar categorías',
-    'view_categoria': 'Ver categorías',
-    
-    // Usuarios
-    'add_user': 'Crear usuarios',
-    'change_user': 'Editar usuarios', 
-    'delete_user': 'Eliminar usuarios',
-    'view_user': 'Ver usuarios',
-    
-    // Grupos
-    'add_group': 'Crear grupos',
-    'change_group': 'Editar grupos',
-    'delete_group': 'Eliminar grupos',
-    'view_group': 'Ver grupos'
+    'add_evento': 'Crear eventos', 'change_evento': 'Editar eventos', 'delete_evento': 'Eliminar eventos', 'view_evento': 'Ver eventos',
+    'add_categoria': 'Crear categorías', 'change_categoria': 'Editar categorías', 'delete_categoria': 'Eliminar categorías', 'view_categoria': 'Ver categorías',
+    'add_user': 'Crear usuarios', 'change_user': 'Editar usuarios', 'delete_user': 'Eliminar usuarios', 'view_user': 'Ver usuarios',
+    'add_group': 'Crear grupos', 'change_group': 'Editar grupos', 'delete_group': 'Eliminar grupos', 'view_group': 'Ver grupos'
   };
   
-  // Usar traducción específica si existe
-  if (specificTranslations[cleanCodename]) {
-    return specificTranslations[cleanCodename];
+  if (specificTranslations[specificKey]) {
+    return specificTranslations[specificKey];
   }
   
-  // Mapeo dinámico de acciones comunes
-  const actionTranslations = {
-    'add': 'Crear',
-    'change': 'Editar',
-    'delete': 'Eliminar',
-    'view': 'Ver',
-    'publish': 'Publicar',
-    'pin': 'Destacar',
-    'feature': 'Promover',
-    'manage': 'Gestionar',
-    'export': 'Exportar',
-    'import': 'Importar',
-    'approve': 'Aprobar',
-    'reject': 'Rechazar',
-    'assign': 'Asignar',
-    'unassign': 'Desasignar',
-    'moderate': 'Moderar',
-    'review': 'Revisar',
-    'archive': 'Archivar',
-    'restore': 'Restaurar'
-  };
-
-  const actionSpanish = actionTranslations[action] || action;
+  const actionSpanish = SYSTEM_CONFIG.translations.actions[action] || action;
   return `${actionSpanish} ${modelVerbose}`;
 };
 
-/**
- * Extrae la acción del codename de un permiso
- * @param {string} codename - Codename del permiso
- * @returns {string} Acción extraída
- */
-const extractActionFromCodename = (codename) => {
-  // Los codenames de Django siguen el patrón: action_model
-  const parts = codename.split('_');
-  return parts.length > 1 ? parts[0] : codename;
-};
+// Funciones de utilidad optimizadas
+const extractActionFromCodename = (codename) => codename.split('_')[0];
 
 /**
- * Obtiene el nombre verbose de una app
- * @param {string} appName - Nombre técnico de la app
- * @returns {string} Nombre amigable
- */
-const getAppVerboseName = (appName) => {
-  const appTranslations = {
-    'events': 'Eventos',
-    'eventos': 'Eventos',
-    'chatbot': 'Chatbot',
-    'users': 'Usuarios',
-    'auth': 'Autenticación',
-    'contenttypes': 'Tipos de Contenido',
-    'sessions': 'Sesiones',
-    'admin': 'Administración',
-    'notifications': 'Notificaciones',
-    'notificaciones': 'Notificaciones',
-    'almuerzos': 'Almuerzos',
-    'permisos': 'Permisos',
-    'grupos': 'Grupos'
-  };
-
-  return appTranslations[appName] || appName.charAt(0).toUpperCase() + appName.slice(1);
-};
-
-/**
- * Obtiene el nombre verbose de un modelo
- * @param {string} modelName - Nombre técnico del modelo
- * @returns {string} Nombre amigable
- */
-const getModelVerboseName = (modelName) => {
-  const modelTranslations = {
-    'evento': 'eventos',
-    'categoria': 'categorías',
-    'user': 'usuarios',
-    'usuario': 'usuarios',
-    'group': 'grupos',
-    'grupo': 'grupos',
-    'chatbotknowledgebase': 'conocimiento del chatbot',
-    'chatbotcategory': 'categorías del chatbot',
-    'chatconversation': 'conversaciones',
-    'notificacion': 'notificaciones',
-    'devicetoken': 'dispositivos',
-    'permission': 'permisos',
-    'permiso': 'permisos',
-    'almuerzo': 'almuerzos'
-  };
-
-  return modelTranslations[modelName] || modelName;
-};
-
-/**
- * Estructura de permisos de respaldo si falla la carga dinámica
- * @returns {Object} Estructura mínima
+ * Estructura de permisos de respaldo OPTIMIZADA (genera programáticamente)
  */
 const getFallbackPermissionsStructure = () => {
-  console.log('⚠️ Usando estructura de permisos de respaldo');
+  console.log('⚠️ Usando estructura de permisos de respaldo COMPLETA');
   
-  return {
-    apps: {
-      events: {
-        name: 'events',
-        verbose_name: 'Eventos',
-        models: {
-          evento: {
-            name: 'evento',
-            verbose_name: 'eventos',
-            permissions: [
-              { id: 'events.add_evento', codename: 'add_evento', action: 'add', translatedName: 'Crear eventos' },
-              { id: 'events.change_evento', codename: 'change_evento', action: 'change', translatedName: 'Editar eventos' },
-              { id: 'events.delete_evento', codename: 'delete_evento', action: 'delete', translatedName: 'Eliminar eventos' },
-              { id: 'events.view_evento', codename: 'view_evento', action: 'view', translatedName: 'Ver eventos' }
-            ]
-          }
-        }
-      },
-      auth: {
-        name: 'auth',
-        verbose_name: 'Autenticación',
-        models: {
-          group: {
-            name: 'group',
-            verbose_name: 'grupos',
-            permissions: [
-              { id: 'auth.add_group', codename: 'add_group', action: 'add', translatedName: 'Crear grupos' },
-              { id: 'auth.change_group', codename: 'change_group', action: 'change', translatedName: 'Editar grupos' },
-              { id: 'auth.delete_group', codename: 'delete_group', action: 'delete', translatedName: 'Eliminar grupos' },
-              { id: 'auth.view_group', codename: 'view_group', action: 'view', translatedName: 'Ver grupos' }
-            ]
-          }
-        }
-      }
-    },
-    byModel: {},
-    allPermissions: []
-  };
+  const structure = { apps: {}, byModel: {}, allPermissions: [] };
+  
+  // Generar estructura programáticamente desde configuración
+  Object.entries(SYSTEM_CONFIG.apps).forEach(([appName, appConfig]) => {
+    structure.apps[appName] = {
+      name: appName,
+      verbose_name: appConfig.verbose_name,
+      models: {}
+    };
+
+    appConfig.models.forEach(modelName => {
+      const permissions = SYSTEM_CONFIG.actions.map(action => ({
+        id: `${appName}.${action}_${modelName}`,
+        codename: `${action}_${modelName}`,
+        action: action,
+        translatedName: translatePermissionDynamically(`${action}_${modelName}`, modelName, appName)
+      }));
+
+      structure.apps[appName].models[modelName] = {
+        name: modelName,
+        verbose_name: SYSTEM_CONFIG.translations.models[modelName] || modelName,
+        permissions: permissions
+      };
+
+      structure.byModel[modelName] = structure.apps[appName].models[modelName];
+      structure.allPermissions.push(...permissions);
+    });
+  });
+  
+  return structure;
 };
 
 /**
  * Obtiene la estructura de permisos organizada por módulos del sistema
- * Compatible con el diseño de ProfileFormNew
- * @returns {Promise} Estructura organizada por módulos de la aplicación
  */
-const getModulePermissionsStructure = async () => {
+const getModulePermissionsStructure = async (forProfileManagement = false) => {
   const baseStructure = await getPermissionsStructure();
   
-  // Organizar permisos por módulos de la aplicación (no por apps de Django)
-  // Estructura actualizada según los módulos del sidebar actual
   const moduleStructure = {
-    'Eventos': {
-      title: 'Eventos',
-      submodules: []
-    },
-    'Chatbot': {
-      title: 'Chatbot',
-      submodules: []
-    },
-    'Usuarios': {
-      title: 'Usuarios',
-      submodules: []
-    },
-    'Notificaciones': {
-      title: 'Notificaciones',
-      submodules: []
-    },
-    'Almuerzos': {
-      title: 'Almuerzos',
-      submodules: []
-    }
+    'Eventos': { title: 'Eventos', submodules: [], description: 'Gestión de eventos, categorías, comentarios y likes' },
+    'Chatbot': { title: 'Chatbot', submodules: [], description: 'Base de conocimiento, categorías y conversaciones' },
+    'Usuarios': { title: 'Usuarios', submodules: [], description: 'Gestión de usuarios, grupos, permisos, áreas y cargos' },
+    'Notificaciones': { title: 'Notificaciones', submodules: [], description: 'Historial de notificaciones y dispositivos registrados' },
+    'Almuerzos': { title: 'Almuerzos', submodules: [], description: 'Gestión del sistema de almuerzos' }
   };
+  
+  if (forProfileManagement) {
+    console.log('🎯 Cargando TODOS los módulos para gestión de perfiles:', Object.keys(moduleStructure));
+  }
 
-  // Mapear apps de Django a módulos de la aplicación
+  // Mapear apps de Django a módulos
   for (const [appName, appData] of Object.entries(baseStructure.apps)) {
     for (const [modelName, modelData] of Object.entries(appData.models)) {
-      // Determinar a qué módulo pertenece este modelo
       const moduleKey = getModuleForModel(appName, modelName);
       
       if (moduleKey && moduleStructure[moduleKey]) {
-        moduleStructure[moduleKey].submodules.push({
+        const submódulo = {
           id: `${appName}_${modelName}`,
           name: modelData.verbose_name,
           app: appName,
           model: modelName,
           permissions: modelData.permissions
-        });
+        };
+        
+        moduleStructure[moduleKey].submodules.push(submódulo);
       }
     }
   }
+  
+  // Ordenar submódulos alfabéticamente
+  Object.values(moduleStructure).forEach(module => {
+    if (Array.isArray(module.submodules)) {
+      module.submodules.sort((a, b) => String(a.name).localeCompare(String(b.name), 'es', { sensitivity: 'base' }));
+    }
+  });
 
   return moduleStructure;
 };
 
 /**
- * Determina a qué módulo de la aplicación pertenece un modelo específico
- * @param {string} appName - Nombre de la app
- * @param {string} modelName - Nombre del modelo
- * @returns {string} Clave del módulo
+ * Determina a qué módulo pertenece un modelo (optimizada)
  */
 const getModuleForModel = (appName, modelName) => {
-  // Mapeo dinámico basado en patrones - actualizado según módulos del sidebar actual
-  if (appName.includes('event') || modelName.includes('evento') || modelName.includes('categoria')) {
-    return 'Eventos';
+  const moduleMap = {
+    'Eventos': ['event', 'eventos', 'evento', 'categoria', 'comentario', 'like'],
+    'Chatbot': ['chatbot', 'conversation', 'knowledge', 'chatbotcategory', 'chatbotknowledgebase'],
+    'Usuarios': ['user', 'auth', 'area', 'cargo', 'group', 'perfil', 'permission', 'permiso'],
+    'Notificaciones': ['notification', 'notificaciones', 'notificacion', 'device', 'dispositivo', 'devicetoken'],
+    'Almuerzos': ['almuerzo']
+  };
+
+  for (const [moduleKey, keywords] of Object.entries(moduleMap)) {
+    if (keywords.some(keyword => appName.includes(keyword) || modelName.includes(keyword))) {
+      return moduleKey;
+    }
   }
-  
-  if (appName.includes('chatbot') || modelName.includes('chatbot') || modelName.includes('conversation')) {
-    return 'Chatbot';
+
+  // Excluir modelos no relevantes
+  const excludedKeywords = ['contenttypes', 'sessions', 'admin', 'core', 'contenttype', 'session', 'logentry', 'config', 'setting'];
+  if (excludedKeywords.some(excluded => appName.includes(excluded) || modelName.includes(excluded))) {
+    return null;
   }
-  
-  if (appName.includes('user') || appName === 'auth' || modelName.includes('user') || modelName.includes('group')) {
-    return 'Usuarios';
-  }
-  
-  if (appName.includes('notification') || modelName.includes('notification') || modelName.includes('device')) {
-    return 'Notificaciones';
-  }
-  
-  if (appName.includes('almuerzo') || modelName.includes('almuerzo')) {
-    return 'Almuerzos';
-  }
-  
-  // Si no coincide con ningún módulo específico, no se incluye
-  // Esto elimina la sección de "Configuración" que ya no existe
+
   return null;
 };
 
-/**
- * Obtiene permisos específicos para un submódulo
- * @param {string} submoduleId - ID del submódulo (formato: app_model)
- * @returns {Promise} Array de permisos con traducciones
- */
+// Funciones auxiliares simplificadas
 const getPermissionsForSubmodule = async (submoduleId) => {
   const [appName, modelName] = submoduleId.split('_');
   const structure = await getPermissionsStructure();
-  
-  if (structure.apps[appName] && structure.apps[appName].models[modelName]) {
-    return structure.apps[appName].models[modelName].permissions;
-  }
-  
-  return [];
+  return structure.apps[appName]?.models[modelName]?.permissions || [];
 };
 
-/**
- * Mapea acciones simplificadas a permisos específicos de Django
- * @param {string} action - Acción simplificada ('view', 'create', 'edit', 'delete')
- * @param {string} submoduleId - ID del submódulo
- * @returns {Promise} Array de IDs de permisos
- */
 const mapSimplifiedActionToPermissions = async (action, submoduleId) => {
   const permissions = await getPermissionsForSubmodule(submoduleId);
-  
-  const actionMap = {
-    'view': ['view'],
-    'create': ['add'],
-    'edit': ['change'],
-    'delete': ['delete']
-  };
-  
+  const actionMap = { 'view': ['view'], 'create': ['add'], 'edit': ['change'], 'delete': ['delete'] };
   const targetActions = actionMap[action] || [action];
-  
-  return permissions
-    .filter(p => targetActions.includes(p.action))
-    .map(p => p.id);
+  return permissions.filter(p => targetActions.includes(p.action)).map(p => p.id);
 };
 
-/**
- * Convierte selecciones simplificadas en lista completa de IDs de permisos
- * @param {Object} simplifiedSelections - Objeto con selecciones por submódulo y acción
- * @returns {Promise} Array de IDs de permisos para enviar al backend
- */
 const convertSimplifiedSelectionsToPermissionIds = async (simplifiedSelections) => {
   const permissionIds = [];
-  
   for (const [submoduleId, actions] of Object.entries(simplifiedSelections)) {
     for (const [action, isSelected] of Object.entries(actions)) {
       if (isSelected) {
@@ -610,30 +498,17 @@ const convertSimplifiedSelectionsToPermissionIds = async (simplifiedSelections) 
       }
     }
   }
-  
-  // Eliminar duplicados
   return [...new Set(permissionIds)];
 };
 
-/**
- * Convierte una lista de IDs de permisos en selecciones simplificadas
- * @param {Array} permissionIds - Array de IDs de permisos
- * @returns {Promise} Objeto con selecciones por submódulo y acción
- */
 const convertPermissionIdsToSimplifiedSelections = async (permissionIds) => {
   const structure = await getModulePermissionsStructure();
   const selections = {};
   
   for (const [moduleKey, moduleData] of Object.entries(structure)) {
     for (const submodule of moduleData.submodules) {
-      selections[submodule.id] = {
-        view: false,
-        create: false,
-        edit: false,
-        delete: false
-      };
+      selections[submodule.id] = { view: false, create: false, edit: false, delete: false };
       
-      // Verificar qué acciones están habilitadas
       for (const permission of submodule.permissions) {
         if (permissionIds.includes(permission.id)) {
           const action = permission.action;
@@ -658,9 +533,17 @@ export default {
   convertPermissionIdsToSimplifiedSelections,
   translatePermissionDynamically,
   
+  // Funciones específicas para gestión de perfiles
+  getCompleteModuleStructureForProfiles: async () => {
+    return await getModulePermissionsStructure(true);
+  },
+  
+  // Funciones de procesamiento
+  processPermissionsStructure,
+  
   // Funciones de utilidad
-  getAppVerboseName,
-  getModelVerboseName,
+  getAppVerboseName: (appName) => SYSTEM_CONFIG.apps[appName]?.verbose_name || appName.charAt(0).toUpperCase() + appName.slice(1),
+  getModelVerboseName: (modelName) => SYSTEM_CONFIG.translations.models[modelName] || modelName,
   extractActionFromCodename,
   
   // Cache management

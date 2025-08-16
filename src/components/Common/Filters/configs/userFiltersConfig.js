@@ -26,12 +26,19 @@ export const userFiltersConfig = {
       className: 'h-[42px]'
     },
     {
-      key: 'selectedDateRange',
+      key: 'dateRange',
       title: 'Fecha Registro',
       type: 'dateRange',
-      placeholder: 'Seleccionar rango...',
-      showIcon: false,
-      className: 'h-[42px]'
+      placeholder: 'Seleccionar fechas...',
+      showIcon: true,
+      iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+      className: 'h-[42px]',
+      responsive: {
+        mobile: 'w-full',
+        tablet: 'w-auto',
+        desktop: 'w-auto'
+      },
+      containerClass: 'min-w-0 max-w-[240px] lg:max-w-[280px] xl:max-w-[320px] transition-all duration-300 ease-in-out'
     }
   ],
 

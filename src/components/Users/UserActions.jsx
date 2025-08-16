@@ -13,6 +13,8 @@ const UserActions = ({
   onSearchChange,
   selectedGroup = '',
   onGroupChange,
+  selectedDateRange = null,
+  onDateRangeChange,
   onCreateNew,
   onImport,
   groups = [],
@@ -59,7 +61,9 @@ const UserActions = ({
   // Estado actual de filtros  
   const activeFilters = {
     searchTerm,
-    selectedRole: selectedGroup // Mapeo para coincidir con la config
+    selectedRole: selectedGroup, // Mapeo para coincidir con la config
+    dateRange_start: selectedDateRange?.start || '',
+    dateRange_end: selectedDateRange?.end || ''
   };
 
   // Manejar cambios de filtros
@@ -71,6 +75,18 @@ const UserActions = ({
       case 'selectedRole':
         onGroupChange?.(value);
         break;
+      case 'dateRange_start':
+        onDateRangeChange?.({ 
+          ...selectedDateRange, 
+          start: value 
+        });
+        break;
+      case 'dateRange_end':
+        onDateRangeChange?.({ 
+          ...selectedDateRange, 
+          end: value 
+        });
+        break;
       default:
         break;
     }
@@ -80,6 +96,7 @@ const UserActions = ({
   const handleClearFilters = () => {
     onSearchChange?.('');
     onGroupChange?.('');
+    onDateRangeChange?.(null);
   };
 
   return (
@@ -102,6 +119,11 @@ UserActions.propTypes = {
   onSearchChange: PropTypes.func.isRequired,
   selectedGroup: PropTypes.string,
   onGroupChange: PropTypes.func.isRequired,
+  selectedDateRange: PropTypes.shape({
+    start: PropTypes.string,
+    end: PropTypes.string
+  }),
+  onDateRangeChange: PropTypes.func,
   onCreateNew: PropTypes.func,
   onImport: PropTypes.func,
   groups: PropTypes.array,

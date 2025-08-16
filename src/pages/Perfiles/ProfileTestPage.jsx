@@ -112,6 +112,16 @@ const ProfileTestPage = () => {
       
       await testCreateProfile();
       
+      // Nuevo: reconciliación de estado de permisos en UI
+      try {
+        // Importación dinámica para no crear dependencias fuertes
+        const { default: dynamicPermissionsService } = await import('../../services/dynamicPermissionsService');
+        const moduleStructure = await dynamicPermissionsService.getModulePermissionsStructure(true);
+        addTestResult('Estructura para reconciliar', true, '✅ Estructura obtenida', Object.keys(moduleStructure));
+      } catch (e) {
+        addTestResult('Estructura para reconciliar', false, `❌ Error: ${e.message}`);
+      }
+
       toast.success('Todas las pruebas completadas');
     } catch (error) {
       toast.error('Error ejecutando pruebas');

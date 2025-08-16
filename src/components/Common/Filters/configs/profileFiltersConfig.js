@@ -24,6 +24,21 @@ export const profileFiltersConfig = {
       placeholder: 'Seleccionar grupo...',
       showIcon: false,
       className: 'h-[42px]'
+    },
+    {
+      key: 'userRange',
+      title: 'Estado del Grupo',
+      type: 'dropdown',
+      options: [
+        { value: '', label: 'Todos los grupos' },
+        { value: 'empty', label: 'Grupos vacíos (0 usuarios)' },
+        { value: 'small', label: 'Grupos pequeños (1-5 usuarios)' },
+        { value: 'active', label: 'Grupos activos (6+ usuarios)' }
+      ],
+      placeholder: 'Filtrar por estado...',
+      showIcon: true,
+      iconPath: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z',
+      className: 'h-[42px]'
     }
   ],
 

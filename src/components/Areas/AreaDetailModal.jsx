@@ -82,12 +82,12 @@ const AreaDetailModal = ({
               <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-gray-200">
                 <span className="text-[13px] text-gray-500 font-mono">#{area.id}</span>
                 
-                <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-[13px] font-medium border whitespace-nowrap ${
-                  statusInfo.status === 'Activa' ? 'bg-green-100/50 text-green-700 border-green-200/50' :
-                  'bg-red-100/50 text-red-700 border-red-200/50'
+                <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-[12px] font-medium border whitespace-nowrap ${
+                  statusInfo.status === 'Activa' ? 'bg-slate-50 text-slate-600 border-slate-200' :
+                  'bg-gray-100 text-gray-600 border-gray-200'
                 }`}>
                   <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                    statusInfo.status === 'Activa' ? 'bg-green-500' : 'bg-red-500'
+                    statusInfo.status === 'Activa' ? 'bg-slate-500' : 'bg-gray-400'
                   }`}></div>
                   {statusInfo.status}
                 </span>

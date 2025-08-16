@@ -6,12 +6,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { useDataView } from '../../hooks/useDataView';
 import { searchInFields } from '../../utils/searchUtils';
 import ProfileActions from '../../components/Perfiles/ProfileActions';
 import ProfileFormNew from '../../components/Perfiles/ProfileFormNew';
 import { ProfileList, LoadingStates, ProfileDetailModal } from '../../components/Perfiles';
 import useProfiles from '../../hooks/useProfiles';
+import groupService from '../../services/groupService';
 
 /**
  * Página principal de gestión de perfiles híbridos
@@ -40,6 +42,7 @@ const ProfileManagementNew = () => {
   // Estados de filtros (solo para vista de listado)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(''); // nombre del grupo específico
+  const [selectedUserRange, setSelectedUserRange] = useState('');
 
   const { currentPage, setCurrentPage } = useDataView();
 
@@ -56,9 +59,9 @@ const ProfileManagementNew = () => {
 
     // Filtro por búsqueda
     if (searchTerm.trim()) {
-      filtered = searchInFields(filtered, searchTerm, [
+      filtered = filtered.filter(item => searchInFields(item, searchTerm, [
         'name', 'permissions.name', 'permissions.codename'
-      ]);
+      ]));
     }
 
     // Filtro por grupo específico
@@ -66,8 +69,25 @@ const ProfileManagementNew = () => {
       filtered = filtered.filter(profile => profile.name === selectedGroup);
     }
 
+    // Filtro por estado del grupo (basado en usuarios)
+    if (selectedUserRange && selectedUserRange !== '') {
+      filtered = filtered.filter(profile => {
+        const userCount = profile.users_count || 0;
+        switch (selectedUserRange) {
+          case 'empty':
+            return userCount === 0;
+          case 'small':
+            return userCount >= 1 && userCount <= 5;
+          case 'active':
+            return userCount >= 6;
+          default:
+            return true;
+        }
+      });
+    }
+
     return filtered;
-  }, [profiles, searchTerm, selectedGroup, currentView]);
+  }, [profiles, searchTerm, selectedGroup, selectedUserRange, currentView]);
 
   // Preparar datos para ProfileTableView (sin adaptación, mantiene estructura original)
   const profilesForTable = useMemo(() => {
@@ -84,11 +104,29 @@ const ProfileManagementNew = () => {
     setCurrentView('create');
   }, []);
 
-  const handleEdit = useCallback((adaptedProfile) => {
-    // Extraer el perfil original del objeto adaptado
-    const originalProfile = adaptedProfile._original || adaptedProfile;
-    setEditingProfile(originalProfile);
-    setCurrentView('edit');
+  const handleEdit = useCallback(async (adaptedProfile) => {
+    try {
+      // Extraer el perfil original del objeto adaptado
+      const originalProfile = adaptedProfile._original || adaptedProfile;
+      
+      // Obtener el perfil completo con permisos del backend
+      const fullProfile = await groupService.get(originalProfile.id);
+      
+      if (fullProfile && fullProfile.status === 'success' && fullProfile.data) {
+        setEditingProfile(fullProfile.data);
+      } else {
+        // Fallback: usar el perfil básico si falla la carga completa
+        setEditingProfile(originalProfile);
+      }
+      
+      setCurrentView('edit');
+    } catch (error) {
+      toast.error('Error al cargar los datos del perfil');
+      // Fallback: usar el perfil básico si falla la carga
+      const originalProfile = adaptedProfile._original || adaptedProfile;
+      setEditingProfile(originalProfile);
+      setCurrentView('edit');
+    }
   }, []);
 
   const handleView = useCallback((adaptedProfile) => {
@@ -195,6 +233,8 @@ const ProfileManagementNew = () => {
           onSearchChange={setSearchTerm}
           selectedGroup={selectedGroup}
           onGroupChange={setSelectedGroup}
+          selectedUserRange={selectedUserRange}
+          onUserRangeChange={setSelectedUserRange}
           groups={profiles} // Pasar todos los grupos para las opciones del filtro
           onCreateNew={handleCreateNew}
           onImport={() => {}} // TODO: Implementar import

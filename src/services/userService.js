@@ -4,7 +4,7 @@
  * Compatible con grupos: Trabajador, Editor de Contenido, Administrador de Contenido, Gestor de Chatbot
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token
@@ -29,6 +29,7 @@ const refreshTokenIfNeeded = async () => {
       const data = await response.json();
       if (data.access) {
         localStorage.setItem('access_token', data.access);
+
         return data.access;
       }
     }
@@ -48,14 +49,29 @@ const apiCall = async (url, options = {}) => {
   let token = localStorage.getItem('access_token');
   
   const makeRequest = async (authToken) => {
+    // Si se pasan headers vacías (para FormData), no establecer Content-Type por defecto
+    const isFormData = options.body instanceof FormData;
+    const hasEmptyHeaders = !options.headers || Object.keys(options.headers).length === 0;
+    
+    
+    // CORREGIR: Siempre incluir Authorization, independientemente del tipo de body
+    const defaultHeaders = isFormData && hasEmptyHeaders
+      ? {
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+        }
+      : {
+          'Content-Type': 'application/json',
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+          ...options.headers,
+        };
+
+    // CORREGIR: No permitir que options.headers sobrescriba defaultHeaders
+    const { headers: optionsHeaders, ...restOptions } = options;
     const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authToken ? `Bearer ${authToken}` : '',
-        ...options.headers,
-      },
-      ...options,
+      ...restOptions,
+      headers: defaultHeaders,
     };
+
 
     const response = await fetch(`${API_BASE}${url}`, config);
     
@@ -119,10 +135,21 @@ const apiCall = async (url, options = {}) => {
       try {
         const newToken = await refreshTokenIfNeeded();
         
+        // CORREGIR: Actualizar variable local del token
+        token = newToken;
+        
         // Reintentar con el nuevo token
         return await makeRequest(newToken);
       } catch (refreshError) {
-        throw new Error('Las credenciales de autenticación no se proveyeron.');
+        // Limpiar tokens caducados
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('user');
+        
+        // Mostrar mensaje claro al usuario
+        console.error('🔄 Tokens expirados, es necesario reloguear');
+        throw new Error('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.');
       }
     }
     throw error;
@@ -173,10 +200,52 @@ const userService = {
      * @returns {Promise} Usuario creado
      */
     create: async (data) => {
-      return await apiCall('/web/users/', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      // Crear una copia de los datos para procesamiento
+      const processedData = { ...data };
+      
+      // Eliminar confirmPassword que no es un campo del backend
+      delete processedData.confirmPassword;
+      
+      // Verificar si hay archivos en los datos
+      const hasFiles = processedData.foto_perfil instanceof File || processedData.firma instanceof File;
+      
+      if (hasFiles) {
+        // Usar FormData para archivos
+        const formData = new FormData();
+        
+        // Solo agregar campos que tienen valor y no son cadenas vacías
+        Object.keys(processedData).forEach(key => {
+          const value = processedData[key];
+          if (value !== null && value !== undefined && value !== '') {
+            formData.append(key, value);
+          }
+        });
+        
+        console.log('🔧 Creando usuario con FormData - Campos:', Array.from(formData.keys()));
+        
+        return await apiCall('/web/users/', {
+          method: 'POST',
+          body: formData,
+          headers: {}, // Dejar que el navegador establezca Content-Type para FormData
+        });
+      } else {
+        // Usar JSON para datos sin archivos
+        // Filtrar campos vacíos o nulos
+        const cleanData = {};
+        Object.keys(processedData).forEach(key => {
+          const value = processedData[key];
+          if (value !== null && value !== undefined && value !== '') {
+            cleanData[key] = value;
+          }
+        });
+        
+        console.log('🔧 Creando usuario con JSON - Campos:', Object.keys(cleanData));
+        
+        return await apiCall('/web/users/', {
+          method: 'POST',
+          body: JSON.stringify(cleanData),
+        });
+      }
     },
     
     /**
@@ -186,10 +255,67 @@ const userService = {
      * @returns {Promise} Usuario actualizado
      */
     update: async (id, data) => {
-      return await apiCall(`/web/users/${id}/`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      // Crear una copia de los datos para procesamiento
+      const processedData = { ...data };
+      
+      // Para edición: si password está vacío, no enviarlo
+      if (!processedData.password || processedData.password.trim() === '') {
+        delete processedData.password;
+      }
+      
+      // Eliminar confirmPassword que no es un campo del backend
+      delete processedData.confirmPassword;
+      
+      // Verificar si hay archivos nuevos en los datos
+      const hasNewFiles = processedData.foto_perfil instanceof File || processedData.firma instanceof File;
+      
+      if (hasNewFiles) {
+        // Usar FormData para archivos
+        const formData = new FormData();
+        
+        // Solo agregar campos que tienen valor y no son cadenas vacías
+        Object.keys(processedData).forEach(key => {
+          const value = processedData[key];
+          if (value !== null && value !== undefined && value !== '') {
+            // Para archivos: solo agregar si es un File nuevo
+            if (key === 'foto_perfil' || key === 'firma') {
+              if (value instanceof File) {
+                formData.append(key, value);
+              }
+              // Si no es File, no agregarlo (mantener archivo existente)
+            } else {
+              formData.append(key, value);
+            }
+          }
+        });
+        
+        console.log('🔧 Enviando con FormData - Campos:', Array.from(formData.keys()));
+        
+        return await apiCall(`/web/users/${id}/`, {
+          method: 'PATCH', // Usar PATCH para actualización parcial
+          body: formData,
+          headers: {}, // Dejar que el navegador establezca Content-Type para FormData
+        });
+      } else {
+        // Usar JSON para datos sin archivos nuevos
+        // Filtrar campos de archivo si no son File instances
+        const cleanData = { ...processedData };
+        
+        // No enviar campos de archivo si no son archivos nuevos
+        if (cleanData.foto_perfil && typeof cleanData.foto_perfil === 'string') {
+          delete cleanData.foto_perfil;
+        }
+        if (cleanData.firma && typeof cleanData.firma === 'string') {
+          delete cleanData.firma;
+        }
+        
+        console.log('🔧 Enviando con JSON - Campos:', Object.keys(cleanData));
+        
+        return await apiCall(`/web/users/${id}/`, {
+          method: 'PATCH', // Usar PATCH para actualización parcial
+          body: JSON.stringify(cleanData),
+        });
+      }
     },
 
     /**
@@ -199,13 +325,32 @@ const userService = {
      * @returns {Promise} Usuario actualizado
      */
     patch: async (id, data) => {
-      console.log(`🔧 PATCH /web/users/${id}/ con datos:`, data);
-      console.log(`🔧 PATCH - Claves enviadas:`, Object.keys(data));
-      console.log(`🔧 PATCH - ¿Tiene password?:`, 'password' in data);
+      // Crear una copia de los datos para procesamiento
+      const processedData = { ...data };
+      
+      // Para edición: si password está vacío, no enviarlo
+      if (!processedData.password || processedData.password.trim() === '') {
+        delete processedData.password;
+      }
+      
+      // Eliminar confirmPassword que no es un campo del backend
+      delete processedData.confirmPassword;
+      
+      // No enviar campos de archivo como strings (URLs) - solo Files nuevos
+      if (processedData.foto_perfil && typeof processedData.foto_perfil === 'string') {
+        delete processedData.foto_perfil;
+      }
+      if (processedData.firma && typeof processedData.firma === 'string') {
+        delete processedData.firma;
+      }
+      
+      console.log(`🔧 PATCH /web/users/${id}/ con datos procesados:`, processedData);
+      console.log(`🔧 PATCH - Claves enviadas:`, Object.keys(processedData));
+      console.log(`🔧 PATCH - ¿Tiene password?:`, 'password' in processedData);
       
       return await apiCall(`/web/users/${id}/`, {
         method: 'PATCH',
-        body: JSON.stringify(data),
+        body: JSON.stringify(processedData),
       });
     },
     

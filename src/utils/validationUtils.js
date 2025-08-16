@@ -297,21 +297,35 @@ export const sanitizeString = (input) => {
 };
 
 /**
- * Valida formato de DNI peruano (8 dígitos)
- * @param {string} dni - DNI a validar
+ * Valida formato de documento de identidad (DNI, Carnet de Extranjería, Pasaporte, etc.)
+ * @param {string} documento - Documento a validar
  * @returns {Object} { isValid, error }
  */
-export const validateDNI = (dni) => {
-  if (!dni) {
-    return { isValid: false, error: 'DNI es obligatorio' };
+export const validateDNI = (documento) => {
+  if (!documento) {
+    return { isValid: false, error: 'Campo obligatorio' };
   }
   
-  const dniRegex = /^\d{8}$/;
-  const isValid = dniRegex.test(dni);
+  // DEBUG: Solo logear si hay problemas
+  if (documento.length > 30) {
+    console.log('🔍 DNI demasiado largo:', { documento, length: documento.length });
+  }
+  
+  // Validar longitud máxima para prevenir error 500
+  if (documento.length > 30) {
+    return { 
+      isValid: false, 
+      error: `Documento debe tener entre 3 y 30 caracteres (actual: ${documento.length})` 
+    };
+  }
+  
+  // Permitir cualquier combinación de letras y números (mínimo 3 caracteres)
+  const documentoRegex = /^[a-zA-Z0-9]{3,30}$/;  // Aumenté a 30 para dar más margen
+  const isValid = documentoRegex.test(documento.trim());
   
   return {
     isValid,
-    error: isValid ? null : 'DNI debe tener exactamente 8 dígitos'
+    error: isValid ? null : 'Documento debe tener entre 3 y 30 caracteres (letras y números)'
   };
 };
 

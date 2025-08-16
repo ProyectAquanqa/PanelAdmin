@@ -42,31 +42,32 @@ export const EXCLUDED_PERMISSIONS = [
 
 /**
  * Configuración de módulos que aparecen en la UI
+ * Basada en la estructura real del sidebar - SOLO 5 módulos principales
  */
 export const UI_MODULES = {
   'Eventos': {
     title: 'Eventos',
-    description: 'Gestión de eventos y categorías',
+    description: 'Gestión de eventos, categorías y comentarios',
     priority: 1
-  },
-  'Usuarios': {
-    title: 'Usuarios', 
-    description: 'Gestión de usuarios y grupos',
-    priority: 2
   },
   'Chatbot': {
     title: 'Chatbot',
-    description: 'Base de conocimiento y conversaciones', 
+    description: 'Base de conocimiento, categorías y conversaciones', 
+    priority: 2
+  },
+  'Usuarios': {
+    title: 'Usuarios', 
+    description: 'Gestión de usuarios, grupos, perfiles, áreas y cargos',
     priority: 3
   },
   'Notificaciones': {
     title: 'Notificaciones',
-    description: 'Envío y gestión de notificaciones',
+    description: 'Historial de notificaciones y dispositivos registrados',
     priority: 4
   },
-  'Configuración': {
-    title: 'Configuración',
-    description: 'Configuración general del sistema',
+  'Almuerzos': {
+    title: 'Almuerzos',
+    description: 'Gestión del sistema de almuerzos',
     priority: 5
   }
 };

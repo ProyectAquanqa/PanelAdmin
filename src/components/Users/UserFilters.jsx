@@ -32,7 +32,8 @@ const UserFilters = ({
   const activeFilters = {
     searchTerm,
     selectedRole,
-    selectedDateRange
+    dateRange_start: selectedDateRange?.start || '',
+    dateRange_end: selectedDateRange?.end || ''
   };
 
   // Manejar cambios de filtros
@@ -44,8 +45,17 @@ const UserFilters = ({
       case 'selectedRole':
         onRoleChange?.(value);
         break;
-      case 'selectedDateRange':
-        onDateRangeChange?.(value);
+      case 'dateRange_start':
+        onDateRangeChange?.({ 
+          ...selectedDateRange, 
+          start: value 
+        });
+        break;
+      case 'dateRange_end':
+        onDateRangeChange?.({ 
+          ...selectedDateRange, 
+          end: value 
+        });
         break;
       default:
         break;

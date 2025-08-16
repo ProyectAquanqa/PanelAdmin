@@ -57,6 +57,7 @@ const UserManagement = () => {
   // Estados de filtros para sistema de permisos dinámicos
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(''); // Cambio de selectedRole a selectedGroup
+  const [selectedDateRange, setSelectedDateRange] = useState(null);
   const [showStatistics, setShowStatistics] = useState(false);
   
   // Vista unificada - sin pestañas (todos los usuarios en una sola vista)
@@ -94,13 +95,13 @@ const UserManagement = () => {
 
     // Filtro por búsqueda
     if (searchTerm.trim()) {
-      filtered = searchInFields(filtered, searchTerm, [
+      filtered = filtered.filter(item => searchInFields(item, searchTerm, [
         'first_name',
         'last_name', 
         'username',
         'email',
         'codigo_empleado'
-      ]);
+      ]));
     }
 
     // Filtro por grupo dinámico 
@@ -115,8 +116,26 @@ const UserManagement = () => {
       );
     }
 
+    // Filtro por fecha
+    if (selectedDateRange?.start || selectedDateRange?.end) {
+      filtered = filtered.filter(user => {
+        const userDate = new Date(user.date_joined || user.created_at);
+        const startDate = selectedDateRange.start ? new Date(selectedDateRange.start) : null;
+        const endDate = selectedDateRange.end ? new Date(selectedDateRange.end) : null;
+        
+        if (startDate && endDate) {
+          return userDate >= startDate && userDate <= endDate;
+        } else if (startDate) {
+          return userDate >= startDate;
+        } else if (endDate) {
+          return userDate <= endDate;
+        }
+        return true;
+      });
+    }
+
     return filtered;
-  }, [users, searchTerm, selectedGroup]);
+  }, [users, searchTerm, selectedGroup, selectedDateRange]);
 
   // Handlers del modal
   const handleCreateNew = useCallback(() => {
@@ -148,26 +167,13 @@ const UserManagement = () => {
   }, []);
 
   // Handlers de acciones
-  const handleSaveUser = useCallback(async (userData) => {
-    try {
-      if (formMode === 'create') {
-        const result = await createUser(userData);
-        if (result) {
-          handleCloseModal(); // Solo cerrar si fue exitoso
-        }
-      } else if (formMode === 'edit') {
-        // Usar PATCH en lugar de PUT para actualizaciones parciales
-        const result = await patchUser(editingUser.id, userData);
-        if (result) {
-          // El toast de éxito ya se muestra en useUsers.js, no duplicar aquí
-          handleCloseModal(); // Solo cerrar si fue exitoso
-        }
-      }
-    } catch (error) {
-      console.error('Error al guardar usuario:', error);
-      // El toast de error ya se maneja en el hook useUsers
+  const handleSaveUser = async (userData) => {
+    if (editingUser) {
+      return await updateUser(editingUser.id, userData);
+    } else {
+      return await createUser(userData);
     }
-  }, [formMode, editingUser, createUser, updateUser, handleCloseModal]);
+  };
 
   const handleDeleteUser = useCallback(async (userId) => {
     // Buscar el usuario para mostrar su nombre en el confirm
@@ -270,6 +276,8 @@ const UserManagement = () => {
             onSearchChange={setSearchTerm}
             selectedGroup={selectedGroup}
             onGroupChange={setSelectedGroup}
+            selectedDateRange={selectedDateRange}
+            onDateRangeChange={setSelectedDateRange}
             onCreateNew={handleCreateNew}
             onImport={handleImport}
             groups={groups}

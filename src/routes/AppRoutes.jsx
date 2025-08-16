@@ -24,6 +24,7 @@ const ComentariosGestion = lazy(() => import('../pages/Eventos/ComentariosGestio
 const Users = lazy(() => import('../pages/Users/Users'));
 const UserManagement = lazy(() => import('../pages/Users/UserManagement'));
 const Areas = lazy(() => import('../pages/Users/Areas'));
+const Cargos = lazy(() => import('../pages/Users/Cargos'));
 
 
 
@@ -344,6 +345,12 @@ const AppRoutes = () => {
         <Route path="usuarios/areas" element={
           <Suspense fallback={<LoadingFallback />}>
             <Areas />
+          </Suspense>
+        } />
+
+        <Route path="usuarios/cargos" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <Cargos />
           </Suspense>
         } />
 

@@ -21,22 +21,29 @@ const useDynamicPermissions = () => {
   const [error, setError] = useState(null);
 
   // Cargar estructura de permisos dinámicamente
-  const loadPermissionsStructure = useCallback(async () => {
+  const loadPermissionsStructure = useCallback(async (forProfileManagement = false) => {
     setLoading(prev => ({ ...prev, permissions: true }));
     setError(null);
 
     try {
-      console.log('🔄 Cargando estructura de permisos...');
+      console.log('🔄 Cargando estructura de permisos...', forProfileManagement ? 'PARA GESTIÓN DE PERFILES' : 'NORMAL');
       
       const [permissions, modules] = await Promise.all([
         dynamicPermissionsService.getPermissionsStructure(),
-        dynamicPermissionsService.getModulePermissionsStructure()
+        forProfileManagement 
+          ? dynamicPermissionsService.getCompleteModuleStructureForProfiles()
+          : dynamicPermissionsService.getModulePermissionsStructure()
       ]);
 
       setPermissionsStructure(permissions);
       setModuleStructure(modules);
       
-      console.log('✅ Estructura de permisos cargada:', { permissions, modules });
+      console.log('✅ Estructura de permisos cargada:', { 
+        permissions, 
+        modules, 
+        isForProfiles: forProfileManagement,
+        moduleCount: Object.keys(modules).length 
+      });
       
     } catch (error) {
       console.error('❌ Error cargando permisos:', error);
@@ -222,6 +229,12 @@ const useDynamicPermissions = () => {
     return stats;
   }, [permissionsStructure, moduleStructure]);
 
+  // Función específica para cargar estructura completa para gestión de perfiles
+  const loadCompleteStructureForProfiles = useCallback(async () => {
+    console.log('🎯 HOOK: Cargando estructura COMPLETA para gestión de perfiles...');
+    await loadPermissionsStructure(true);
+  }, [loadPermissionsStructure]);
+
   // Función para limpiar cache
   const clearCache = useCallback(() => {
     dynamicPermissionsService.clearCache();
@@ -245,6 +258,7 @@ const useDynamicPermissions = () => {
 
     // Funciones de carga
     loadPermissionsStructure,
+    loadCompleteStructureForProfiles, // ⭐ NUEVA FUNCIÓN
     reload,
     clearCache,
 

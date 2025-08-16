@@ -70,6 +70,7 @@ export const userNotificationItems = [
       { title: 'Gestión de Usuarios', path: '/usuarios/gestion' },
       { title: 'Perfiles', path: '/usuarios/perfiles' },
       { title: 'Áreas', path: '/usuarios/areas' },
+      { title: 'Cargos', path: '/usuarios/cargos' },
     ],
   },
   {

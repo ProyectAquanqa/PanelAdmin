@@ -13,8 +13,8 @@ import permissionService, {
 } from '../services/permissionService';
 
 /**
- * Mapeo de módulos del menú a permisos requeridos
- * Cada módulo puede requerir uno o varios permisos (OR lógico)
+ * Mapeo dinámico de módulos del menú a permisos requeridos
+ * Actualizado para funcionar con permisos dinámicos del sistema
  */
 const MENU_PERMISSIONS_MAP = {
   // Dashboard - accesible para todos los usuarios autenticados
@@ -23,138 +23,116 @@ const MENU_PERMISSIONS_MAP = {
     manage: []
   },
   
-  // Eventos: requires alguno de eventos.view_evento o eventos.view_categoria
+  // Eventos: cualquier permiso de eventos
   eventos: {
     view: [
-      'eventos.view_evento',
-      'eventos.view_categoria',
-      'eventos.view_comentario'
+      // Apps posibles: eventos, events
+      'eventos.view_evento', 'events.view_evento',
+      'eventos.view_categoria', 'events.view_categoria', 
+      'eventos.view_comentario', 'events.view_comentario',
+      // Patrones dinámicos
+      'evento', 'categoria', 'comentario'
     ],
     manage: [
-      'eventos.add_evento',
-      'eventos.change_evento', 
-      'eventos.delete_evento',
-      'eventos.add_categoria',
-      'eventos.change_categoria',
-      'eventos.delete_categoria',
-      'eventos.add_comentario',
-      'eventos.change_comentario',
-      'eventos.delete_comentario'
+      'eventos.add_evento', 'eventos.change_evento', 'eventos.delete_evento',
+      'events.add_evento', 'events.change_evento', 'events.delete_evento',
+      'eventos.add_categoria', 'eventos.change_categoria', 'eventos.delete_categoria',
+      'events.add_categoria', 'events.change_categoria', 'events.delete_categoria'
     ]
   },
   
-  // Chatbot: requires chatbot.view_chatbotknowledgebase o similares
+  // Chatbot: cualquier permiso de chatbot
   chatbot: {
     view: [
-      'chatbot.view_chatbotknowledgebase',
-      'chatbot.view_chatbotcategory',
-      'chatbot.view_chatconversation'
+      // Apps posibles: chatbot
+      'chatbot.view_chatbotknowledgebase', 'chatbot.view_chatbotcategory',
+      'chatbot.view_chatconversation', 'chatbot.view_conversation',
+      // Patrones dinámicos
+      'chatbot', 'chatbotknowledgebase', 'chatbotcategory', 'conversation'
     ],
     manage: [
-      'chatbot.add_chatbotknowledgebase',
-      'chatbot.change_chatbotknowledgebase',
-      'chatbot.delete_chatbotknowledgebase',
-      'chatbot.add_chatbotcategory',
-      'chatbot.change_chatbotcategory',
-      'chatbot.delete_chatbotcategory'
+      'chatbot.add_chatbotknowledgebase', 'chatbot.change_chatbotknowledgebase', 'chatbot.delete_chatbotknowledgebase',
+      'chatbot.add_chatbotcategory', 'chatbot.change_chatbotcategory', 'chatbot.delete_chatbotcategory',
+      'chatbot.add_conversation', 'chatbot.change_conversation', 'chatbot.delete_conversation'
     ]
   },
   
-  // Usuarios: requires users.view_usuario
+  // Usuarios: cualquier permiso de usuarios, grupos, áreas, cargos
   usuarios: {
     view: [
-      'users.view_usuario',
-      'auth.view_user'  // Fallback para diferentes implementaciones
+      // Usuarios principales
+      'users.view_user', 'users.view_usuario', 'auth.view_user',
+      // Grupos/Perfiles
+      'auth.view_group', 'users.view_group',
+      // Áreas y Cargos (submódulos de usuarios)
+      'areas.view_area', 'areas.view_cargo', 'cargos.view_cargo',
+      // Patrones dinámicos
+      'user', 'usuario', 'group', 'grupo', 'area', 'cargo'
     ],
     manage: [
-      'users.add_usuario',
-      'users.change_usuario',
-      'users.delete_usuario',
-      'auth.add_user',
-      'auth.change_user',
-      'auth.delete_user'
+      'users.add_user', 'users.change_user', 'users.delete_user',
+      'auth.add_user', 'auth.change_user', 'auth.delete_user',
+      'auth.add_group', 'auth.change_group', 'auth.delete_group',
+      'areas.add_area', 'areas.change_area', 'areas.delete_area',
+      'areas.add_cargo', 'areas.change_cargo', 'areas.delete_cargo'
     ]
   },
   
-  // Perfiles (grupos): requires auth.view_group
+  // Perfiles (submódulo de usuarios)
   perfiles: {
     view: [
-      'auth.view_group',
-      'users.view_group'
+      'auth.view_group', 'users.view_group', 'group', 'grupo'
     ],
     manage: [
-      'auth.add_group',
-      'auth.change_group',
-      'auth.delete_group',
-      'users.add_group', 
-      'users.change_group',
-      'users.delete_group'
+      'auth.add_group', 'auth.change_group', 'auth.delete_group',
+      'users.add_group', 'users.change_group', 'users.delete_group'
     ]
   },
   
-  // Areas: generalmente parte de usuarios
+  // Áreas (submódulo de usuarios)
   areas: {
     view: [
-      'areas.view_area',
-      'areas.view_cargo',
-      'users.view_area'
+      'areas.view_area', 'area'
     ],
     manage: [
-      'areas.add_area',
-      'areas.change_area',
-      'areas.delete_area',
-      'areas.add_cargo',
-      'areas.change_cargo',
-      'areas.delete_cargo'
+      'areas.add_area', 'areas.change_area', 'areas.delete_area'
     ]
   },
   
-  // Notificaciones: requires notificaciones.view_notificacion
-  notificaciones: {
+  // Cargos (submódulo de usuarios)
+  cargos: {
     view: [
-      'notificaciones.view_notificacion',
-      'notifications.view_notification'
+      'areas.view_cargo', 'cargos.view_cargo', 'cargo'
     ],
     manage: [
-      'notificaciones.add_notificacion',
-      'notificaciones.change_notificacion',
-      'notificaciones.delete_notificacion'
+      'areas.add_cargo', 'areas.change_cargo', 'areas.delete_cargo',
+      'cargos.add_cargo', 'cargos.change_cargo', 'cargos.delete_cargo'
+    ]
+  },
+  
+  // Notificaciones: cualquier permiso de notificaciones o dispositivos
+  notificaciones: {
+    view: [
+      // Apps posibles: notificaciones, notifications
+      'notificaciones.view_notificacion', 'notifications.view_notification',
+      'notificaciones.view_devicetoken', 'notifications.view_devicetoken',
+      // Patrones dinámicos
+      'notificacion', 'notification', 'devicetoken', 'device'
+    ],
+    manage: [
+      'notificaciones.add_notificacion', 'notificaciones.change_notificacion', 'notificaciones.delete_notificacion',
+      'notifications.add_notification', 'notifications.change_notification', 'notifications.delete_notification',
+      'notificaciones.add_devicetoken', 'notificaciones.change_devicetoken', 'notificaciones.delete_devicetoken'
     ]
   },
   
   // Almuerzos
   almuerzos: {
     view: [
-      'almuerzos.view_almuerzo'
+      'almuerzos.view_almuerzo', 'almuerzo'
     ],
     manage: [
-      'almuerzos.add_almuerzo',
-      'almuerzos.change_almuerzo',
-      'almuerzos.delete_almuerzo'
-    ]
-  },
-  
-  // Configuración - generalmente solo administradores
-  configuracion: {
-    view: [
-      'admin.view_settings',
-      'core.view_settings'
-    ],
-    manage: [
-      'admin.change_settings',
-      'core.change_settings'
-    ]
-  },
-  
-  // Permisos - solo administradores
-  permisos: {
-    view: [
-      'auth.view_permission',
-      'admin.view_permission'
-    ],
-    manage: [
-      'auth.change_permission',
-      'admin.change_permission'
+      'almuerzos.add_almuerzo', 'almuerzos.change_almuerzo', 'almuerzos.delete_almuerzo'
     ]
   }
 };
@@ -185,6 +163,7 @@ export const useMenuPermissions = () => {
   
   /**
    * Verifica si el usuario tiene al menos uno de los permisos requeridos
+   * Funciona con permisos exactos y patrones dinámicos
    */
   const hasAnyPermission = useMemo(() => (requiredPermissions = []) => {
     if (!isAuthenticated) return false;
@@ -201,10 +180,27 @@ export const useMenuPermissions = () => {
       return true;
     }
     
-    // Verificar si tiene al menos uno de los permisos requeridos
-    return requiredPermissions.some(permission => 
+    // Verificar coincidencias exactas primero
+    const hasExactMatch = requiredPermissions.some(permission => 
       allowedCodenames.includes(permission)
     );
+    
+    if (hasExactMatch) return true;
+    
+    // Verificar patrones dinámicos - si el usuario tiene permisos que contienen los patrones
+    const hasPatternMatch = requiredPermissions.some(requiredPattern => {
+      return allowedCodenames.some(userPermission => {
+        // Si el patrón requerido es solo una palabra (como 'evento'), buscar en permisos del usuario
+        if (!requiredPattern.includes('.')) {
+          return userPermission.includes(requiredPattern);
+        }
+        // Si es formato app.action_model, hacer coincidencia parcial
+        const [requiredApp, requiredAction] = requiredPattern.split('.');
+        return userPermission.includes(requiredApp) && (requiredAction ? userPermission.includes(requiredAction) : true);
+      });
+    });
+    
+    return hasPatternMatch;
   }, [isAuthenticated, getAllowedCodenames]);
   
   /**
@@ -212,10 +208,20 @@ export const useMenuPermissions = () => {
    */
   const canViewModule = useMemo(() => (moduleName) => {
     const modulePerms = MENU_PERMISSIONS_MAP[moduleName];
-    if (!modulePerms) return false;
+    if (!modulePerms) {
+      console.log('⚠️ Módulo no encontrado en MENU_PERMISSIONS_MAP:', moduleName);
+      return false;
+    }
     
-    return hasAnyPermission(modulePerms.view);
-  }, [hasAnyPermission]);
+    const hasPermission = hasAnyPermission(modulePerms.view);
+    console.log(`🔍 Verificando acceso a módulo ${moduleName}:`, {
+      requiredPermissions: modulePerms.view,
+      userPermissions: getAllowedCodenames,
+      hasAccess: hasPermission
+    });
+    
+    return hasPermission;
+  }, [hasAnyPermission, getAllowedCodenames]);
   
   /**
    * Verifica si el usuario puede gestionar (add/change/delete) un módulo
@@ -226,10 +232,65 @@ export const useMenuPermissions = () => {
     
     return hasAnyPermission(modulePerms.manage);
   }, [hasAnyPermission]);
+
+  /**
+   * Verifica si el usuario puede gestionar perfiles (crear, editar, eliminar grupos)
+   * LÓGICA INDEPENDIENTE del sidebar - para gestión de perfiles
+   */
+  const canManageProfiles = useMemo(() => {
+    if (!isAuthenticated) return false;
+    
+    // Superusuario siempre puede
+    if (getAllowedCodenames.includes('*')) return true;
+    
+    const userGroups = getUserGroups();
+    const allowedCodenames = getAllowedCodenames;
+    
+    // Verificar grupos específicos que pueden gestionar perfiles
+    const profileManagerGroups = [
+      'SUPER_ADMIN_WEB',
+      'ADMIN_WEB', 
+      'Administrador',
+      'Admin'
+    ];
+    
+    if (userGroups && userGroups.length > 0) {
+      const canManageByGroup = userGroups.some(group => {
+        const groupName = typeof group === 'object' ? group.name : group;
+        return profileManagerGroups.includes(groupName) || 
+               groupName.includes('ADMIN') || 
+               groupName.includes('SUPER');
+      });
+      
+      if (canManageByGroup) {
+        console.log('✅ Usuario puede gestionar perfiles por grupo:', userGroups);
+        return true;
+      }
+    }
+    
+    // Verificar permisos específicos de gestión de grupos
+    const profileManagementPermissions = [
+      'auth.add_group', 'auth.change_group', 'auth.delete_group',
+      'users.add_group', 'users.change_group', 'users.delete_group'
+    ];
+    
+    const hasProfilePermissions = profileManagementPermissions.some(perm => 
+      allowedCodenames.includes(perm) || 
+      allowedCodenames.some(userPerm => userPerm.includes('group'))
+    );
+    
+    if (hasProfilePermissions) {
+      console.log('✅ Usuario puede gestionar perfiles por permisos específicos');
+      return true;
+    }
+    
+    console.log('❌ Usuario NO puede gestionar perfiles');
+    return false;
+  }, [isAuthenticated, getAllowedCodenames]);
   
   /**
    * Determina si el usuario debe tener acceso restringido (solo trabajador)
-   * Basado en el sistema de grupos definido en el backend
+   * LÓGICA ACTUALIZADA para reconocer mejor los grupos administrativos
    */
   const isRestrictedUser = useMemo(() => {
     if (!isAuthenticated || !user) return true;
@@ -243,45 +304,72 @@ export const useMenuPermissions = () => {
     const userGroups = getUserGroups();
     const allowedCodenames = getAllowedCodenames;
     
-    // Grupos que indican usuarios administrativos (no restringidos)
+    // Grupos que indican usuarios administrativos (incluir SUPER_ADMIN_WEB)
     const adminGroups = [
       'Administrador de Contenido',
       'Editor de Contenido', 
       'Gestor de Chatbot',
       'Admin',
-      'Administrador'
+      'Administrador',
+      'SUPER_ADMIN_WEB',  // ⭐ AGREGADO
+      'ADMIN_WEB',
+      'GESTOR_CONTENIDO',
+      'MODERADOR'
     ];
     
     // Verificar si tiene algún grupo administrativo
     if (userGroups && userGroups.length > 0) {
       const hasAdminGroup = userGroups.some(group => {
         const groupName = typeof group === 'object' ? group.name : group;
-        return adminGroups.includes(groupName);
+        return adminGroups.includes(groupName) || groupName.includes('ADMIN') || groupName.includes('SUPER');
       });
       
-      if (hasAdminGroup) return false;
+      if (hasAdminGroup) {
+        console.log('🔓 Usuario reconocido como admin por grupo:', userGroups);
+        return false;
+      }
     }
     
-    // **NUEVA LÓGICA**: Verificar si tiene al menos algunos permisos asignados
-    // Si el usuario no tiene ningún permiso, es considerado trabajador restringido
+    // Si no tiene ningún permiso, es trabajador restringido
     if (!allowedCodenames || allowedCodenames.length === 0) {
-      return true; // Sin permisos = acceso restringido
-    }
-    
-    // Si tiene permisos pero no son grupos administrativos, revisar si tiene permisos significativos
-    // Permisos básicos que no otorgan acceso admin (solo para validación)
-    const basicPermissions = [
-      'almuerzos.view_almuerzo', // Solo ver almuerzos
-      'auth.view_user'  // Solo ver su propio perfil
-    ];
-    
-    // Si solo tiene permisos básicos, sigue siendo trabajador
-    const hasOnlyBasicPerms = allowedCodenames.every(perm => basicPermissions.includes(perm));
-    if (hasOnlyBasicPerms && allowedCodenames.length <= 2) {
       return true;
     }
     
-    // Si tiene otros permisos, puede acceder al panel admin
+    // **LÓGICA MEJORADA**: Si tiene muchos permisos (más de 3), probablemente es admin
+    if (allowedCodenames.length > 3) {
+      console.log('🔓 Usuario reconocido como admin por cantidad de permisos:', allowedCodenames.length);
+      return false;
+    }
+    
+    // Verificar si tiene permisos administrativos específicos
+    const hasAdminPermissions = allowedCodenames.some(perm => 
+      perm.includes('add_') || perm.includes('change_') || perm.includes('delete_') ||
+      perm.includes('group') || perm.includes('user') || perm.includes('admin')
+    );
+    
+    if (hasAdminPermissions) {
+      console.log('🔓 Usuario reconocido como admin por permisos administrativos');
+      return false;
+    }
+    
+    // Permisos básicos que indican trabajador
+    const basicWorkerPermissions = [
+      'almuerzos.view_almuerzo',
+      'auth.view_user'
+    ];
+    
+    // Si solo tiene permisos básicos de trabajador, es restringido
+    const hasOnlyBasicPerms = allowedCodenames.every(perm => 
+      basicWorkerPermissions.some(basic => perm.includes(basic.split('.')[1]))
+    );
+    
+    if (hasOnlyBasicPerms) {
+      console.log('🔒 Usuario identificado como trabajador restringido');
+      return true;
+    }
+    
+    // Por defecto, si tiene permisos no básicos, no es restringido
+    console.log('🔓 Usuario no restringido por defecto');
     return false;
   }, [isAuthenticated, user, getAllowedCodenames]);
   
@@ -295,20 +383,25 @@ export const useMenuPermissions = () => {
       // Crear una copia del item para no mutar el original
       const filteredItem = { ...item };
       
-      // Mapear rutas principales a módulos
+      // Mapear rutas principales a módulos - ACTUALIZADO
       const getModuleFromPath = (path) => {
         if (path === '/') return 'dashboard';
+        
+        // Módulos principales
         if (path.startsWith('/eventos')) return 'eventos';
         if (path.startsWith('/chatbot')) return 'chatbot';
-        if (path.startsWith('/usuarios')) return 'usuarios';
+        if (path.startsWith('/usuarios')) {
+          // Submódulos específicos de usuarios
+          if (path === '/usuarios/perfiles') return 'perfiles';
+          if (path === '/usuarios/areas') return 'areas';
+          if (path === '/usuarios/cargos') return 'cargos';
+          if (path === '/usuarios/gestion') return 'usuarios';
+          return 'usuarios'; // Por defecto usuarios
+        }
         if (path.startsWith('/notificaciones')) return 'notificaciones';
         if (path.startsWith('/almuerzos')) return 'almuerzos';
-        if (path.startsWith('/configuracion')) return 'configuracion';
-        if (path.startsWith('/permisos')) return 'permisos';
         
-        // Mapeos específicos para submenús
-        if (path === '/usuarios/perfiles') return 'perfiles';
-        if (path === '/usuarios/areas') return 'areas';
+        // Ya no mapeamos configuración ni permisos (fueron eliminados)
         
         return null;
       };
@@ -322,8 +415,8 @@ export const useMenuPermissions = () => {
       
       // Para usuarios restringidos (trabajadores), aplicar restricciones estrictas
       if (isRestrictedUser) {
+        console.log('🔒 Aplicando restricciones de trabajador para módulo:', moduleName);
         // Los trabajadores solo pueden acceder a dashboard y almuerzos
-        // Dashboard siempre disponible, almuerzos solo si tienen permisos
         const allowedForWorkers = ['dashboard'];
         
         // Permitir almuerzos solo si tienen permisos específicos
@@ -332,6 +425,7 @@ export const useMenuPermissions = () => {
         }
         
         if (!allowedForWorkers.includes(moduleName)) {
+          console.log('🚫 Módulo filtrado para trabajador:', moduleName);
           return null; // Filtrar este item
         }
       }
@@ -348,7 +442,7 @@ export const useMenuPermissions = () => {
           
           if (!subModuleName) return true; // Permitir si no está mapeado
           
-          // Aplicar restricciones para trabajadores
+          // Aplicar restricciones para trabajadores en submenús
           if (isRestrictedUser) {
             const allowedForWorkers = ['dashboard'];
             
@@ -357,7 +451,9 @@ export const useMenuPermissions = () => {
               allowedForWorkers.push('almuerzos');
             }
             
-            return allowedForWorkers.includes(subModuleName);
+            const isAllowed = allowedForWorkers.includes(subModuleName);
+            console.log(`🔍 Submódulo ${subModuleName} para trabajador:`, isAllowed);
+            return isAllowed;
           }
           
           return canViewModule(subModuleName);
@@ -376,10 +472,21 @@ export const useMenuPermissions = () => {
     }).filter(Boolean); // Remover items null
   }, [isAuthenticated, isRestrictedUser, canViewModule]);
   
+  // Log de debugging para el usuario actual
+  console.log('🔐 Estado de permisos del usuario:', {
+    isAuthenticated,
+    user: user?.username || user?.email,
+    isRestrictedUser,
+    userGroups: getUserGroups(),
+    userPermissions: getAllowedCodenames,
+    permissionCount: getAllowedCodenames?.length || 0
+  });
+
   return {
     // Funciones de verificación
     canViewModule,
     canManageModule,
+    canManageProfiles, // ⭐ NUEVA FUNCIÓN PARA GESTIÓN DE PERFILES
     hasAnyPermission,
     
     // Estados del usuario
@@ -398,3 +505,5 @@ export const useMenuPermissions = () => {
 };
 
 export default useMenuPermissions;
+
+

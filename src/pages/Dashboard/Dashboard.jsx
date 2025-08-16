@@ -126,7 +126,7 @@ const QuickActions = React.memo(() => {
     {
       label: 'Gestionar Perfiles',
       icon: <UsersIcon className="w-5 h-5" />,
-      onClick: () => navigate('/perfiles'),
+      onClick: () => navigate('/usuarios/perfiles'),
       color: 'slate'
     },
     {

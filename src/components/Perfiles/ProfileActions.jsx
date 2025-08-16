@@ -13,6 +13,8 @@ const ProfileActions = ({
   onSearchChange,
   selectedGroup = '',
   onGroupChange,
+  selectedUserRange = '',
+  onUserRangeChange,
   groups = [],
   onCreateNew,
   onImport,
@@ -32,7 +34,8 @@ const ProfileActions = ({
   // Estado actual de filtros  
   const activeFilters = {
     searchTerm,
-    selectedGroup
+    selectedGroup,
+    userRange: selectedUserRange
   };
 
   // Manejar cambios de filtros
@@ -44,6 +47,9 @@ const ProfileActions = ({
       case 'selectedGroup':
         onGroupChange?.(value);
         break;
+      case 'userRange':
+        onUserRangeChange?.(value);
+        break;
       default:
         break;
     }
@@ -53,6 +59,7 @@ const ProfileActions = ({
   const handleClearFilters = () => {
     onSearchChange?.('');
     onGroupChange?.('');
+    onUserRangeChange?.('');
   };
 
   return (
@@ -76,6 +83,8 @@ ProfileActions.propTypes = {
   onSearchChange: PropTypes.func.isRequired,
   selectedGroup: PropTypes.string,
   onGroupChange: PropTypes.func.isRequired,
+  selectedUserRange: PropTypes.string,
+  onUserRangeChange: PropTypes.func.isRequired,
   groups: PropTypes.arrayOf(PropTypes.object),
   onCreateNew: PropTypes.func.isRequired,
   onImport: PropTypes.func.isRequired,

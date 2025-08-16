@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { UniversalFilters } from '../Common/Filters';
-import { prepareAreasFiltersConfig } from '../Common/Filters/configs/areasFiltersConfig';
+import { prepareCargoFiltersConfig } from '../Common/Filters/configs/cargosFiltersConfig';
 
 /**
- * Componente de acciones integradas: búsqueda, filtros y acciones principales para Áreas
- * Ahora usa UniversalFilters para consistencia con eventos
+ * Componente de acciones integradas: búsqueda, filtros y acciones principales para Cargos
+ * Ahora usa UniversalFilters para consistencia con eventos y áreas
  */
-const AreaActions = ({
+const CargoActions = ({
   searchTerm = '',
   onSearchChange,
   selectedStatus = '',
@@ -21,7 +21,7 @@ const AreaActions = ({
 }) => {
   // Preparar configuración con datos dinámicos
   const filtersConfig = useMemo(() => {
-    return prepareAreasFiltersConfig({
+    return prepareCargoFiltersConfig({
       onCreateNew,
       onExport
     });
@@ -84,7 +84,7 @@ const AreaActions = ({
   );
 };
 
-AreaActions.propTypes = {
+CargoActions.propTypes = {
   searchTerm: PropTypes.string,
   onSearchChange: PropTypes.func,
   selectedStatus: PropTypes.string,
@@ -100,4 +100,4 @@ AreaActions.propTypes = {
   onClearFilters: PropTypes.func
 };
 
-export default AreaActions;
+export default CargoActions;

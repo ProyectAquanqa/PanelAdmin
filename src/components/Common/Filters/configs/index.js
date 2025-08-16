@@ -22,3 +22,4 @@ export {
   profileFiltersConfig,
   prepareProfileFiltersConfig
 } from './profileFiltersConfig';
+export { default as cargoFiltersConfig } from './cargoFiltersConfig';

@@ -53,7 +53,7 @@ const refreshToken = async () => {
     throw new Error('No refresh token available');
   }
 
-  const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
+  const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
   const apiBase = rawBase.replace(/\/(web|admin|mobile)\/?$/, '');
   const response = await fetch(`${apiBase}/web/auth/refresh/`, {
     method: 'POST',

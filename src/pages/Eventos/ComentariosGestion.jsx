@@ -159,7 +159,7 @@ const ComentariosGestion = () => {
       
       // Fallback: fetch directo al endpoint
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
         const cleanBase = API_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
         const url = `${cleanBase}/web/users/?page_size=100`;
         

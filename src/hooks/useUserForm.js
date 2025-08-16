@@ -215,7 +215,6 @@ export const useUserForm = (initialData = {}, options = {}) => {
       
       // IMPORTANTE: Verificar formato del backend
       // El backend puede esperar diferentes formatos según la versión
-      console.log('🔍 Datos antes de procesamiento:', dataToSubmit);
       
       if (dataToSubmit.groups) {
         // Si es array, procesarlo
@@ -243,16 +242,11 @@ export const useUserForm = (initialData = {}, options = {}) => {
         dataToSubmit.groups = [];
       }
       
-      console.log('✅ Datos después de procesamiento:', dataToSubmit);
-      
       // MANEJAR CONTRASEÑAS DE FORMA MÁS ROBUSTA
       const passwordValue = dataToSubmit.password;
       const confirmPasswordValue = dataToSubmit.confirmPassword;
       const hasPassword = passwordValue && typeof passwordValue === 'string' && passwordValue.trim() !== '';
       const hasConfirmPassword = confirmPasswordValue && typeof confirmPasswordValue === 'string' && confirmPasswordValue.trim() !== '';
-      
-      console.log('🔍 DEBUG - hasPassword:', hasPassword, 'hasConfirmPassword:', hasConfirmPassword);
-      console.log('🔍 DEBUG - passwordValue:', passwordValue, 'confirmPasswordValue:', confirmPasswordValue);
       
       if (detectedFormType === 'create') {
         // EN CREACIÓN: contraseña es OBLIGATORIA
@@ -300,7 +294,6 @@ export const useUserForm = (initialData = {}, options = {}) => {
           }
         } else {
           // NO HAY CONTRASEÑAS: eliminar completamente del objeto
-          console.log('🗑️ Eliminando campos de contraseña vacíos...');
           delete dataToSubmit.password;
           delete dataToSubmit.confirmPassword;
         }
@@ -309,25 +302,6 @@ export const useUserForm = (initialData = {}, options = {}) => {
       // SIEMPRE eliminar confirmPassword antes del envío final
       if ('confirmPassword' in dataToSubmit) {
         delete dataToSubmit.confirmPassword;
-      }
-      
-      console.log('🔧 Datos finales para envío:', dataToSubmit);
-      console.log('🔧 ¿Tiene password?:', 'password' in dataToSubmit);
-      console.log('🔧 Claves del objeto final:', Object.keys(dataToSubmit));
-      
-      // VERIFICACIÓN FINAL: asegurar que no hay campos de contraseña vacíos
-      if (detectedFormType === 'edit') {
-        const finalPasswordValue = dataToSubmit.password;
-        if (finalPasswordValue === '' || finalPasswordValue === null || finalPasswordValue === undefined) {
-          console.log('⚠️ LIMPIEZA FINAL: Eliminando password vacío');
-          delete dataToSubmit.password;
-        }
-        if ('confirmPassword' in dataToSubmit) {
-          console.log('⚠️ LIMPIEZA FINAL: Eliminando confirmPassword');
-          delete dataToSubmit.confirmPassword;
-        }
-        console.log('🧹 POST-LIMPIEZA - Datos finales:', dataToSubmit);
-        console.log('🧹 POST-LIMPIEZA - Claves:', Object.keys(dataToSubmit));
       }
       
       // Para edición, enviar solo los campos que realmente cambiaron
@@ -343,7 +317,6 @@ export const useUserForm = (initialData = {}, options = {}) => {
           }
         });
         
-        console.log('🧴 Datos ultra-limpiados para PATCH:', cleanedData);
         const result = await onSubmit(cleanedData);
         
         if (resetOnSubmit && result !== false) {

@@ -3,8 +3,100 @@
  * Basado en Django Groups nativos con SimpleGroupViewSet
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
+
+/**
+ * Intenta obtener permisos detallados desde un grupo específico
+ * @param {Object} groupsResponse - Respuesta del endpoint de grupos
+ * @returns {Promise} Estructura de permisos o null
+ */
+const tryGetDetailedGroupPermissions = async (groupsResponse) => {
+  try {
+
+    
+    // Extraer lista de grupos
+    let groups = [];
+    if (groupsResponse.status === 'success' && Array.isArray(groupsResponse.data)) {
+      groups = groupsResponse.data;
+    } else if (Array.isArray(groupsResponse)) {
+      groups = groupsResponse;
+    }
+    
+    if (groups.length === 0) {
+      console.log('⚠️ No hay grupos disponibles para extraer permisos');
+      return null;
+    }
+    
+    // Tomar el primer grupo e intentar obtener sus detalles con permisos
+    const firstGroup = groups[0];
+    if (!firstGroup.id) {
+      console.log('⚠️ El grupo no tiene ID para obtener detalles');
+      return null;
+    }
+    
+
+    
+    try {
+      const detailedGroup = await apiCall(`/web/groups/${firstGroup.id}/`);
+      
+      if (detailedGroup && detailedGroup.status === 'success' && detailedGroup.data && detailedGroup.data.permissions) {
+
+        
+        // Transformar los permisos del grupo en una estructura similar a la esperada
+        const permissions_by_app = {};
+        
+        detailedGroup.data.permissions.forEach(permission => {
+          if (permission.full_codename) {
+            const parts = permission.full_codename.split('.');
+            if (parts.length === 2) {
+              const [appLabel, codename] = parts;
+              
+              if (!permissions_by_app[appLabel]) {
+                permissions_by_app[appLabel] = {};
+              }
+              
+              // Extraer el modelo del codename (formato: action_model)
+              const modelMatch = codename.match(/^(add|change|delete|view)_(.+)$/);
+              if (modelMatch) {
+                const [, action, modelName] = modelMatch;
+                
+                if (!permissions_by_app[appLabel][modelName]) {
+                  permissions_by_app[appLabel][modelName] = [];
+                }
+                
+                permissions_by_app[appLabel][modelName].push({
+                  id: permission.id,
+                  name: permission.name,
+                  codename: permission.codename,
+                  content_type: null,
+                  app_label: appLabel,
+                  model: modelName
+                });
+              }
+            }
+          }
+        });
+        
+        return {
+          status: 'success',
+          data: {
+            permissions_by_app: permissions_by_app,
+            source: 'group_permissions'
+          }
+        };
+      }
+    } catch (groupDetailError) {
+      console.log(`⚠️ No se pudieron obtener detalles del grupo: ${groupDetailError.message}`);
+    }
+    
+    return null;
+    
+  } catch (error) {
+
+    return null;
+  }
+};
 
 // Función auxiliar para refrescar token (reutilizada del userService)
 const refreshTokenIfNeeded = async () => {
@@ -139,7 +231,7 @@ const groupService = {
               permissions: groupData.permissions || []
             };
           } catch (error) {
-            console.error(`❌ Error obteniendo permisos para grupo ${group.id}:`, error);
+
             // Retornar grupo sin permisos si falla
             return {
               id: group.id,
@@ -154,7 +246,7 @@ const groupService = {
       return groupsWithPermissions;
       
     } catch (error) {
-      console.error('❌ Error en groupService.list:', error);
+
       throw error;
     }
   },
@@ -168,15 +260,62 @@ const groupService = {
     return await apiCall(`/web/groups/${id}/`);
   },
 
+
+
   /**
    * Crea un nuevo grupo
    * @param {Object} data - Datos del grupo
    * @returns {Promise} Grupo creado
    */
   create: async (data) => {
+    const convertedData = { ...data };
+    // Intentar convertir strings 'app.codename' a IDs si el endpoint admin está disponible
+    if (Array.isArray(convertedData.permissions)) {
+      try {
+        const resp = await apiCall('/admin/system/permissions/');
+        const data = resp?.data || resp;
+        const dynamicMap = {};
+        if (data && data.permissions_by_app) {
+          Object.entries(data.permissions_by_app).forEach(([appLabel, appObj]) => {
+            Object.values(appObj).forEach(modelPerms => {
+              if (Array.isArray(modelPerms)) {
+                modelPerms.forEach(perm => {
+                  if (perm.full_codename && perm.id != null) {
+                    dynamicMap[perm.full_codename] = perm.id;
+                    // Soportar sinónimos de app_label
+                    const [, code] = perm.full_codename.split('.');
+                    if (appLabel === 'eventos') dynamicMap[`events.${code}`] = perm.id;
+                    if (appLabel === 'events') dynamicMap[`eventos.${code}`] = perm.id;
+                    if (appLabel === 'notificaciones') dynamicMap[`notifications.${code}`] = perm.id;
+                    if (appLabel === 'notifications') dynamicMap[`notificaciones.${code}`] = perm.id;
+                    if (appLabel === 'auth') dynamicMap[`users.${code}`] = perm.id;
+                    if (appLabel === 'users') dynamicMap[`auth.${code}`] = perm.id;
+                  }
+                });
+              }
+            });
+          });
+        }
+        if (Object.keys(dynamicMap).length > 0) {
+          const normalized = convertedData.permissions.map(p => {
+            if (typeof p === 'number') return p;
+            if (typeof p === 'string' && p.includes('.')) return dynamicMap[p] ?? p;
+            if (p && typeof p === 'object') {
+              if (p.id != null) return p.id;
+              if (p.full_codename && dynamicMap[p.full_codename]) return dynamicMap[p.full_codename];
+            }
+            return p;
+          });
+          convertedData.permissions = Array.from(new Set(normalized));
+        }
+      } catch (e) {
+        // Sin acceso al endpoint admin: enviar tal cual (ids y/o app.codename)
+      }
+    }
+    // Backend acepta ids numéricos o strings 'app.codename'
     return await apiCall('/web/groups/', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(convertedData),
     });
   },
 
@@ -187,9 +326,52 @@ const groupService = {
    * @returns {Promise} Grupo actualizado
    */
   update: async (id, data) => {
+    const convertedData = { ...data };
+    if (Array.isArray(convertedData.permissions)) {
+      try {
+        const resp = await apiCall('/admin/system/permissions/');
+        const data = resp?.data || resp;
+        const dynamicMap = {};
+        if (data && data.permissions_by_app) {
+          Object.entries(data.permissions_by_app).forEach(([appLabel, appObj]) => {
+            Object.values(appObj).forEach(modelPerms => {
+              if (Array.isArray(modelPerms)) {
+                modelPerms.forEach(perm => {
+                  if (perm.full_codename && perm.id != null) {
+                    dynamicMap[perm.full_codename] = perm.id;
+                    const [, code] = perm.full_codename.split('.');
+                    if (appLabel === 'eventos') dynamicMap[`events.${code}`] = perm.id;
+                    if (appLabel === 'events') dynamicMap[`eventos.${code}`] = perm.id;
+                    if (appLabel === 'notificaciones') dynamicMap[`notifications.${code}`] = perm.id;
+                    if (appLabel === 'notifications') dynamicMap[`notificaciones.${code}`] = perm.id;
+                    if (appLabel === 'auth') dynamicMap[`users.${code}`] = perm.id;
+                    if (appLabel === 'users') dynamicMap[`auth.${code}`] = perm.id;
+                  }
+                });
+              }
+            });
+          });
+        }
+        if (Object.keys(dynamicMap).length > 0) {
+          const normalized = convertedData.permissions.map(p => {
+            if (typeof p === 'number') return p;
+            if (typeof p === 'string' && p.includes('.')) return dynamicMap[p] ?? p;
+            if (p && typeof p === 'object') {
+              if (p.id != null) return p.id;
+              if (p.full_codename && dynamicMap[p.full_codename]) return dynamicMap[p.full_codename];
+            }
+            return p;
+          });
+          convertedData.permissions = Array.from(new Set(normalized));
+        }
+      } catch (e) {
+        // Sin acceso: enviar tal cual
+      }
+    }
+    // Backend acepta ids numéricos o strings 'app.codename'
     return await apiCall(`/web/groups/${id}/`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(convertedData),
     });
   },
 
@@ -198,20 +380,32 @@ const groupService = {
    * @returns {Promise} Permisos organizados por app
    */
   getAvailablePermissions: async () => {
-    // Intentar diferentes endpoints para máxima compatibilidad
-    const endpoints = [
-      '/admin/system/permissions/',
-      '/web/admin/permissions/', 
-      '/admin/permissions/',
-      '/api/permissions/'
-    ];
+    const endpoints = ['/admin/system/permissions/', '/web/groups/'];
 
     for (const endpoint of endpoints) {
       try {
         const response = await apiCall(endpoint);
-        if (response && (response.status === 'success' || response.data)) {
-          console.log(`✅ Permisos obtenidos desde: ${endpoint}`);
-          return response;
+
+        if (endpoint === '/admin/system/permissions/') {
+          // Normalizar ambas posibles formas de respuesta
+          if (response && (response.status === 'success' || response.permissions_by_app || response.data)) {
+            const data = response.data || response;
+            if (data.permissions_by_app) {
+              return { status: 'success', data };
+            }
+            if (Array.isArray(data.applications)) {
+              return { status: 'success', data };
+            }
+          }
+        }
+
+        if (endpoint === '/web/groups/') {
+          if (response && (response.status === 'success' || Array.isArray(response.data) || Array.isArray(response))) {
+            const detailedResponse = await tryGetDetailedGroupPermissions(response);
+            if (detailedResponse) {
+              return detailedResponse;
+            }
+          }
         }
       } catch (error) {
         console.log(`⚠️ Endpoint ${endpoint} no disponible:`, error.message);
@@ -219,7 +413,7 @@ const groupService = {
       }
     }
 
-    throw new Error('No se pudieron obtener permisos de ningún endpoint disponible');
+    throw new Error('No se pudieron obtener permisos');
   },
 
   /**

@@ -1,15 +1,11 @@
 {
   "folders": [
     {
-      "path": "../Aquanqa_noticias_web"
+      "path": "../Admin_Django"
     },
     {
       "path": "."
-    },
-{
-  "path":"../AppAquanqa"
-  }
-    
+    }
   ],
   "settings": {
   }

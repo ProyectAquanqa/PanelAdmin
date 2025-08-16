@@ -1,29 +1,29 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useAreas } from "../../hooks/useAreas";
-import { searchInFields } from "../../utils/searchUtils";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCargos } from "../../hooks/useCargos";
 import {
-  AreaActions,
-  AreaList,
+  CargoActions,
+  CargoList,
   LoadingStates,
-  AreaDetailModal,
-} from "../../components/Areas";
-import AreaModal from "../../components/Areas/AreaModal";
+  CargoDetailModal,
+} from "../../components/Cargos";
+import CargoModal from "../../components/Cargos/CargoModal";
 import toast from "react-hot-toast";
 
 /**
- * Página principal de Áreas - Refactorizada siguiendo el patrón de Cargos
+ * Página principal de Cargos - Siguiendo el patrón de Areas
  */
-const Areas = () => {
+const Cargos = () => {
   const {
+    cargos,
     areas,
     loading,
+    fetchCargos,
     fetchAreas,
-    createArea,
-    updateArea,
-    deleteArea,
-    toggleAreaActiveStatus,
-    validateAreaName,
-  } = useAreas();
+    createCargo,
+    updateCargo,
+    deleteCargo,
+    validateCargoName,
+  } = useCargos();
 
   // Estados locales
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -32,57 +32,74 @@ const Areas = () => {
   const [viewingItem, setViewingItem] = useState(null);
   const [formMode, setFormMode] = useState('create'); // 'create', 'edit', 'view'
 
-  // Estados locales para filtros (mismo patrón que Cargos)
+  // Estados locales para filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedDateRange, setSelectedDateRange] = useState(null);
 
-  // Filtrar áreas basado en los criterios de búsqueda (mismo patrón que Cargos)
-  const filteredAreas = useMemo(() => {
-    let filtered = [...areas];
+  // Filtrar cargos basado en los criterios de búsqueda
+  const filteredCargos = React.useMemo(() => {
+    let filtered = [...cargos];
 
     // Filtro de búsqueda por texto
     if (searchTerm) {
-      filtered = filtered.filter(item => searchInFields(item, searchTerm, ['nombre', 'descripcion']));
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(cargo => 
+        cargo.nombre.toLowerCase().includes(searchLower) ||
+        (cargo.descripcion && cargo.descripcion.toLowerCase().includes(searchLower)) ||
+        (cargo.area_detail?.nombre && cargo.area_detail.nombre.toLowerCase().includes(searchLower))
+      );
     }
 
     // Filtro por estado
     if (selectedStatus) {
       switch (selectedStatus) {
-        case "true":
-          filtered = filtered.filter(item => item.is_active === true);
+        case "active_area":
+          filtered = filtered.filter(item => item.area_detail?.is_active === true);
           break;
-        case "false":
-          filtered = filtered.filter(item => item.is_active === false);
+        case "inactive_area":
+          filtered = filtered.filter(item => item.area_detail?.is_active === false);
+          break;
+        case "with_users":
+          filtered = filtered.filter(item => (item.total_usuarios || 0) > 0);
+          break;
+        case "without_users":
+          filtered = filtered.filter(item => (item.total_usuarios || 0) === 0);
           break;
       }
     }
 
     // Filtro por fecha
     if (selectedDateRange?.start || selectedDateRange?.end) {
-      filtered = filtered.filter(area => {
-        const areaDate = new Date(area.created_at);
+      filtered = filtered.filter(cargo => {
+        const cargoDate = new Date(cargo.created_at);
         const startDate = selectedDateRange.start ? new Date(selectedDateRange.start) : null;
         const endDate = selectedDateRange.end ? new Date(selectedDateRange.end) : null;
         
         if (startDate && endDate) {
-          return areaDate >= startDate && areaDate <= endDate;
+          return cargoDate >= startDate && cargoDate <= endDate;
         } else if (startDate) {
-          return areaDate >= startDate;
+          return cargoDate >= startDate;
         } else if (endDate) {
-          return areaDate <= endDate;
+          return cargoDate <= endDate;
         }
         return true;
       });
     }
 
     return filtered;
-  }, [areas, searchTerm, selectedStatus, selectedDateRange]);
+  }, [cargos, searchTerm, selectedStatus, selectedDateRange]);
 
   // Cargar datos iniciales
   useEffect(() => {
-    fetchAreas();
-  }, [fetchAreas]);
+    const loadData = async () => {
+      await Promise.all([
+        fetchCargos(),
+        fetchAreas()
+      ]);
+    };
+    loadData();
+  }, [fetchCargos, fetchAreas]);
 
   // Handlers de acciones
   const handleCreateNew = useCallback(() => {
@@ -104,42 +121,30 @@ const Areas = () => {
 
   const handleDelete = useCallback(
     async (id) => {
-      const area = areas.find(a => a.id === id);
-      if (!area) return;
+      const cargo = cargos.find(c => c.id === id);
+      if (!cargo) return;
 
-      // Verificar si tiene cargos o usuarios
-      const hasRelations = (area.total_cargos && area.total_cargos > 0) || 
-                           (area.total_usuarios && area.total_usuarios > 0);
+      // Verificar si tiene usuarios asignados
+      const hasUsers = cargo.total_usuarios && cargo.total_usuarios > 0;
 
-      if (hasRelations) {
-        toast.error(`El área "${area.nombre}" tiene ${area.total_cargos || 0} cargo(s) y ${area.total_usuarios || 0} usuario(s) asignados. Debe eliminar o reasignar primero los elementos relacionados.`);
+      if (hasUsers) {
+        toast.error(`El cargo "${cargo.nombre}" tiene ${cargo.total_usuarios} usuario(s) asignados. Debe reasignar o eliminar primero los usuarios relacionados.`);
         return;
       }
 
       if (
         window.confirm(
-          `¿Está seguro de que desea eliminar el área "${area.nombre}"? Esta acción no se puede deshacer.`
+          `¿Está seguro de que desea eliminar el cargo "${cargo.nombre}"? Esta acción no se puede deshacer.`
         )
       ) {
-        await deleteArea(id);
+        await deleteCargo(id);
       }
     },
-    [deleteArea, areas]
+    [deleteCargo, cargos]
   );
-
-  const handleToggleStatus = useCallback(async (id) => {
-    await toggleAreaActiveStatus(id);
-  }, [toggleAreaActiveStatus]);
 
   const handleExport = useCallback(async () => {
     toast.success('Función de exportación próximamente disponible');
-  }, []);
-
-  // Función para limpiar filtros
-  const handleClearFilters = useCallback(() => {
-    setSearchTerm('');
-    setSelectedStatus('');
-    setSelectedDateRange(null);
   }, []);
 
   // Manejar envío del formulario
@@ -147,23 +152,24 @@ const Areas = () => {
     async (formData) => {
       // Validación adicional: verificar duplicados antes de enviar (solo al crear)
       if (!editingItem) {
-        const nameExists = areas.some(
-          item => item.nombre.toLowerCase().trim() === formData.nombre.toLowerCase().trim()
+        const nameExists = cargos.some(
+          item => item.nombre.toLowerCase().trim() === formData.nombre.toLowerCase().trim() &&
+                  item.area === formData.area
         );
         
         if (nameExists) {
-          toast.error('Ya existe un área con este nombre');
+          toast.error('Ya existe un cargo con este nombre en esta área');
           return false;
         }
       }
 
       if (editingItem) {
-        return await updateArea(editingItem.id, formData);
+        return await updateCargo(editingItem.id, formData);
       } else {
-        return await createArea(formData);
+        return await createCargo(formData);
       }
     },
-    [editingItem, updateArea, createArea, areas]
+    [editingItem, updateCargo, createCargo, cargos]
   );
 
   const handleCloseModal = useCallback(() => {
@@ -177,14 +183,19 @@ const Areas = () => {
     setViewingItem(null);
   }, []);
 
-
+  // Función para limpiar filtros
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm('');
+    setSelectedStatus('');
+    setSelectedDateRange(null);
+  }, []);
 
   // Estado de carga general
-  if (loading.areas && !areas?.length) {
+  if (loading.cargos && !cargos?.length) {
     return (
       <div className="w-full bg-slate-50">
         <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <LoadingStates.AreaListLoading />
+          <LoadingStates.CargoListLoading />
         </div>
       </div>
     );
@@ -193,53 +204,54 @@ const Areas = () => {
   return (
     <div className="w-full bg-slate-50">
       <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <AreaActions
+        <CargoActions
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           selectedStatus={selectedStatus}
           onStatusChange={setSelectedStatus}
           selectedDateRange={selectedDateRange}
           onDateRangeChange={setSelectedDateRange}
-          totalItems={filteredAreas.length}
+          totalItems={filteredCargos.length}
           onCreateNew={handleCreateNew}
           onExport={handleExport}
           onClearFilters={handleClearFilters}
         />
 
-        <AreaList
-          areas={filteredAreas}
-          loading={loading.areas}
+        <CargoList
+          cargos={filteredCargos}
+          loading={loading.cargos}
           error={loading.error}
-          totalItems={filteredAreas.length}
+          totalItems={filteredCargos.length}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onView={handleView}
-          onToggleStatus={handleToggleStatus}
           onCreateFirst={handleCreateNew}
-          onRetry={() => fetchAreas()}
+          onRetry={() => fetchCargos()}
         />
       </div>
 
       {/* Modal de Crear/Editar usando componente separado */}
-      <AreaModal
+      <CargoModal
         show={showCreateModal}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
-        editingArea={editingItem}
-        loading={loading.areas}
+        editingCargo={editingItem}
+        areas={areas}
+        loading={loading.cargos}
         mode={formMode}
-        onValidateName={validateAreaName}
+        onValidateName={validateCargoName}
       />
 
       {/* Modal de Ver Detalles */}
-      <AreaDetailModal
+      <CargoDetailModal
         show={showDetailModal}
         onClose={handleCloseDetailModal}
-        area={viewingItem}
-        loading={loading.areas}
+        cargo={viewingItem}
+        loading={loading.cargos}
       />
     </div>
   );
 };
 
-export default Areas;
+export default Cargos;
+

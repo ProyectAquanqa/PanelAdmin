@@ -1,5 +1,5 @@
 /**
- * Componente de tabla para Areas
+ * Vista de tabla para Cargos siguiendo el patrón exacto de AreaTableView
  * Diseño optimizado con fuente 13px y columnas bien distribuidas
  */
 
@@ -7,7 +7,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import SortIcon from '../Common/DataView/SortIcon';
 
-const AreaTableView = ({
+const CargoTableView = ({
   data = [],
   sortField,
   sortDirection,
@@ -17,65 +17,56 @@ const AreaTableView = ({
   onDelete,
   onToggleExpansion,
   onView,
-  onToggleStatus,
   className = ''
 }) => {
 
   /**
    * Renderiza una fila de la tabla para móvil (card layout)
    */
-  const renderMobileCard = (area, index) => {
-    const canDelete = (area.total_cargos || 0) === 0 && (area.total_usuarios || 0) === 0;
+  const renderMobileCard = (cargo, index) => {
+    const canDelete = (cargo.total_usuarios || 0) === 0;
     
     return (
-      <div key={area.id} className="bg-white border-l-4 border-l-blue-500 p-4 space-y-3 hover:bg-gray-50 transition-colors">
-        {/* Nombre del área */}
+      <div key={cargo.id} className="bg-white border-l-4 border-l-slate-500 p-4 space-y-3 hover:bg-gray-50 transition-colors">
+        {/* Nombre del cargo */}
         <div>
           <h4 className="text-[13px] font-medium text-gray-900 mb-1">
-            {area.nombre}
+            {cargo.nombre}
           </h4>
           <span className="text-[13px] text-gray-500 font-mono">
-            #{area.id}
+            #{cargo.id}
           </span>
-          {area.descripcion && (
+          {cargo.descripcion && (
             <p className="text-[13px] text-gray-600 mt-1">
-              {area.descripcion}
+              {cargo.descripcion}
             </p>
           )}
         </div>
 
-        {/* Estado */}
+        {/* Área */}
         <div className="flex items-center gap-2">
-          <span className="text-[13px] text-gray-500">Estado:</span>
-          <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-[12px] font-medium border whitespace-nowrap ${
-            area.is_active 
-              ? 'bg-slate-50 text-slate-600 border-slate-200' 
-              : 'bg-gray-100 text-gray-600 border-gray-200'
-          }`}>
-            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-              area.is_active ? 'bg-slate-500' : 'bg-gray-400'
-            }`}></div>
-            {area.is_active ? 'Activa' : 'Inactiva'}
+          <span className="text-[13px] text-gray-500">Área:</span>
+          <span className="text-[13px] font-medium text-gray-900">
+            {cargo.area_detail?.nombre || 'N/A'}
           </span>
+          {cargo.area_detail?.is_active === false && (
+            <span className="text-[12px] px-2 py-1 rounded-full bg-red-100 text-red-800">
+              Inactiva
+            </span>
+          )}
         </div>
 
-        {/* Stats */}
-        <div className="flex gap-4 text-[13px]">
-          <div className="flex items-center gap-1">
-            <span className="text-gray-500">Cargos:</span>
-            <span className="font-medium text-gray-900">{area.total_cargos || 0}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-gray-500">Usuarios:</span>
-            <span className="font-medium text-gray-900">{area.total_usuarios || 0}</span>
-          </div>
+        {/* Usuarios */}
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] text-gray-500">Usuarios:</span>
+          <span className="text-[13px] font-medium text-gray-900">{cargo.total_usuarios || 0}</span>
         </div>
 
         {/* Acciones */}
         <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-100">
           <button
-            onClick={() => onView?.(area)}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-lg"
+            onClick={() => onView?.(cargo)}
+            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors rounded-lg"
             title="Ver detalles"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,8 +75,8 @@ const AreaTableView = ({
             </svg>
           </button>
           <button
-            onClick={() => onEdit?.(area)}
-            className="p-2 text-gray-400 hover:text-[#2D728F] transition-colors rounded-lg hover:bg-gray-100"
+            onClick={() => onEdit?.(cargo)}
+            className="p-2 text-gray-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-100"
             title="Editar"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,14 +84,14 @@ const AreaTableView = ({
             </svg>
           </button>
           <button
-            onClick={() => onDelete?.(area.id)}
+            onClick={() => onDelete?.(cargo.id)}
             disabled={!canDelete}
             className={`p-2 transition-colors rounded-lg ${
               canDelete 
                 ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' 
                 : 'text-gray-300 cursor-not-allowed opacity-50'
             }`}
-            title={canDelete ? "Eliminar" : "No se puede eliminar (tiene cargos o usuarios)"}
+            title={canDelete ? "Eliminar" : "No se puede eliminar (tiene usuarios)"}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -114,64 +105,61 @@ const AreaTableView = ({
   /**
    * Renderiza una fila de la tabla para desktop
    */
-  const renderTableRow = (area, index) => {
-    const canDelete = (area.total_cargos || 0) === 0 && (area.total_usuarios || 0) === 0;
+  const renderTableRow = (cargo, index) => {
+    const canDelete = (cargo.total_usuarios || 0) === 0;
     
     return (
-      <tr key={area.id} className="hover:bg-gray-50 transition-colors">
+      <tr key={cargo.id} className="hover:bg-gray-50 transition-colors">
         {/* ID */}
         <td className="px-3 py-2.5 border-b border-gray-100 text-center">
           <span className="text-[13px] text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
-            #{String(area.id).padStart(3, '0')}
+            #{String(cargo.id).padStart(3, '0')}
           </span>
         </td>
         
-        {/* Nombre */}
+        {/* Cargo */}
         <td className="px-3 py-2.5 border-b border-gray-100 text-left">
           <div className="w-full overflow-hidden">
             <p className="text-[13px] text-gray-900 font-medium truncate">
-              {area.nombre}
+              {cargo.nombre}
             </p>
-            {area.descripcion && (
+            {cargo.descripcion && (
               <p className="text-[13px] text-gray-500 mt-0.5 truncate">
-                {area.descripcion.length > 30 ? `${area.descripcion.substring(0, 30)}...` : area.descripcion}
+                {cargo.descripcion.length > 30 ? `${cargo.descripcion.substring(0, 30)}...` : cargo.descripcion}
               </p>
             )}
           </div>
         </td>
         
-        {/* Estado */}
-        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
-          <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-[12px] font-medium border whitespace-nowrap ${
-            area.is_active 
-              ? 'bg-slate-50 text-slate-600 border-slate-200' 
-              : 'bg-gray-100 text-gray-600 border-gray-200'
-          }`}>
-            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-              area.is_active ? 'bg-slate-500' : 'bg-gray-400'
-            }`}></div>
-            {area.is_active ? 'Activa' : 'Inactiva'}
-          </span>
-        </td>
-
-        {/* Cargos */}
-        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
-          <span className="text-[13px] text-gray-900 font-medium">
-            {area.total_cargos || 0}
-          </span>
+        {/* Área */}
+        <td className="px-3 py-2.5 border-b border-gray-100 text-left">
+          <div className="w-full overflow-hidden">
+            <p className="text-[13px] text-gray-900 font-medium truncate">
+              {cargo.area_detail?.nombre || 'N/A'}
+            </p>
+            {cargo.area_detail?.is_active === false && (
+              <p className="text-[12px] text-red-600 font-medium mt-0.5">
+                Área inactiva
+              </p>
+            )}
+          </div>
         </td>
 
         {/* Usuarios */}
         <td className="px-3 py-2.5 border-b border-gray-100 text-center">
-          <span className="text-[13px] text-gray-900 font-medium">
-            {area.total_usuarios || 0}
+          <span className={`text-[13px] font-medium ${
+            (cargo.total_usuarios || 0) > 0 
+              ? 'text-slate-600' 
+              : 'text-gray-500'
+          }`}>
+            {cargo.total_usuarios || 0}
           </span>
         </td>
 
         {/* Fecha de creación */}
         <td className="px-3 py-2.5 border-b border-gray-100 text-center">
           <span className="text-[13px] text-gray-500">
-            {area.created_at ? new Date(area.created_at).toLocaleDateString('es-ES', {
+            {cargo.created_at ? new Date(cargo.created_at).toLocaleDateString('es-ES', {
               year: '2-digit',
               month: 'short',
               day: 'numeric'
@@ -183,7 +171,7 @@ const AreaTableView = ({
         <td className="px-3 py-2.5 border-b border-gray-100 text-center">
           <div className="flex items-center justify-center gap-1">
             <button
-              onClick={() => onView?.(area)}
+              onClick={() => onView?.(cargo)}
               className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors rounded"
               title="Ver"
             >
@@ -193,8 +181,8 @@ const AreaTableView = ({
               </svg>
             </button>
             <button
-              onClick={() => onEdit?.(area)}
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded"
+              onClick={() => onEdit?.(cargo)}
+              className="p-1.5 text-gray-400 hover:text-slate-600 hover:bg-slate-50 transition-colors rounded"
               title="Editar"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,7 +190,7 @@ const AreaTableView = ({
               </svg>
             </button>
             <button
-              onClick={() => onDelete?.(area.id)}
+              onClick={() => onDelete?.(cargo.id)}
               disabled={!canDelete}
               className={`p-1.5 transition-colors rounded ${
                 canDelete 
@@ -237,24 +225,21 @@ const AreaTableView = ({
                 ID
               </th>
               <th 
-                className="px-3 py-3 text-left text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-64"
+                className="px-3 py-3 text-left text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-48"
                 onClick={() => onSort('nombre')}
               >
                 <div className="flex items-center gap-1">
-                  Área
+                  Cargo
                   <SortIcon field="nombre" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
-              <th className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider w-20">
-                Estado
-              </th>
               <th 
-                className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-16"
-                onClick={() => onSort('total_cargos')}
+                className="px-3 py-3 text-left text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-40"
+                onClick={() => onSort('area_detail.nombre')}
               >
-                <div className="flex items-center justify-center gap-1">
-                  Cargos
-                  <SortIcon field="total_cargos" currentField={sortField} direction={sortDirection} />
+                <div className="flex items-center gap-1">
+                  Área
+                  <SortIcon field="area_detail.nombre" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
               <th 
@@ -289,7 +274,7 @@ const AreaTableView = ({
   );
 };
 
-AreaTableView.propTypes = {
+CargoTableView.propTypes = {
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
   sortField: PropTypes.string,
   sortDirection: PropTypes.oneOf(['asc', 'desc', null]),
@@ -299,8 +284,7 @@ AreaTableView.propTypes = {
   onDelete: PropTypes.func,
   onToggleExpansion: PropTypes.func.isRequired,
   onView: PropTypes.func,
-  onToggleStatus: PropTypes.func,
   className: PropTypes.string,
 };
 
-export default React.memo(AreaTableView);
+export default React.memo(CargoTableView);
