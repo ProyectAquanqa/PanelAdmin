@@ -138,7 +138,7 @@ const QuickActions = React.memo(() => {
     {
       label: 'Chatbot IA',
       icon: <ChatBubbleLeftRightIcon className="w-5 h-5" />,
-      onClick: () => navigate('/chatbot'),
+      onClick: () => navigate('/chatbot/knowledge'),
       color: 'slate'
     }
   ];
