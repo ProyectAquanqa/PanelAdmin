@@ -152,7 +152,6 @@ const UserModal = ({
       }
 
       // Los cargos se pasan como prop availableCargos, no necesitamos cargarlos aquí
-      console.log('📋 Cargos disponibles desde props:', availableCargos);
     };
 
     loadInitialData();
@@ -231,7 +230,7 @@ const UserModal = ({
         }
       }
     } catch (error) {
-      console.error('❌ Error capturado en handleFormSubmit:', error);
+      console.error(' Error capturado en handleFormSubmit:', error);
       // NO cerrar el modal en caso de error
       if (error.message.includes('Ya existe un usuario con este nombre')) {
         toast.error('Este documento de identidad ya está registrado. Por favor, usa otro documento.');

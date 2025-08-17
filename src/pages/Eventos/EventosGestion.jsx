@@ -170,7 +170,7 @@ const EventosGestion = () => {
       await eliminarEvento(eventoId);
       setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
     } catch (error) {
-      console.error('Error al eliminar evento:', error);
+      // Error al eliminar evento
     }
   };
 
@@ -194,8 +194,6 @@ const EventosGestion = () => {
         handleCloseModal();
         return true;
       } catch (error) {
-        console.error('Error al guardar evento:', error);
-        
         if (error.status === 422 && error.data?.error?.details) {
           // Errores de validación
           setModalErrors(error.data.error.details);

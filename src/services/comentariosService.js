@@ -3,7 +3,7 @@
  * Basado en los endpoints de AquanQ WebComentarioViewSet
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token
@@ -86,7 +86,6 @@ const apiCall = async (url, options = {}) => {
     
     return response;
   } catch (error) {
-    console.error('API call error:', error);
     throw error;
   }
 };
@@ -115,7 +114,6 @@ export const getComentarios = async (params = {}) => {
     
     return data;
   } catch (error) {
-    console.error('Error fetching comentarios:', error);
     throw error;
   }
 };
@@ -131,7 +129,6 @@ export const getComentario = async (id) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching comentario:', error);
     throw error;
   }
 };
@@ -147,7 +144,6 @@ export const deleteComentario = async (id) => {
       method: 'DELETE',
     });
   } catch (error) {
-    console.error('Error deleting comentario:', error);
     throw error;
   }
 };
@@ -170,7 +166,6 @@ export const moderateComentario = async (id, isActive) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error moderating comentario:', error);
     throw error;
   }
 };
@@ -185,7 +180,6 @@ export const getComentariosStatistics = async () => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching comentarios statistics:', error);
     throw error;
   }
 };

@@ -95,7 +95,7 @@ const DeviceManagement = () => {
     const file = e.target.files?.[0];
     if (file) {
       // bulkImportDevices(file);
-      console.log('Importación de dispositivos deshabilitada');
+      // Importación de dispositivos deshabilitada
     }
   };
 
@@ -103,7 +103,7 @@ const DeviceManagement = () => {
     try {
       await exportDevices('csv');
     } catch (error) {
-      console.error('Error al exportar:', error);
+      // Error al exportar
     }
   };
 

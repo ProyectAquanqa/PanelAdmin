@@ -84,7 +84,7 @@ const ErrorState = ({ onRetry }) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
       <div className="max-w-md mx-auto">
-        <div className="text-gray-400 text-6xl mb-4">⚠️</div>
+        <div className="text-gray-400 text-6xl mb-4">!</div>
         <h3 className="text-[13px] font-medium text-gray-900 mb-2">
           Error al cargar categorías
         </h3>

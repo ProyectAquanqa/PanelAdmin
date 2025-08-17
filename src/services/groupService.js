@@ -3,7 +3,7 @@
  * Basado en Django Groups nativos con SimpleGroupViewSet
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 /**
@@ -24,14 +24,12 @@ const tryGetDetailedGroupPermissions = async (groupsResponse) => {
     }
     
     if (groups.length === 0) {
-      console.log('⚠️ No hay grupos disponibles para extraer permisos');
       return null;
     }
     
     // Tomar el primer grupo e intentar obtener sus detalles con permisos
     const firstGroup = groups[0];
     if (!firstGroup.id) {
-      console.log('⚠️ El grupo no tiene ID para obtener detalles');
       return null;
     }
     
@@ -87,7 +85,7 @@ const tryGetDetailedGroupPermissions = async (groupsResponse) => {
         };
       }
     } catch (groupDetailError) {
-      console.log(`⚠️ No se pudieron obtener detalles del grupo: ${groupDetailError.message}`);
+      // No se pudieron obtener detalles del grupo
     }
     
     return null;
@@ -208,7 +206,6 @@ const groupService = {
       } else if (basicGroups && Array.isArray(basicGroups.data)) {
         groups = basicGroups.data;
       } else {
-        console.warn('⚠️ Formato inesperado de grupos:', basicGroups);
         return [];
       }
 
@@ -408,7 +405,6 @@ const groupService = {
           }
         }
       } catch (error) {
-        console.log(`⚠️ Endpoint ${endpoint} no disponible:`, error.message);
         continue;
       }
     }

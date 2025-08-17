@@ -17,7 +17,6 @@ export const isRouteActive = (currentPath, itemPath, exact = false) => {
     return currentPath === itemPath;
   }
   
-  // Para rutas raíz, usar coincidencia exacta
   if (itemPath === '/') {
     return currentPath === '/';
   }

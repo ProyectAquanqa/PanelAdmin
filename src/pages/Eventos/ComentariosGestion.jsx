@@ -155,11 +155,9 @@ const ComentariosGestion = () => {
       setUsuarios(usuariosValidos);
       
     } catch (error) {
-      console.error('Error cargando usuarios:', error);
-      
       // Fallback: fetch directo al endpoint
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
         const cleanBase = API_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
         const url = `${cleanBase}/web/users/?page_size=100`;
         
@@ -199,7 +197,6 @@ const ComentariosGestion = () => {
         }
         
       } catch (directError) {
-        console.error('Error total cargando usuarios:', directError);
         toast.error('No se pudieron cargar los usuarios para el filtro');
       }
     }
@@ -230,7 +227,7 @@ const ComentariosGestion = () => {
       await eliminarComentario(comentarioId);
       setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
     } catch (error) {
-      console.error('Error al eliminar comentario:', error);
+      // Error al eliminar comentario
     }
   };
 

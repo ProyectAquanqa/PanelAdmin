@@ -13,12 +13,13 @@ function getUserPermissions() {
     const permissions = localStorage.getItem('user_permissions');
     return permissions ? JSON.parse(permissions) : [];
   } catch (error) {
-    console.error('Error parsing user permissions:', error);
     return [];
   }
 }
 
-// Obtiene el usuario actual desde localStorage
+/**
+ * Obtiene el usuario actual desde localStorage
+ */
 function getStoredUser() {
   try {
     const raw = localStorage.getItem('user');
@@ -28,7 +29,9 @@ function getStoredUser() {
   }
 }
 
-// Verifica si el usuario es superusuario (bypass total)
+/**
+ * Verifica si el usuario es superusuario
+ */
 function isSuperuser() {
   const user = getStoredUser();
   return Boolean(user && (user.is_superuser === true || user.isSuperuser === true));
@@ -45,7 +48,6 @@ function getUserGroups() {
     const groups = localStorage.getItem('user_groups');
     return groups ? JSON.parse(groups) : [];
   } catch (error) {
-    console.error('Error parsing user groups:', error);
     return [];
   }
 }
@@ -201,7 +203,7 @@ function setUserPermissions(permissions, groups) {
     localStorage.setItem('user_permissions', JSON.stringify(permissions || []));
     localStorage.setItem('user_groups', JSON.stringify(groups || []));
   } catch (error) {
-    console.error('Error saving user permissions:', error);
+    // Error saving permissions - fail silently
   }
 }
 

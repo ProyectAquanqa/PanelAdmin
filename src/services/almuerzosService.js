@@ -3,7 +3,7 @@
  * Basado en los endpoints de AquanQ AlmuerzoViewSet
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://172.16.11.29:http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://172.16.11.29:http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token
@@ -86,7 +86,6 @@ const apiCall = async (url, options = {}) => {
     
     return response;
   } catch (error) {
-    console.error('API call error:', error);
     throw error;
   }
 };
@@ -115,7 +114,6 @@ export const getAlmuerzos = async (params = {}) => {
     
     return data;
   } catch (error) {
-    console.error('❌ Error fetching almuerzos:', error);
     throw error;
   }
 };
@@ -131,7 +129,6 @@ export const getAlmuerzo = async (id) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching almuerzo:', error);
     throw error;
   }
 };
@@ -151,7 +148,6 @@ export const createAlmuerzo = async (almuerzoData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error creating almuerzo:', error);
     throw error;
   }
 };
@@ -164,8 +160,6 @@ export const createAlmuerzo = async (almuerzoData) => {
  */
 export const updateAlmuerzo = async (id, almuerzoData) => {
   try {
-    console.log('🔍 updateAlmuerzo - Datos enviados:', almuerzoData);
-    
     const response = await apiCall(`${API_BASE}/web/almuerzos/${id}/`, {
       method: 'PUT',
       body: JSON.stringify(almuerzoData),
@@ -174,7 +168,6 @@ export const updateAlmuerzo = async (id, almuerzoData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error updating almuerzo:', error);
     throw error;
   }
 };
@@ -195,7 +188,6 @@ export const patchAlmuerzo = async (id, almuerzoData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('❌ Error patching almuerzo:', error);
     throw error;
   }
 };
@@ -211,7 +203,6 @@ export const deleteAlmuerzo = async (id) => {
       method: 'DELETE',
     });
   } catch (error) {
-    console.error('Error deleting almuerzo:', error);
     throw error;
   }
 };
@@ -226,7 +217,6 @@ export const getAlmuerzosStatistics = async () => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching almuerzo statistics:', error);
     throw error;
   }
 };
@@ -246,7 +236,6 @@ export const bulkCreateWeekAlmuerzos = async (weekData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error creating week almuerzos:', error);
     throw error;
   }
 };

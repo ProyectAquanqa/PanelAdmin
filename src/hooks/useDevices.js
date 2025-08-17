@@ -66,7 +66,6 @@ const useDevices = () => {
       });
 
     } catch (error) {
-      console.error('Error cargando dispositivos:', error);
       setError(error.message || 'Error al cargar dispositivos');
       toast.error('Error al cargar dispositivos');
     } finally {
@@ -82,7 +81,6 @@ const useDevices = () => {
       const list = await devicesService.deviceTypes.list();
       setDeviceTypes(Array.isArray(list) ? list : []);
     } catch (error) {
-      console.error('Error cargando tipos de dispositivos:', error);
       setDeviceTypes([]);
     }
   }, []);
@@ -97,7 +95,7 @@ const useDevices = () => {
       // setUsers(response.results || response || []);
       setUsers([]); // Por ahora vacío hasta implementar el servicio de usuarios
     } catch (error) {
-      console.error('Error cargando usuarios:', error);
+      // Error cargando usuarios
     }
   }, []);
 
@@ -110,7 +108,7 @@ const useDevices = () => {
       // El backend puede devolver { status: 'success', data: {...} } o directamente {...}
       setStats(response.data || response);
     } catch (error) {
-      console.error('Error cargando estadísticas:', error);
+      // Error cargando estadísticas
     }
   }, []);
 
@@ -135,7 +133,6 @@ const useDevices = () => {
       
       return newDevice;
     } catch (error) {
-      console.error('Error creando dispositivo:', error);
       toast.error(error.message || 'Error al registrar dispositivo');
       throw error;
     } finally {
@@ -165,7 +162,6 @@ const useDevices = () => {
       
       return updatedDevice;
     } catch (error) {
-      console.error('Error actualizando dispositivo:', error);
       toast.error(error.message || 'Error al actualizar dispositivo');
       throw error;
     } finally {
@@ -190,7 +186,7 @@ const useDevices = () => {
       
       return result;
     } catch (error) {
-      console.error('Error eliminando dispositivo:', error);
+      // Error eliminando dispositivo
       
       // Mostrar error específico al usuario
       const errorMessage = error.message || 'Error al eliminar token del dispositivo';
@@ -218,7 +214,6 @@ const useDevices = () => {
       
       return updatedDevice;
     } catch (error) {
-      console.error('Error cambiando estado del dispositivo:', error);
       toast.error(error.message || 'Error al cambiar estado del dispositivo');
       throw error;
     }
@@ -240,7 +235,6 @@ const useDevices = () => {
       
       return response;
     } catch (error) {
-      console.error('Error en importación masiva:', error);
       toast.error(error.message || 'Error en la importación masiva');
       throw error;
     } finally {
@@ -262,7 +256,6 @@ const useDevices = () => {
       
       return response;
     } catch (error) {
-      console.error('Error exportando dispositivos:', error);
       toast.error(error.message || 'Error al exportar dispositivos');
       throw error;
     } finally {

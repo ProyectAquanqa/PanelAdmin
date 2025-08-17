@@ -1,3 +1,10 @@
+/**
+ * Contexto de autenticación para PanelAdmin
+ * 
+ * Maneja el estado de autenticación, login, logout y permisos de usuario
+ * Proporciona funciones y estado global para toda la aplicación
+ */
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import authService from '../services/authService';
 import { setUserPermissions, clearUserPermissions } from '../services/permissionService';
@@ -13,30 +20,24 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Verificar si el usuario está autenticado
         const isAuth = authService.isAuthenticated();
         setIsAuthenticated(isAuth);
         
         if (isAuth) {
-          // Obtener datos del usuario desde localStorage primero
           let userData = await authService.getCurrentUser(true);
 
-          // Si no existe en storage, obtener del servidor
           if (!userData) {
             userData = await authService.getCurrentUser(false);
           }
 
           if (userData) {
             setUser(userData);
-            // Asegurar que los permisos estén sincronizados
             if (userData.permissions && userData.groups) {
               setUserPermissions(userData.permissions, userData.groups);
             }
           }
         }
       } catch (error) {
-        console.error('Error al inicializar autenticación:', error);
-        // Limpiar datos si hay error
         await authService.logout();
         setIsAuthenticated(false);
         setUser(null);
@@ -48,43 +49,33 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // 🔐 Función de login actualizada para AquanQ
+  /**
+   * Función de autenticación de usuario
+   */
   const login = async (credentials) => {
     try {
       setLoading(true);
       
-      // Validar campos
       if (!credentials.username || !credentials.password) {
         throw new Error('Usuario y contraseña son obligatorios');
       }
-
-      // Intentar autenticación
       const response = await authService.login(credentials);
       
-      // Obtener datos completos del usuario desde el perfil
       let userData = response.user;
       if (!userData) {
         try {
-          userData = await authService.getCurrentUser(false); // Obtener del servidor
+          userData = await authService.getCurrentUser(false);
         } catch (profileError) {
-          console.warn('No se pudieron obtener datos del perfil:', profileError);
-          // Usar datos básicos del usuario
           userData = { username: credentials.username };
         }
       }
       
-      // Guardar permisos y grupos en localStorage para el sistema dinámico
       if (userData) {
         const permissions = userData.permissions || [];
         const groups = userData.groups || [];
         setUserPermissions(permissions, groups);
-        
-        console.log('👤 Usuario autenticado:', userData.username);
-        console.log('🔑 Permisos:', permissions);
-        console.log('👥 Grupos:', groups);
       }
       
-      // Actualizar estado
       setUser(userData);
       setIsAuthenticated(true);
       
@@ -92,7 +83,6 @@ export const AuthProvider = ({ children }) => {
       return response;
       
     } catch (error) {
-      console.error('Error de login:', error);
       toast.error(error.message || 'Error al iniciar sesión');
       throw error;
     } finally {
@@ -100,18 +90,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🚪 Función de logout actualizada para sistema de permisos dinámicos
+  /**
+   * Función de cierre de sesión
+   */
   const logout = async () => {
     try {
       setLoading(true);
       await authService.logout();
       setUser(null);
       setIsAuthenticated(false);
-      clearUserPermissions(); // Limpiar permisos del sistema dinámico
+      clearUserPermissions();
       toast.success('Sesión cerrada correctamente');
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      // Asegurar limpieza local aunque falle el servidor
       setUser(null);
       setIsAuthenticated(false);
       clearUserPermissions();
@@ -121,7 +111,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🔄 Verificar y refrescar token si es necesario
+  /**
+   * Refresca el token de autenticación
+   */
   const refreshAuth = async () => {
     try {
       if (!isAuthenticated) return false;
@@ -135,23 +127,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🔑 Obtener token actual
+  /**
+   * Obtiene el token de autenticación actual
+   */
   const getToken = () => {
     return authService.getToken();
   };
 
-  // 👤 Actualizar datos del usuario
+  /**
+   * Actualiza los datos del usuario en el estado
+   */
   const updateUser = (userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  // 🔄 Refrescar datos del usuario desde el servidor
+  /**
+   * Refresca los datos del usuario desde el servidor
+   */
   const refreshUser = async () => {
     try {
       if (!isAuthenticated) return null;
       
-      const userData = await authService.getCurrentUser(false); // Forzar obtención del servidor
+      const userData = await authService.getCurrentUser(false);
       if (userData) {
         setUser(userData);
         return userData;
@@ -163,12 +161,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    // Estados
+    /** Estados */
     user,
     loading,
     isAuthenticated,
     
-    // Funciones
+    /** Funciones de autenticación */
     login,
     logout,
     refreshAuth,
@@ -176,11 +174,11 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
     getToken,
     
-    // Utilidades
+    /** Utilidades de validación */
     validateEmail: authService.validateEmail,
     validatePassword: authService.validatePassword,
     
-    // API autenticada
+    /** Llamadas API autenticadas */
     authenticatedApiCall: authService.authenticatedApiCall,
   };
 

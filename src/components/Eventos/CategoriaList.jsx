@@ -75,7 +75,6 @@ const CategoriaList = ({
   const handleSort = (field, direction) => {
     // Por ahora el ordenamiento se hace en el componente DataViewSwitcher
     // En el futuro podríamos llamar al backend para ordenamiento del servidor
-    console.log(`Ordenando categorías por ${field} en dirección ${direction}`);
   };
 
   return (

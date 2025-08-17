@@ -3,7 +3,7 @@
  * Sistema completamente dinámico que se adapta automáticamente a nuevos permisos del backend
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Configuración base para fetch con manejo automático de token refresh
@@ -149,12 +149,10 @@ const transformGroupsResponseToPermissions = async (groupsResponse) => {
     } else if (Array.isArray(groupsResponse)) {
       groups = groupsResponse;
     } else {
-      console.log('⚠️ Respuesta de grupos no es válida para transformar');
       return null;
     }
     
     if (groups.length === 0) {
-      console.log('⚠️ No hay grupos disponibles, no se puede extraer estructura de permisos');
       return null;
     }
     
@@ -177,7 +175,6 @@ const getPermissionsStructure = async () => {
   if (permissionsCache.structure && 
       permissionsCache.lastUpdated && 
       (Date.now() - permissionsCache.lastUpdated) < permissionsCache.ttl) {
-    console.log('📦 Usando permisos desde cache');
     return permissionsCache.structure;
   }
 
@@ -194,7 +191,6 @@ const getPermissionsStructure = async () => {
         
         if (endpoint === '/web/groups/') {
           if (response && (response.status === 'success' || Array.isArray(response.data) || Array.isArray(response))) {
-            console.log(`✅ Endpoint ${endpoint} (grupos) respondió correctamente`);
             response = await transformGroupsResponseToPermissions(response);
             if (response) {
               break;
@@ -202,29 +198,23 @@ const getPermissionsStructure = async () => {
           }
         } else {
           if (response && (response.status === 'success' || response.data || Array.isArray(response))) {
-            console.log(`✅ Endpoint ${endpoint} respondió correctamente`);
             break;
           }
         }
       } catch (error) {
-        console.log(`❌ Endpoint ${endpoint} falló: ${error.message}`);
         continue;
       }
     }
 
     if (!response) {
-      console.log('⚠️ Todos los endpoints fallaron, usando estructura de respaldo');
       throw new Error('No se pudieron obtener permisos de ningún endpoint');
     }
     
     if (response.status === 'fallback_required') {
-      console.log(`✅ ${response.message}`);
-      console.log('🔄 Usando estructura de respaldo para usuario con permisos válidos pero limitados');
       throw new Error('fallback_required_for_limited_user');
     }
 
     if (response && Array.isArray(response) && response.length > 0) {
-      console.log('⚠️ Endpoint devolvió grupos, no estructura de permisos');
       throw new Error('Endpoint devolvió grupos, no estructura de permisos');
     }
 
@@ -239,7 +229,6 @@ const getPermissionsStructure = async () => {
     }
 
     if (!permissionsData || (!permissionsData.permissions_by_app && !permissionsData.applications)) {
-      console.log('⚠️ Respuesta no contiene estructura de permisos válida');
       throw new Error('Respuesta no contiene estructura de permisos válida');
     }
 
@@ -252,9 +241,9 @@ const getPermissionsStructure = async () => {
 
   } catch (error) {
     if (error.message === 'fallback_required_for_limited_user') {
-      console.log('✅ Usuario autenticado con permisos limitados - usando estructura de respaldo');
+      // Usuario autenticado con permisos limitados - usando estructura de respaldo
     } else {
-      console.error('❌ Error obteniendo estructura de permisos:', error);
+      console.error(' Error obteniendo estructura de permisos:', error);
     }
     
     const fallbackStructure = getFallbackPermissionsStructure();
@@ -366,7 +355,6 @@ const extractActionFromCodename = (codename) => codename.split('_')[0];
  * Estructura de permisos de respaldo OPTIMIZADA (genera programáticamente)
  */
 const getFallbackPermissionsStructure = () => {
-  console.log('⚠️ Usando estructura de permisos de respaldo COMPLETA');
   
   const structure = { apps: {}, byModel: {}, allPermissions: [] };
   
@@ -415,7 +403,7 @@ const getModulePermissionsStructure = async (forProfileManagement = false) => {
   };
   
   if (forProfileManagement) {
-    console.log('🎯 Cargando TODOS los módulos para gestión de perfiles:', Object.keys(moduleStructure));
+    // Cargando todos los módulos para gestión de perfiles
   }
 
   // Mapear apps de Django a módulos

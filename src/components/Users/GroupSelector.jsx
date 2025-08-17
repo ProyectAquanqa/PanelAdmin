@@ -212,7 +212,7 @@ const GroupSelector = ({
       {mode === 'create' && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-xs text-blue-700">
-            💡 <strong>Tip:</strong> Los grupos seleccionados se aplicarán cuando se cree el usuario.
+            <strong>Tip:</strong> Los grupos seleccionados se aplicarán cuando se cree el usuario.
           </p>
         </div>
       )}
@@ -220,7 +220,7 @@ const GroupSelector = ({
       {selectedGroups.length === 0 && mode !== 'create' && (
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-xs text-yellow-700">
-            ⚠️ <strong>Atención:</strong> Este usuario no tiene grupos asignados. 
+            <strong>Atención:</strong> Este usuario no tiene grupos asignados. 
             Asigna al menos el grupo "Trabajador" para acceso básico.
           </p>
         </div>

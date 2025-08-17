@@ -3,7 +3,7 @@
  * Basado en los endpoints de AquanQ EventoViewSet
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token
@@ -86,7 +86,6 @@ const apiCall = async (url, options = {}) => {
     
     return response;
   } catch (error) {
-    console.error('API call error:', error);
     throw error;
   }
 };
@@ -115,7 +114,6 @@ export const getEventos = async (params = {}) => {
     
     return data;
   } catch (error) {
-    console.error('Error fetching eventos:', error);
     throw error;
   }
 };
@@ -131,7 +129,6 @@ export const getEvento = async (id) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching evento:', error);
     throw error;
   }
 };
@@ -151,7 +148,6 @@ export const createEvento = async (eventoData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error creating evento:', error);
     throw error;
   }
 };
@@ -164,16 +160,6 @@ export const createEvento = async (eventoData) => {
  */
 export const updateEvento = async (id, eventoData) => {
   try {
-    console.log('🔍 updateEvento - Datos enviados:', eventoData);
-    console.log('🔍 updateEvento - Es FormData:', eventoData instanceof FormData);
-    
-    // Si es FormData, mostrar contenido
-    if (eventoData instanceof FormData) {
-      console.log('📋 FormData content:');
-      for (let [key, value] of eventoData.entries()) {
-        console.log(`  ${key}: ${value} (${typeof value})`);
-      }
-    }
     
     const response = await apiCall(`${API_BASE}/web/eventos/${id}/`, {
       method: 'PUT',
@@ -183,7 +169,6 @@ export const updateEvento = async (id, eventoData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error updating evento:', error);
     throw error;
   }
 };
@@ -204,7 +189,6 @@ export const patchEvento = async (id, eventoData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error patching evento:', error);
     throw error;
   }
 };
@@ -220,7 +204,6 @@ export const deleteEvento = async (id) => {
       method: 'DELETE',
     });
   } catch (error) {
-    console.error('Error deleting evento:', error);
     throw error;
   }
 };
@@ -248,7 +231,6 @@ export const getCategorias = async (params = {}) => {
     
     return data;
   } catch (error) {
-    console.error('Error fetching categorías:', error);
     throw error;
   }
 };
@@ -268,7 +250,6 @@ export const createCategoria = async (categoriaData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error creating categoría:', error);
     throw error;
   }
 };
@@ -289,7 +270,6 @@ export const updateCategoria = async (id, categoriaData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error updating categoría:', error);
     throw error;
   }
 };
@@ -305,7 +285,6 @@ export const deleteCategoria = async (id) => {
       method: 'DELETE',
     });
   } catch (error) {
-    console.error('Error deleting categoría:', error);
     throw error;
   }
 };
@@ -317,16 +296,13 @@ export const deleteCategoria = async (id) => {
  */
 export const pinEvento = async (id) => {
   try {
-    console.log('Fijando evento:', id);
     const response = await apiCall(`${API_BASE}/web/eventos/${id}/pin_evento/`, {
       method: 'POST',
     });
     
     const data = await response.json();
-    console.log('Evento fijado exitosamente');
     return data;
   } catch (error) {
-    console.error('Error pinning evento:', error);
     throw error;
   }
 };
@@ -338,16 +314,13 @@ export const pinEvento = async (id) => {
  */
 export const unpinEvento = async (id) => {
   try {
-    console.log('Desfijando evento:', id);
     const response = await apiCall(`${API_BASE}/web/eventos/${id}/unpin_evento/`, {
       method: 'POST',
     });
     
     const data = await response.json();
-    console.log('Evento desfijado exitosamente');
     return data;
   } catch (error) {
-    console.error('Error unpinning evento:', error);
     throw error;
   }
 };

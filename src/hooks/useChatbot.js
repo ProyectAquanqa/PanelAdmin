@@ -30,7 +30,7 @@ export const useChatbot = () => {
     knowledge: { current: 1, total: 0, limit: 10 },
   });
 
-  // 🔄 Funciones para obtener datos
+  // Funciones para obtener datos
   const fetchConversations = useCallback(async (page = 1) => {
     setLoading(prev => ({ ...prev, conversations: true }));
     try {
@@ -88,14 +88,13 @@ export const useChatbot = () => {
         throw new Error(response.error?.message || 'Error desconocido');
       }
     } catch (error) {
-      console.error('❌ Error en fetchKnowledgeBase:', error);
       toast.error(`Error al cargar base de conocimientos: ${error.message}`);
     } finally {
       setLoading(prev => ({ ...prev, knowledge: false }));
     }
   }, [pagination.knowledge.limit]);
 
-  // 📂 Funciones para gestionar categorías
+  // Funciones para gestionar categorías
   const fetchCategories = useCallback(async () => {
     setLoading(prev => ({ ...prev, categories: true }));
     try {
@@ -181,7 +180,7 @@ export const useChatbot = () => {
     }
   }, []);
 
-  // 🤖 Función para consultar el chatbot
+  /** Función para consultar el chatbot */
   const queryBot = useCallback(async (question, sessionId = 'admin-test') => {
     setLoading(prev => ({ ...prev, query: true }));
     try {
@@ -195,7 +194,7 @@ export const useChatbot = () => {
     }
   }, []);
 
-  // 📝 Funciones CRUD para base de conocimientos
+  // Funciones CRUD para base de conocimientos
   const createKnowledge = useCallback(async (data) => {
     try {
       const response = await chatbotService.knowledge.create(data);
@@ -218,8 +217,6 @@ export const useChatbot = () => {
       
       return true;
     } catch (error) {
-      console.error('❌ Error al crear conocimiento:', error);
-      
       // Manejo específico de errores comunes
       let errorMessage = 'Error al crear conocimiento';
       
@@ -255,8 +252,6 @@ export const useChatbot = () => {
       
       return true;
     } catch (error) {
-      console.error('❌ Error al actualizar conocimiento:', error);
-      
       // Manejo específico de errores comunes
       let errorMessage = 'Error al actualizar conocimiento';
       
@@ -299,7 +294,7 @@ export const useChatbot = () => {
     }
   }, []);
 
-  // 📁 Importación masiva
+  /** Importación masiva */
   const bulkImportKnowledge = useCallback(async (file) => {
     try {
       const response = await chatbotService.knowledge.bulkImport(file);
@@ -312,7 +307,7 @@ export const useChatbot = () => {
     }
   }, [fetchKnowledgeBase]);
 
-  // 🗑️ Eliminar conversación
+  /** Eliminar conversación */
   const deleteConversation = useCallback(async (id) => {
     try {
       await chatbotService.conversations.delete(id);
@@ -325,7 +320,7 @@ export const useChatbot = () => {
     }
   }, [fetchConversations, pagination.conversations.current]);
 
-  // 🔄 Regenerar embeddings
+  // Regenerar embeddings
   const regenerateEmbeddings = useCallback(async () => {
     try {
       const response = await chatbotService.regenerateEmbeddings();
@@ -341,7 +336,7 @@ export const useChatbot = () => {
     }
   }, [fetchKnowledgeBase, pagination.knowledge.current]);
 
-  // 🎯 Función para marcar respuesta como relevante/fallida
+  // Función para marcar respuesta como relevante/fallida
   const markResponse = useCallback(async (questionId, isRelevant) => {
     try {
       // Esta función se puede implementar cuando esté disponible en el backend

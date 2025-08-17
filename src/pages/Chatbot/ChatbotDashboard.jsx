@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useChatbot } from '../../hooks/useChatbot';
 import StatsCards from '../../components/Chatbot/StatsCards';
 import TestChat from '../../components/Chatbot/TestChat';
+import { ChatBubbleLeftRightIcon, AcademicCapIcon, BeakerIcon, CheckCircleIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
 /**
  * Dashboard principal del módulo Chatbot
@@ -22,7 +23,8 @@ const ChatbotDashboard = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          🤖 Administración del Chatbot
+          <ChatBubbleLeftRightIcon className="w-6 h-6 inline mr-2" />
+          Administración del Chatbot
         </h1>
         <p className="text-gray-600">
           Gestiona conversaciones, base de conocimientos y estadísticas del chatbot con IA
@@ -34,19 +36,21 @@ const ChatbotDashboard = () => {
             to="/chatbot/conversations"
             className="bg-[#2D728F] text-white px-4 py-2 rounded-lg hover:bg-[#235a73] transition-colors inline-flex items-center"
           >
-            💬 Ver Conversaciones
+            Ver Conversaciones
           </Link>
           <Link
             to="/chatbot/knowledge"
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors inline-flex items-center"
           >
-            🧠 Gestionar Conocimientos
+            <AcademicCapIcon className="w-5 h-5 mr-2" />
+            Gestionar Conocimientos
           </Link>
           <Link
             to="/chatbot/test"
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors inline-flex items-center"
           >
-            🧪 Modo de Prueba
+            <BeakerIcon className="w-5 h-5 mr-2" />
+            Modo de Prueba
           </Link>
         </div>
       </div>
@@ -59,7 +63,8 @@ const ChatbotDashboard = () => {
         {/* Test Chat - 2/3 del ancho */}
         <div className="lg:col-span-2">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            🧪 Prueba Rápida del Chatbot
+            <BeakerIcon className="w-6 h-6 inline mr-2" />
+            Prueba Rápida del Chatbot
           </h2>
           <TestChat
             onQuery={queryBot}
@@ -73,7 +78,7 @@ const ChatbotDashboard = () => {
           {/* Preguntas Recomendadas */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📋 Preguntas Recomendadas
+              Preguntas Recomendadas
             </h3>
             
             {loading.recommended ? (
@@ -104,7 +109,8 @@ const ChatbotDashboard = () => {
                   to="/chatbot/knowledge"
                   className="inline-block mt-4 text-[#2D728F] text-sm font-medium hover:underline"
                 >
-                  Ver todas las preguntas →
+                  Ver todas las preguntas
+                  <ArrowRightIcon className="w-4 h-4 ml-1 inline" />
                 </Link>
               </div>
             ) : (
@@ -117,7 +123,7 @@ const ChatbotDashboard = () => {
           {/* Acciones Rápidas */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              ⚡ Acciones Rápidas
+              Acciones Rápidas
             </h3>
             
             <div className="space-y-3">
@@ -132,14 +138,14 @@ const ChatbotDashboard = () => {
                 to="/chatbot/conversations"
                 className="block w-full bg-blue-50 text-blue-700 p-3 rounded-lg hover:bg-blue-100 transition-colors text-center"
               >
-                👥 Ver Conversaciones Recientes
+                Ver Conversaciones Recientes
               </Link>
               
               <button
                 onClick={() => window.location.reload()}
                 className="block w-full bg-gray-50 text-gray-700 p-3 rounded-lg hover:bg-gray-100 transition-colors text-center"
               >
-                🔄 Actualizar Estadísticas
+                Actualizar Estadísticas
               </button>
             </div>
           </div>
@@ -147,7 +153,8 @@ const ChatbotDashboard = () => {
           {/* Estado del Sistema */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              🟢 Estado del Sistema
+              <CheckCircleIcon className="w-6 h-6 inline mr-2 text-green-600" />
+              Estado del Sistema
             </h3>
             
             <div className="space-y-3">

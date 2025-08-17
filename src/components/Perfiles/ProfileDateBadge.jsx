@@ -5,6 +5,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import { StarIcon } from '@heroicons/react/24/outline';
 
 /**
  * Calcula si un perfil es "nuevo" (creado en las últimas 24 horas)
@@ -85,7 +86,8 @@ const ProfileDateBadge = ({
       {/* Badge "NUEVO" */}
       {esNuevo && (
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-800 border border-green-200 animate-pulse">
-          ✨ NUEVO
+          <StarIcon className="w-3 h-3 mr-1" />
+          NUEVO
         </span>
       )}
       

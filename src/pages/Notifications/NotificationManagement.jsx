@@ -73,7 +73,7 @@ const NotificationManagement = () => {
           fetchEventos()
         ]);
       } catch (error) {
-        console.error('Error cargando datos iniciales:', error);
+        // Error cargando datos iniciales
       }
     };
 
@@ -145,7 +145,6 @@ const NotificationManagement = () => {
 
         return success;
       } catch (error) {
-        console.error('Error en envío de formulario:', error);
         toast.error('Error procesando la solicitud');
         return false;
       }

@@ -1,3 +1,10 @@
+/**
+ * Componente principal de la aplicación PanelAdmin
+ * 
+ * Configura el enrutamiento, contexto de autenticación,
+ * sistema de notificaciones y detección de tema oscuro
+ */
+
 import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
@@ -6,11 +13,16 @@ import AppRoutes from './routes/AppRoutes';
 import './App.css';
 
 function App() {
-  // Verificar si el usuario tiene preferencia de tema oscuro
+  /**
+   * Inicialización del tema
+   * Detecta preferencia del usuario o configuración del sistema
+   */
   useEffect(() => {
-    if (localStorage.theme === 'dark' || 
-        (!('theme' in localStorage) && 
-         window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    const isDarkMode = localStorage.theme === 'dark' || 
+      (!('theme' in localStorage) && 
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
@@ -22,7 +34,7 @@ function App() {
       <AuthProvider>
         <AppRoutes />
         
-        {/* Toaster para notificaciones */}
+        {/** Sistema de notificaciones globales */}
         <Toaster
           position="top-right"
           toastOptions={{

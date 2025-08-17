@@ -4,10 +4,12 @@
  * Compatible con grupos: Trabajador, Editor de Contenido, Administrador de Contenido, Gestor de Chatbot
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
-// Función auxiliar para refrescar token
+/**
+ * Función auxiliar para refrescar token de autenticación
+ */
 const refreshTokenIfNeeded = async () => {
   try {
     const refreshToken = localStorage.getItem('refresh_token');
@@ -79,7 +81,6 @@ const apiCall = async (url, options = {}) => {
       let error;
       try {
         error = await response.json();
-        console.log(`❌ Error HTTP ${response.status} response:`, error);
       } catch (parseError) {
         // Si no se puede parsear como JSON, crear un error básico
         error = { message: `HTTP ${response.status}` };
@@ -148,7 +149,7 @@ const apiCall = async (url, options = {}) => {
         localStorage.removeItem('user');
         
         // Mostrar mensaje claro al usuario
-        console.error('🔄 Tokens expirados, es necesario reloguear');
+        console.error('Tokens expirados, es necesario reloguear');
         throw new Error('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.');
       }
     }
@@ -157,7 +158,7 @@ const apiCall = async (url, options = {}) => {
 };
 
 const userService = {
-  // 👥 Gestión de usuarios CRUD - Basado en UsuarioViewSet del backend
+  // Gestión de usuarios CRUD - Basado en UsuarioViewSet del backend
   users: {
     /**
      * Lista usuarios con filtros y paginación
@@ -221,8 +222,6 @@ const userService = {
           }
         });
         
-        console.log('🔧 Creando usuario con FormData - Campos:', Array.from(formData.keys()));
-        
         return await apiCall('/web/users/', {
           method: 'POST',
           body: formData,
@@ -238,8 +237,6 @@ const userService = {
             cleanData[key] = value;
           }
         });
-        
-        console.log('🔧 Creando usuario con JSON - Campos:', Object.keys(cleanData));
         
         return await apiCall('/web/users/', {
           method: 'POST',
@@ -289,8 +286,6 @@ const userService = {
           }
         });
         
-        console.log('🔧 Enviando con FormData - Campos:', Array.from(formData.keys()));
-        
         return await apiCall(`/web/users/${id}/`, {
           method: 'PATCH', // Usar PATCH para actualización parcial
           body: formData,
@@ -308,8 +303,6 @@ const userService = {
         if (cleanData.firma && typeof cleanData.firma === 'string') {
           delete cleanData.firma;
         }
-        
-        console.log('🔧 Enviando con JSON - Campos:', Object.keys(cleanData));
         
         return await apiCall(`/web/users/${id}/`, {
           method: 'PATCH', // Usar PATCH para actualización parcial
@@ -343,10 +336,6 @@ const userService = {
       if (processedData.firma && typeof processedData.firma === 'string') {
         delete processedData.firma;
       }
-      
-      console.log(`🔧 PATCH /web/users/${id}/ con datos procesados:`, processedData);
-      console.log(`🔧 PATCH - Claves enviadas:`, Object.keys(processedData));
-      console.log(`🔧 PATCH - ¿Tiene password?:`, 'password' in processedData);
       
       return await apiCall(`/web/users/${id}/`, {
         method: 'PATCH',
@@ -412,7 +401,7 @@ const userService = {
     }
   },
 
-  // 👥 Gestión de grupos y permisos dinámicos
+  // Gestión de grupos y permisos dinámicos
   groups: {
     /**
      * Lista todos los grupos disponibles del sistema dinámico
@@ -467,7 +456,7 @@ const userService = {
     }
   },
 
-  // 🔐 Permisos específicos
+  // Permisos específicos
   permissions: {
     /**
      * Lista todos los permisos disponibles en el sistema
@@ -500,13 +489,12 @@ const userService = {
         });
         return response.has_permission || false;
       } catch (error) {
-        console.error('Error verificando permiso:', error);
         return false;
       }
     }
   },
 
-  // 🔐 Autenticación y perfil
+  // Autenticación y perfil
   auth: {
     /**
      * Registro de nuevo usuario (usando endpoint existente)
@@ -541,7 +529,7 @@ const userService = {
     }
   },
 
-  // 📊 Utilidades
+  // Utilidades
   utils: {
     /**
      * Exporta lista de usuarios a CSV
@@ -623,7 +611,6 @@ const userService = {
         const existingUser = response.results?.find(user => user.username === username);
         return !existingUser;
       } catch (error) {
-        console.error('Error validating username:', error);
         return false;
       }
     },
@@ -666,7 +653,6 @@ const userService = {
           ]
         };
       } catch (error) {
-        console.error('Error obteniendo cargos:', error);
         // Devolver datos mock en caso de error
         return {
           status: 'success',

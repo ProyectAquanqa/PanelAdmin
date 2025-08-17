@@ -306,9 +306,9 @@ export const validateDNI = (documento) => {
     return { isValid: false, error: 'Campo obligatorio' };
   }
   
-  // DEBUG: Solo logear si hay problemas
+  // Validación de longitud máxima
   if (documento.length > 30) {
-    console.log('🔍 DNI demasiado largo:', { documento, length: documento.length });
+    return false;
   }
   
   // Validar longitud máxima para prevenir error 500

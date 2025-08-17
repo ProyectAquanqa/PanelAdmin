@@ -3,7 +3,7 @@
  * Siguiendo el patrón del userService para consistencia
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Función auxiliar para refrescar token
@@ -73,7 +73,7 @@ const apiCall = async (url, options = {}) => {
 };
 
 const areasService = {
-  // 🏢 Gestión de areas CRUD
+  // Gestión de areas CRUD
   areas: {
     /**
      * Lista areas con filtros y paginación
@@ -86,6 +86,7 @@ const areasService = {
       const params = new URLSearchParams({
         page: page.toString(),
         page_size: limit.toString(),
+        include_counts: 'true', // Incluir conteos de usuarios y cargos
       });
 
       // Agregar filtros
@@ -109,7 +110,11 @@ const areasService = {
      * @returns {Promise} Datos del area
      */
     get: async (id) => {
-      const response = await apiCall(`${API_BASE}/web/areas/${id}/`);
+      const params = new URLSearchParams({
+        include_counts: 'true', // Incluir conteos de usuarios y cargos
+      });
+
+      const response = await apiCall(`${API_BASE}/web/areas/${id}/?${params}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -223,7 +228,11 @@ const areasService = {
      * @returns {Promise} Areas con cargos
      */
     withCargos: async () => {
-      const response = await apiCall(`${API_BASE}/web/areas/with_cargos/`);
+      const params = new URLSearchParams({
+        include_counts: 'true', // Incluir conteos de usuarios y cargos
+      });
+
+      const response = await apiCall(`${API_BASE}/web/areas/with_cargos/?${params}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -287,7 +296,7 @@ const areasService = {
     }
   },
 
-  // 👔 Gestión de cargos CRUD
+  // Gestión de cargos CRUD
   cargos: {
     /**
      * Lista cargos con filtros y paginación
@@ -431,7 +440,7 @@ const areasService = {
     }
   },
 
-  // 📊 Funciones de utilidad
+  // Funciones de utilidad
   utils: {
     /**
      * Valida si existe un area con el mismo nombre

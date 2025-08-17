@@ -107,12 +107,11 @@ const Areas = () => {
       const area = areas.find(a => a.id === id);
       if (!area) return;
 
-      // Verificar si tiene cargos o usuarios
-      const hasRelations = (area.total_cargos && area.total_cargos > 0) || 
-                           (area.total_usuarios && area.total_usuarios > 0);
+      // Verificar si tiene cargos
+      const hasRelations = (area.total_cargos && area.total_cargos > 0);
 
       if (hasRelations) {
-        toast.error(`El área "${area.nombre}" tiene ${area.total_cargos || 0} cargo(s) y ${area.total_usuarios || 0} usuario(s) asignados. Debe eliminar o reasignar primero los elementos relacionados.`);
+        toast.error(`El área "${area.nombre}" tiene ${area.total_cargos || 0} cargo(s) asignados. Debe eliminar o reasignar primero los cargos relacionados.`);
         return;
       }
 

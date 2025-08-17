@@ -335,7 +335,6 @@ export const useUserForm = (initialData = {}, options = {}) => {
 
       return { success: result !== false };
     } catch (error) {
-      console.error('Error en handleSubmit:', error);
       return { success: false, error };
     } finally {
       setIsSubmitting(false);

@@ -25,7 +25,8 @@ const AreaTableView = ({
    * Renderiza una fila de la tabla para móvil (card layout)
    */
   const renderMobileCard = (area, index) => {
-    const canDelete = (area.total_cargos || 0) === 0 && (area.total_usuarios || 0) === 0;
+    const totalCargos = area.total_cargos ?? area.cargo_count ?? area.cargos_count ?? 0;
+    const canDelete = totalCargos === 0;
     
     return (
       <div key={area.id} className="bg-white border-l-4 border-l-blue-500 p-4 space-y-3 hover:bg-gray-50 transition-colors">
@@ -63,11 +64,7 @@ const AreaTableView = ({
         <div className="flex gap-4 text-[13px]">
           <div className="flex items-center gap-1">
             <span className="text-gray-500">Cargos:</span>
-            <span className="font-medium text-gray-900">{area.total_cargos || 0}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-gray-500">Usuarios:</span>
-            <span className="font-medium text-gray-900">{area.total_usuarios || 0}</span>
+            <span className="font-medium text-gray-900">{totalCargos}</span>
           </div>
         </div>
 
@@ -100,7 +97,7 @@ const AreaTableView = ({
                 ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' 
                 : 'text-gray-300 cursor-not-allowed opacity-50'
             }`}
-            title={canDelete ? "Eliminar" : "No se puede eliminar (tiene cargos o usuarios)"}
+            title={canDelete ? "Eliminar" : "No se puede eliminar (tiene cargos asignados)"}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -115,7 +112,8 @@ const AreaTableView = ({
    * Renderiza una fila de la tabla para desktop
    */
   const renderTableRow = (area, index) => {
-    const canDelete = (area.total_cargos || 0) === 0 && (area.total_usuarios || 0) === 0;
+    const totalCargos = area.total_cargos ?? area.cargo_count ?? area.cargos_count ?? 0;
+    const canDelete = totalCargos === 0;
     
     return (
       <tr key={area.id} className="hover:bg-gray-50 transition-colors">
@@ -157,14 +155,7 @@ const AreaTableView = ({
         {/* Cargos */}
         <td className="px-3 py-2.5 border-b border-gray-100 text-center">
           <span className="text-[13px] text-gray-900 font-medium">
-            {area.total_cargos || 0}
-          </span>
-        </td>
-
-        {/* Usuarios */}
-        <td className="px-3 py-2.5 border-b border-gray-100 text-center">
-          <span className="text-[13px] text-gray-900 font-medium">
-            {area.total_usuarios || 0}
+            {totalCargos}
           </span>
         </td>
 
@@ -255,15 +246,6 @@ const AreaTableView = ({
                 <div className="flex items-center justify-center gap-1">
                   Cargos
                   <SortIcon field="total_cargos" currentField={sortField} direction={sortDirection} />
-                </div>
-              </th>
-              <th 
-                className="px-3 py-3 text-center text-[13px] text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors w-20"
-                onClick={() => onSort('total_usuarios')}
-              >
-                <div className="flex items-center justify-center gap-1">
-                  Usuarios
-                  <SortIcon field="total_usuarios" currentField={sortField} direction={sortDirection} />
                 </div>
               </th>
               <th 

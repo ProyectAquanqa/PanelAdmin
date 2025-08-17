@@ -63,17 +63,13 @@ const Categories = () => {
     }
 
     // Ordenar
-    console.log('🔄 Aplicando ordenamiento:', sortOrder, 'a', filtered.length, 'categorías');
     if (sortOrder === 'nombre_asc') {
       filtered.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
-      console.log('📈 Ordenado A-Z:', filtered.map(c => c.name).slice(0, 5));
     } else if (sortOrder === 'nombre_desc') {
       filtered.sort((a, b) => b.name.localeCompare(a.name, 'es', { sensitivity: 'base' }));
-      console.log('📉 Ordenado Z-A:', filtered.map(c => c.name).slice(0, 5));
     } else {
       // Ordenar por último agregado (ID más alto primero) por defecto
       filtered.sort((a, b) => b.id - a.id);
-      console.log('📅 Ordenado por defecto:', filtered.map(c => c.name).slice(0, 5));
     }
 
     return filtered;
@@ -150,7 +146,6 @@ const Categories = () => {
       toast.success(`${dataToExport.length} categorías exportadas exitosamente`);
     } catch (error) {
       toast.error('Error al exportar categorías');
-      console.error('Export error:', error);
     }
   }, [processedCategories]);
 

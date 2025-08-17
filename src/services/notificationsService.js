@@ -36,7 +36,6 @@ class NotificationsService {
         data: response
       };
     } catch (error) {
-      console.error('❌ Error obteniendo notificaciones:', error);
       return this.handleError(error, 'Error al cargar notificaciones');
     }
   }
@@ -53,7 +52,6 @@ class NotificationsService {
         data: response
       };
     } catch (error) {
-      console.error('❌ Error obteniendo notificación:', error);
       return this.handleError(error, 'Error al cargar notificación');
     }
   }
@@ -81,7 +79,6 @@ class NotificationsService {
         message: 'Notificación creada exitosamente'
       };
     } catch (error) {
-      console.error('❌ Error creando notificación:', error);
       return this.handleError(error, 'Error al crear notificación');
     }
   }
@@ -109,7 +106,6 @@ class NotificationsService {
         message: 'Notificación actualizada exitosamente'
       };
     } catch (error) {
-      console.error('❌ Error actualizando notificación:', error);
       return this.handleError(error, 'Error al actualizar notificación');
     }
   }
@@ -126,7 +122,6 @@ class NotificationsService {
         message: 'Notificación eliminada exitosamente'
       };
     } catch (error) {
-      console.error('❌ Error eliminando notificación:', error);
       return this.handleError(error, 'Error al eliminar notificación');
     }
   }
@@ -144,7 +139,6 @@ class NotificationsService {
         message: 'Notificación broadcast enviada exitosamente'
       };
     } catch (error) {
-      console.error('❌ Error enviando broadcast:', error);
       return this.handleError(error, 'Error al enviar notificación broadcast');
     }
   }
@@ -162,7 +156,6 @@ class NotificationsService {
         message: 'Notificaciones enviadas exitosamente'
       };
     } catch (error) {
-      console.error('❌ Error enviando notificaciones masivas:', error);
       return this.handleError(error, 'Error al enviar notificaciones masivas');
     }
   }
@@ -182,7 +175,6 @@ class NotificationsService {
         data: normalized
       };
     } catch (error) {
-      console.error('❌ Error obteniendo estadísticas:', error);
       return this.handleError(error, 'Error al cargar estadísticas');
     }
   }
@@ -213,7 +205,6 @@ class NotificationsService {
         data: response
       };
     } catch (error) {
-      console.error('❌ Error obteniendo dispositivos:', error);
       return this.handleError(error, 'Error al cargar dispositivos');
     }
   }
@@ -230,7 +221,6 @@ class NotificationsService {
         data: response
       };
     } catch (error) {
-      console.error('❌ Error obteniendo dispositivo:', error);
       return this.handleError(error, 'Error al cargar dispositivo');
     }
   }
@@ -248,7 +238,6 @@ class NotificationsService {
         message: 'Dispositivo registrado exitosamente'
       };
     } catch (error) {
-      console.error('❌ Error registrando dispositivo:', error);
       return this.handleError(error, 'Error al registrar dispositivo');
     }
   }
@@ -266,7 +255,6 @@ class NotificationsService {
         message: 'Dispositivo actualizado exitosamente'
       };
     } catch (error) {
-      console.error('❌ Error actualizando dispositivo:', error);
       return this.handleError(error, 'Error al actualizar dispositivo');
     }
   }
@@ -283,7 +271,6 @@ class NotificationsService {
         message: 'Dispositivo eliminado exitosamente'
       };
     } catch (error) {
-      console.error('❌ Error eliminando dispositivo:', error);
       return this.handleError(error, 'Error al eliminar dispositivo');
     }
   }

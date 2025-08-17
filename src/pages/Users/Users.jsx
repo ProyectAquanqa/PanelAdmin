@@ -176,7 +176,7 @@ const Users = () => {
       
       return result;
     } catch (error) {
-      console.error('Error en handleSubmit:', error);
+      // Error en handleSubmit
       toast.error('Error al guardar usuario');
       return false;
     }
@@ -187,7 +187,6 @@ const Users = () => {
       await toggleUserActiveStatus(userId);
       // Los datos se actualizan automáticamente en el hook
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
       toast.error('Error al cambiar estado del usuario');
     }
   }, [toggleUserActiveStatus]);
@@ -198,7 +197,6 @@ const Users = () => {
         await deleteUser(userId);
         // Los datos se actualizan automáticamente en el hook
       } catch (error) {
-        console.error('Error al desactivar usuario:', error);
         toast.error('Error al desactivar usuario');
       }
     }
@@ -216,7 +214,6 @@ const Users = () => {
       
       await exportUsers(filters);
     } catch (error) {
-      console.error('Error al exportar:', error);
       toast.error('Error al exportar usuarios');
     }
   }, [exportUsers, searchTerm, selectedRole, selectedDateRange]);

@@ -21,7 +21,7 @@ const UserModalAccesoPerfil = ({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h4 className="text-lg font-medium text-slate-800 mb-2">🔐 Acceso y Perfil</h4>
+        <h4 className="text-lg font-medium text-slate-800 mb-2">Acceso y Perfil</h4>
         <p className="text-sm text-slate-600">Configura el acceso al sistema y asigna el perfil correspondiente</p>
       </div>
 

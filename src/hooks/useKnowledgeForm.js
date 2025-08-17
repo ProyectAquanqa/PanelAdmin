@@ -279,7 +279,6 @@ export const useKnowledgeForm = (initialData = {}, options = {}) => {
       return { success: true, data: result };
       
     } catch (error) {
-      console.error('Error al enviar formulario:', error);
       setIsSubmitting(false);
       
       // Si el error tiene información de validación del servidor

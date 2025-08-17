@@ -25,7 +25,7 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
   
-  // ✅ Función para manejar el envío del formulario conectado al backend AquanQ
+  // Función para manejar el envío del formulario conectado al backend AquanQ
   const handleLogin = async (formData) => {
     setIsLoading(true);
     setLoginError('');
@@ -42,13 +42,13 @@ const Login = () => {
         password: formData.password,
       });
       
-      // ✅ Redirigir a /dashboard si la autenticación es exitosa (según prompt)
+      // Redirigir a /dashboard si la autenticación es exitosa (según prompt)
       navigate('/', { replace: true });
       
     } catch (error) {
       console.error('Error de inicio de sesión:', error);
       
-      // ✅ Manejar errores (credenciales inválidas, conexión fallida) según prompt
+      // Manejar errores (credenciales inválidas, conexión fallida) según prompt
       let errorMessage = 'Error al iniciar sesión';
       
       if (error.message.includes('Credenciales inválidas') || 

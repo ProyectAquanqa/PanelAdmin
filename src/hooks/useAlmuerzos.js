@@ -54,7 +54,6 @@ export const useAlmuerzos = () => {
       setAlmuerzos(almuerzosData);
       
     } catch (error) {
-      console.error('❌ Error loading almuerzos:', error);
       setError(error.message || 'Error al cargar almuerzos');
       toast.error('Error al cargar almuerzos');
       setAlmuerzos([]);
@@ -71,7 +70,7 @@ export const useAlmuerzos = () => {
         setStatistics(response.data);
       }
     } catch (error) {
-      console.error('Error loading statistics:', error);
+      // Error loading statistics
     }
   }, []);
 
@@ -95,8 +94,6 @@ export const useAlmuerzos = () => {
       }
       
     } catch (error) {
-      console.error('Error creating almuerzo:', error);
-      
       const errorMessage = error?.data?.error?.message || 
                           error?.message || 
                           'Error al crear almuerzo';
@@ -133,8 +130,6 @@ export const useAlmuerzos = () => {
       }
       
     } catch (error) {
-      console.error('Error updating almuerzo:', error);
-      
       const errorMessage = error?.data?.error?.message || 
                           error?.message || 
                           'Error al actualizar almuerzo';
@@ -162,8 +157,6 @@ export const useAlmuerzos = () => {
       toast.success('Almuerzo eliminado exitosamente');
       
     } catch (error) {
-      console.error('Error deleting almuerzo:', error);
-      
       const errorMessage = error?.data?.error?.message || 
                           error?.message || 
                           'Error al eliminar almuerzo';
@@ -198,8 +191,6 @@ export const useAlmuerzos = () => {
       }
       
     } catch (error) {
-      console.error('❌ Error toggling almuerzo status:', error);
-      
       const errorMessage = error?.data?.error?.message || 
                           error?.message || 
                           'Error al cambiar estado del almuerzo';
@@ -228,7 +219,6 @@ export const useAlmuerzos = () => {
         
         if (errors && errors.length > 0) {
           toast.success(`Se crearon ${created} almuerzos. Algunos tuvieron errores.`);
-          console.warn('Errores al crear semana:', errors);
         } else {
           toast.success(`Se crearon ${created} almuerzos para la semana`);
         }
@@ -239,8 +229,6 @@ export const useAlmuerzos = () => {
       }
       
     } catch (error) {
-      console.error('Error creating week almuerzos:', error);
-      
       const errorMessage = error?.data?.error?.message || 
                           error?.message || 
                           'Error al crear semana de almuerzos';

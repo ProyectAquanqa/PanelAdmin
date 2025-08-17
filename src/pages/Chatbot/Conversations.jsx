@@ -97,7 +97,6 @@ const Conversations = () => {
       toast.success(`${dataToExport.length} conversaciones exportadas exitosamente`);
     } catch (error) {
       toast.error('Error al exportar conversaciones');
-      console.error('Export error:', error);
     }
   }, [displayConversations]);
 

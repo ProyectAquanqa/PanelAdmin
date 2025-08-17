@@ -3,10 +3,12 @@
  * Basado en los endpoints de AquanQ/aquanq_noticias/api_urls.py
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
-// Configuración base para fetch
+/**
+ * Función auxiliar para realizar llamadas a la API del chatbot
+ */
 const apiCall = async (url, options = {}) => {
   const token = localStorage.getItem('access_token');
   
@@ -43,13 +45,12 @@ const apiCall = async (url, options = {}) => {
       return { success: true };
     }
   } catch (error) {
-    console.error('API Error:', error);
     throw error;
   }
 };
 
 const chatbotService = {
-  // 🤖 Consultar el chatbot
+  /** Consultar el chatbot */
   query: async (question, sessionId = 'admin-panel') => {
     // Para pruebas desde admin, se usa capa mobile (público)
     return await apiCall('/mobile/chatbot/query/', {
@@ -61,13 +62,13 @@ const chatbotService = {
     });
   },
 
-  // 📊 Obtener estadísticas del chatbot
+  // Obtener estadísticas del chatbot
   getStats: async (queryParams = '') => {
     const url = `/web/chatbot-knowledge/statistics/${queryParams}`;
     return await apiCall(url);
   },
 
-  // 💬 Gestión de conversaciones
+  // Gestión de conversaciones
   conversations: {
     list: async (page = 1, limit = 10) => {
       return await apiCall(`/web/chatbot-conversations/?page=${page}&limit=${limit}`);
@@ -84,7 +85,7 @@ const chatbotService = {
     },
   },
 
-  // 🧠 Gestión de base de conocimientos
+  /** Gestión de base de conocimientos */
   knowledge: {
     list: async (page = 1, limit = 10, search = '') => {
       const params = new URLSearchParams({
@@ -148,7 +149,7 @@ const chatbotService = {
     },
   },
 
-  // 📂 Gestión de categorías
+  // Gestión de categorías
   categories: {
     list: async () => {
       return await apiCall('/web/chatbot-categories/');
@@ -175,12 +176,12 @@ const chatbotService = {
     },
   },
 
-  // 📋 Preguntas recomendadas
+  // Preguntas recomendadas
   getRecommendedQuestions: async () => {
     return await apiCall('/mobile/chatbot/recommended-questions/');
   },
 
-  // 🔄 Regenerar embeddings (endpoint personalizado si existe)
+  // Regenerar embeddings (endpoint personalizado si existe)
   regenerateEmbeddings: async () => {
     return await apiCall('/admin/maintenance/regenerate-embeddings/', {
       method: 'POST',

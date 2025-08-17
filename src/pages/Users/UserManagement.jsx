@@ -77,7 +77,7 @@ const UserManagement = () => {
             fetchGroups()
           ]);
         } catch (error) {
-          console.error('❌ Error cargando datos iniciales:', error);
+          // Error cargando datos iniciales
         }
       }
     };
@@ -188,10 +188,8 @@ const UserManagement = () => {
       const result = await deleteUser(userId);
       if (result) {
         // El toast de éxito ya se maneja en el hook useUsers
-        console.log(`✅ Usuario ${userName} eliminado exitosamente`);
       }
     } catch (error) {
-      console.error('Error al eliminar usuario:', error);
       toast.error('Error al eliminar usuario');
     }
   }, [deleteUser, users]);
@@ -203,7 +201,6 @@ const UserManagement = () => {
         `Usuario ${!currentStatus ? 'activado' : 'desactivado'} exitosamente`
       );
     } catch (error) {
-      console.error('Error al cambiar estado del usuario:', error);
       toast.error('Error al cambiar estado del usuario');
     }
   }, [toggleUserActiveStatus]);
@@ -218,7 +215,6 @@ const UserManagement = () => {
       // Aquí iría la lógica de importación cuando se implemente
       toast.success('Función de importación próximamente');
     } catch (error) {
-      console.error('Error al importar usuarios:', error);
       toast.error('Error al importar usuarios');
     }
   }, []);

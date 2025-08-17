@@ -31,7 +31,7 @@ export const useAreas = () => {
     totalPages: 0
   });
 
-  // 🔄 Funciones para obtener datos
+  // Funciones para obtener datos
   
   // Función para obtener areas
   const fetchAreas = useCallback(async (page = 1, filters = {}) => {
@@ -39,7 +39,6 @@ export const useAreas = () => {
       setLoading(prev => ({ ...prev, areas: true }));
       
       const result = await areasService.areas.list(page, 10, filters);
-      console.log('🏢 Resultado areasService.areas.list:', result);
       
       // Manejar diferentes formatos de respuesta
       let areasData = [];
@@ -59,6 +58,12 @@ export const useAreas = () => {
         totalCount = areasData.length;
       }
 
+      // Asegurar que cada área tenga los campos de conteo
+      areasData = areasData.map(area => ({
+        ...area,
+        total_cargos: area.total_cargos ?? area.cargo_count ?? area.cargos_count ?? 0
+      }));
+
       setAreas(areasData);
       setPagination(prev => ({
         ...prev,
@@ -66,11 +71,8 @@ export const useAreas = () => {
         total: totalCount,
         totalPages: Math.ceil(totalCount / 10)
       }));
-
-      console.log('✅ Areas cargadas:', areasData.length);
       
     } catch (error) {
-      console.error('❌ Error fetching areas:', error);
       toast.error(`Error al cargar areas: ${error.message}`);
       setAreas([]);
     } finally {
@@ -84,7 +86,6 @@ export const useAreas = () => {
       setLoading(prev => ({ ...prev, cargos: true }));
       
       const result = await areasService.cargos.simple(); // Usar simple en lugar de list
-      console.log('👔 Resultado areasService.cargos.simple:', result);
       
       // Manejar diferentes formatos de respuesta
       let cargosData = [];
@@ -98,10 +99,8 @@ export const useAreas = () => {
       }
 
       setCargos(cargosData);
-      console.log('✅ Cargos cargados:', cargosData.length);
       
     } catch (error) {
-      console.error('❌ Error fetching cargos:', error);
       toast.error(`Error al cargar cargos: ${error.message}`);
       setCargos([]);
     } finally {
@@ -115,7 +114,6 @@ export const useAreas = () => {
       setLoading(prev => ({ ...prev, create: true }));
       
       const result = await areasService.areas.create(areaData);
-      console.log('✅ Area creada:', result);
       
       toast.success('Área creada exitosamente');
       
@@ -124,8 +122,6 @@ export const useAreas = () => {
       
       return result;
     } catch (error) {
-      console.error('❌ Error creating area:', error);
-      
       // Manejo específico de errores de validación
       if (error.message.includes('ya existe') || error.message.includes('unique')) {
         toast.error('Ya existe un área con ese nombre');
@@ -145,7 +141,6 @@ export const useAreas = () => {
       setLoading(prev => ({ ...prev, update: true }));
       
       const result = await areasService.areas.update(id, areaData);
-      console.log('✅ Area actualizada:', result);
       
       toast.success('Área actualizada exitosamente');
       
@@ -154,8 +149,6 @@ export const useAreas = () => {
       
       return result;
     } catch (error) {
-      console.error('❌ Error updating area:', error);
-      
       if (error.message.includes('ya existe') || error.message.includes('unique')) {
         toast.error('Ya existe un área con ese nombre');
       } else {
@@ -174,7 +167,6 @@ export const useAreas = () => {
       setLoading(prev => ({ ...prev, delete: true }));
       
       await areasService.areas.delete(id);
-      console.log('✅ Area eliminada:', id);
       
       toast.success('Área eliminada exitosamente');
       
@@ -183,8 +175,6 @@ export const useAreas = () => {
       
       return { success: true };
     } catch (error) {
-      console.error('❌ Error deleting area:', error);
-      
       if (error.message.includes('cargos') || error.message.includes('usuarios')) {
         toast.error('No se puede eliminar el área porque tiene cargos o usuarios asignados');
       } else {
@@ -205,7 +195,6 @@ export const useAreas = () => {
       if (!area) return;
       
       const response = await areasService.areas.toggleActiveStatus(id);
-      console.log('✅ Estado del area cambiado:', response);
       
       if (response.status === 'success') {
         toast.success(response.message);
@@ -224,7 +213,6 @@ export const useAreas = () => {
       }
       
     } catch (error) {
-      console.error('❌ Error toggling area status:', error);
       toast.error(`Error al cambiar estado del área: ${error.message}`);
       throw error;
     }
@@ -236,11 +224,9 @@ export const useAreas = () => {
       setLoading(prev => ({ ...prev, areas: true }));
       
       const result = await areasService.areas.withCargos();
-      console.log('🏢👔 Areas con cargos:', result);
       
       return result;
     } catch (error) {
-      console.error('❌ Error fetching areas with cargos:', error);
       toast.error(`Error al cargar areas con cargos: ${error.message}`);
       throw error;
     } finally {
@@ -252,11 +238,9 @@ export const useAreas = () => {
   const getAreaUsuarios = useCallback(async (areaId) => {
     try {
       const result = await areasService.areas.getUsuarios(areaId);
-      console.log(`👥 Usuarios del area ${areaId}:`, result);
       
       return result;
     } catch (error) {
-      console.error('❌ Error fetching area usuarios:', error);
       toast.error(`Error al cargar usuarios del área: ${error.message}`);
       throw error;
     }
@@ -266,11 +250,9 @@ export const useAreas = () => {
   const getAreaCargos = useCallback(async (areaId) => {
     try {
       const result = await areasService.areas.getCargos(areaId);
-      console.log(`👔 Cargos del area ${areaId}:`, result);
       
       return result;
     } catch (error) {
-      console.error('❌ Error fetching area cargos:', error);
       toast.error(`Error al cargar cargos del área: ${error.message}`);
       throw error;
     }
@@ -282,7 +264,6 @@ export const useAreas = () => {
       const result = await areasService.utils.validateAreaName(nombre, excludeId);
       return result;
     } catch (error) {
-      console.error('❌ Error validating area name:', error);
       return { exists: false, areas: [] };
     }
   }, []);
@@ -303,18 +284,16 @@ export const useAreas = () => {
       
       return areasData;
     } catch (error) {
-      console.error('❌ Error fetching simple areas:', error);
       return [];
     }
   }, []);
 
-  // 📊 Funciones para cargos (CRUD básico)
+  // Funciones para cargos (CRUD básico)
   const createCargo = useCallback(async (cargoData) => {
     try {
       setLoading(prev => ({ ...prev, create: true }));
       
       const result = await areasService.cargos.create(cargoData);
-      console.log('✅ Cargo creado:', result);
       
       toast.success('Cargo creado exitosamente');
       
@@ -323,7 +302,6 @@ export const useAreas = () => {
       
       return result;
     } catch (error) {
-      console.error('❌ Error creating cargo:', error);
       toast.error(`Error al crear cargo: ${error.message}`);
       throw error;
     } finally {
@@ -336,7 +314,6 @@ export const useAreas = () => {
       setLoading(prev => ({ ...prev, update: true }));
       
       const result = await areasService.cargos.update(id, cargoData);
-      console.log('✅ Cargo actualizado:', result);
       
       toast.success('Cargo actualizado exitosamente');
       
@@ -345,7 +322,6 @@ export const useAreas = () => {
       
       return result;
     } catch (error) {
-      console.error('❌ Error updating cargo:', error);
       toast.error(`Error al actualizar cargo: ${error.message}`);
       throw error;
     } finally {
@@ -358,7 +334,6 @@ export const useAreas = () => {
       setLoading(prev => ({ ...prev, delete: true }));
       
       await areasService.cargos.delete(id);
-      console.log('✅ Cargo eliminado:', id);
       
       toast.success('Cargo eliminado exitosamente');
       
@@ -367,8 +342,6 @@ export const useAreas = () => {
       
       return { success: true };
     } catch (error) {
-      console.error('❌ Error deleting cargo:', error);
-      
       if (error.message.includes('usuarios')) {
         toast.error('No se puede eliminar el cargo porque tiene usuarios asignados');
       } else {
@@ -381,7 +354,7 @@ export const useAreas = () => {
     }
   }, []);
 
-  // 🔄 Efecto para cargar datos iniciales (solo una vez)
+  // Efecto para cargar datos iniciales (solo una vez)
   useEffect(() => {
     let isMounted = true;
     

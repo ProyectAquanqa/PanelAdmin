@@ -6,6 +6,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Pagination, SortIcon } from '../Common';
+import { EnvelopeIcon, UserIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 // import LoadingStates from './LoadingStates';
 
 const UserTableView = ({
@@ -75,7 +76,8 @@ const UserTableView = ({
         {/* Información adicional mejorada */}
         <div className="space-y-2">
           <div className="text-[13px] text-gray-600 truncate">
-            📧 {user.email || 'Sin email registrado'}
+            <EnvelopeIcon className="w-4 h-4 inline mr-1" />
+            {user.email || 'Sin email registrado'}
           </div>
           
           <div className="flex items-center justify-start">
@@ -98,11 +100,21 @@ const UserTableView = ({
             {user.tipo_usuario && (
               <div>
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                  user.tipo_usuario === 'ADMIN' 
+                  user.tipo_usuario === 'Admin' 
                     ? 'bg-purple-100 text-purple-600 border border-purple-200' 
                     : 'bg-blue-100 text-blue-600 border border-blue-200'
                 }`}>
-                  {user.tipo_usuario === 'ADMIN' ? '👑 Admin' : '👤 Trabajador'}
+                  {user.tipo_usuario === 'Admin' ? (
+                    <span className="flex items-center">
+                      <ShieldCheckIcon className="w-4 h-4 mr-1" />
+                      Admin
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <UserIcon className="w-4 h-4 mr-1" />
+                      Trabajador
+                    </span>
+                  )}
                 </span>
               </div>
             )}
@@ -110,7 +122,7 @@ const UserTableView = ({
             {/* Grupos asignados */}
             {user.groups && user.groups.length > 0 && (
               <div className="text-[12px] text-slate-600">
-                📋 {user.groups.map(group => 
+                {user.groups.map(group => 
                   typeof group === 'object' ? group.name || group.nombre : group
                 ).join(', ')}
               </div>
@@ -119,7 +131,7 @@ const UserTableView = ({
             {/* Empresa si existe */}
             {user.empresa && (
               <div className="text-[11px] text-slate-500">
-                🏢 {user.empresa}
+                {user.empresa}
               </div>
             )}
           </div>
@@ -252,11 +264,21 @@ const UserTableView = ({
             {user.tipo_usuario ? (
               <div>
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                  user.tipo_usuario === 'ADMIN' 
+                  user.tipo_usuario === 'Admin' 
                     ? 'bg-purple-100 text-purple-600 border border-purple-200' 
                     : 'bg-blue-100 text-blue-600 border border-blue-200'
                 }`}>
-                  {user.tipo_usuario === 'ADMIN' ? '👑 Admin' : '👤 Trabajador'}
+                  {user.tipo_usuario === 'Admin' ? (
+                    <span className="flex items-center">
+                      <ShieldCheckIcon className="w-4 h-4 mr-1" />
+                      Admin
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <UserIcon className="w-4 h-4 mr-1" />
+                      Trabajador
+                    </span>
+                  )}
                 </span>
               </div>
             ) : (
@@ -266,7 +288,7 @@ const UserTableView = ({
             {/* Grupos asignados */}
             {user.groups && user.groups.length > 0 && (
               <div className="text-[11px] text-slate-600 truncate">
-                📋 {user.groups.map(group => 
+                {user.groups.map(group => 
                   typeof group === 'object' ? group.name || group.nombre : group
                 ).join(', ')}
               </div>
@@ -336,9 +358,9 @@ const UserTableView = ({
   if (!loading && (!data || data.length === 0)) {
     return (
       <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-        <div className="text-gray-400 text-6xl mb-4">👥</div>
+        <UserIcon className="w-16 h-16 text-gray-400 mb-4 mx-auto" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">No hay usuarios registrados</h3>
-        <p className="text-gray-500 mb-4">Los usuarios aparecerán aquí cuando se registren en el sistema. Puedes agregar nuevos usuarios desde el panel de administración.</p>
+        <p className="text-gray-500 mb-4">Los usuarios aparecerán aquí cuando se registren en el sistema. Puedes agregar nuevos usuarios desde el panel deAdministración.</p>
         <button
           onClick={onCreateNew}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"

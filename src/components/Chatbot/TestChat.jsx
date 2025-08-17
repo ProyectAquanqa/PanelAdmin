@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { BeakerIcon, HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/outline';
 
 /**
  * Componente para probar el chatbot en modo test
@@ -97,7 +98,10 @@ const TestChat = ({ onQuery, loading, onMarkResponse }) => {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[600px] flex flex-col">
       {/* Header */}
       <div className="bg-[#2D728F] text-white p-4 rounded-t-lg">
-        <h3 className="text-lg font-semibold">🧪 Modo de Prueba del Chatbot</h3>
+        <h3 className="text-lg font-semibold">
+          <BeakerIcon className="w-5 h-5 inline mr-2" />
+          Modo de Prueba del Chatbot
+        </h3>
         <p className="text-sm opacity-90">Envía mensajes para probar las respuestas del bot</p>
       </div>
 
@@ -147,14 +151,16 @@ const TestChat = ({ onQuery, loading, onMarkResponse }) => {
                       className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs hover:bg-green-200 transition-colors"
                       title="Marcar como relevante"
                     >
-                      👍 Relevante
+                      <HandThumbUpIcon className="w-4 h-4 mr-1" />
+                      Relevante
                     </button>
                     <button
                       onClick={() => onMarkResponse(message.knowledgeId, false)}
                       className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs hover:bg-red-200 transition-colors"
                       title="Marcar como fallida"
                     >
-                      👎 Fallida
+                      <HandThumbDownIcon className="w-4 h-4 mr-1" />
+                      Fallida
                     </button>
                   </div>
                 </div>
@@ -204,7 +210,7 @@ const TestChat = ({ onQuery, loading, onMarkResponse }) => {
         </div>
         
         <div className="mt-2 text-xs text-gray-500">
-          <p>💡 Presiona Enter para enviar, Shift+Enter para nueva línea</p>
+          <p>Presiona Enter para enviar, Shift+Enter para nueva línea</p>
         </div>
       </div>
     </div>

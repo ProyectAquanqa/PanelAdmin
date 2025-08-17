@@ -44,7 +44,6 @@ export const useEventos = () => {
         throw new Error(response.error?.message || 'Error al cargar eventos');
       }
     } catch (err) {
-      console.error('Error loading eventos:', err);
       setError(err.message);
       toast.error(err.message || 'Error al cargar eventos');
       setEventos([]);
@@ -74,7 +73,6 @@ export const useEventos = () => {
         throw new Error(response.error?.message || 'Error al crear evento');
       }
     } catch (err) {
-      console.error('Error creating evento:', err);
       setError(err.message);
       
       if (err.status === 422 && err.data?.error?.details) {
@@ -115,7 +113,6 @@ export const useEventos = () => {
         throw new Error(response.error?.message || 'Error al actualizar evento');
       }
     } catch (err) {
-      console.error('Error updating evento:', err);
       setError(err.message);
       
       if (err.status === 422 && err.data?.error?.details) {
@@ -155,7 +152,6 @@ export const useEventos = () => {
         throw new Error(response.error?.message || 'Error al actualizar evento');
       }
     } catch (err) {
-      console.error('Error patching evento:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -178,7 +174,6 @@ export const useEventos = () => {
       toast.success('Evento eliminado exitosamente');
       return true;
     } catch (err) {
-      console.error('Error deleting evento:', err);
       setError(err.message);
       toast.error(err.message || 'Error al eliminar evento');
       return false;
@@ -234,7 +229,6 @@ export const useEventos = () => {
         throw new Error(response.error?.message || 'Error al fijar evento');
       }
     } catch (err) {
-      console.error('Error pinning evento:', err);
       setError(err.message);
       toast.error(err.message || 'Error al fijar evento');
       return false;
@@ -268,7 +262,6 @@ export const useEventos = () => {
         throw new Error(response.error?.message || 'Error al desfijar evento');
       }
     } catch (err) {
-      console.error('Error unpinning evento:', err);
       setError(err.message);
       toast.error(err.message || 'Error al desfijar evento');
       return false;
@@ -318,7 +311,6 @@ export const useEvento = (eventoId) => {
         throw new Error(response.error?.message || 'Error al cargar evento');
       }
     } catch (err) {
-      console.error('Error loading evento:', err);
       setError(err.message);
       toast.error(err.message || 'Error al cargar evento');
     } finally {

@@ -71,13 +71,10 @@ const EventosCategorias = () => {
     }
 
     // Ordenar
-    console.log('🔄 Aplicando ordenamiento:', sortOrder, 'a', filtered.length, 'categorías');
     if (sortOrder === 'nombre_asc') {
       filtered.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
-      console.log('📈 Ordenado A-Z:', filtered.map(c => c.nombre).slice(0, 5));
     } else if (sortOrder === 'nombre_desc') {
       filtered.sort((a, b) => b.nombre.localeCompare(a.nombre, 'es', { sensitivity: 'base' }));
-      console.log('📉 Ordenado Z-A:', filtered.map(c => c.nombre).slice(0, 5));
     } else {
       // Ordenar por último agregado por defecto (usar created_at si existe, sino usar id)
       filtered.sort((a, b) => {
@@ -85,7 +82,6 @@ const EventosCategorias = () => {
         const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
         return dateB - dateA || b.id - a.id; // Fallback a ID si las fechas son iguales
       });
-      console.log('📅 Ordenado por defecto:', filtered.map(c => c.nombre).slice(0, 5));
     }
 
     return filtered;
@@ -118,7 +114,7 @@ const EventosCategorias = () => {
       await eliminarCategoria(categoriaId);
       setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
     } catch (error) {
-      console.error('Error al eliminar categoría:', error);
+      // Error al eliminar categoría
     }
   };
 
@@ -138,8 +134,6 @@ const EventosCategorias = () => {
         handleCloseModal();
         return true;
       } catch (error) {
-        console.error('Error al guardar categoría:', error);
-        
         if (error.status === 422 && error.data?.error?.details) {
           // Errores de validación
           setModalErrors(error.data.error.details);

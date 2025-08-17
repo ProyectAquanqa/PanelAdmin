@@ -12,11 +12,11 @@ export const debugUserPermissions = () => {
   const permissions = getUserPermissions();
   const groups = getUserGroups();
   
-  console.group('🔐 DEBUG: Permisos del Usuario');
-  console.log('📋 Permisos:', permissions);
-  console.log('👥 Grupos:', groups);
-  console.log('🔢 Total permisos:', permissions.length);
-  console.log('🔢 Total grupos:', groups.length);
+  console.group('DEBUG: Permisos del Usuario');
+  console.log('Permisos:', permissions);
+  console.log('Grupos:', groups);
+  console.log('Total permisos:', permissions.length);
+  console.log('Total grupos:', groups.length);
   
   // Mostrar permisos por aplicación
   const permsByApp = {};
@@ -26,7 +26,7 @@ export const debugUserPermissions = () => {
     permsByApp[app].push(rest.join('.'));
   });
   
-  console.log('📱 Permisos por aplicación:', permsByApp);
+  console.log('Permisos por aplicación:', permsByApp);
   console.groupEnd();
   
   return { permissions, groups, permsByApp };
@@ -103,8 +103,8 @@ export const simulateUserType = (userType) => {
     groups: simulation.groups
   }));
   
-  console.log(`✅ Simulando usuario tipo: ${userType}`, simulation);
-  console.log('🔄 Recarga la página para ver los cambios en el menú');
+  console.log(`Simulando usuario tipo: ${userType}`, simulation);
+  console.log('Recarga la página para ver los cambios en el menú');
   
   return simulation;
 };
@@ -113,7 +113,7 @@ export const simulateUserType = (userType) => {
  * Restaura los permisos reales del usuario
  */
 export const restoreRealPermissions = () => {
-  console.log('🔄 Restaurando permisos reales...');
+  console.log('Restaurando permisos reales...');
   // Simplemente recarga la página para obtener datos reales del servidor
   window.location.reload();
 };
@@ -128,7 +128,7 @@ if (typeof window !== 'undefined') {
     restore: restoreRealPermissions,
     help: () => {
       console.log(`
-🔐 Utilidades de Debug de Permisos
+Utilidades de Debug de Permisos
 
 Funciones disponibles:
 - debugPermissions.debug() - Muestra información actual del usuario

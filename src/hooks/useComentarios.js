@@ -42,7 +42,6 @@ export const useComentarios = () => {
         throw new Error(response.error?.message || 'Error al cargar comentarios');
       }
     } catch (err) {
-      console.error('Error loading comentarios:', err);
       setError(err.message);
       toast.error(err.message || 'Error al cargar comentarios');
       setComentarios([]);
@@ -66,7 +65,6 @@ export const useComentarios = () => {
       toast.success('Comentario eliminado exitosamente');
       return true;
     } catch (err) {
-      console.error('Error deleting comentario:', err);
       setError(err.message);
       toast.error(err.message || 'Error al eliminar comentario');
       return false;
@@ -105,7 +103,6 @@ export const useComentarios = () => {
         throw new Error(response.error?.message || 'Error al moderar comentario');
       }
     } catch (err) {
-      console.error('Error moderating comentario:', err);
       setError(err.message);
       toast.error(err.message || 'Error al moderar comentario');
       return false;
@@ -128,7 +125,6 @@ export const useComentarios = () => {
         throw new Error(response.error?.message || 'Error al obtener estadísticas');
       }
     } catch (err) {
-      console.error('Error getting comentarios statistics:', err);
       toast.error(err.message || 'Error al obtener estadísticas');
       return null;
     }
@@ -171,7 +167,6 @@ export const useComentario = (comentarioId) => {
         throw new Error(response.error?.message || 'Error al cargar comentario');
       }
     } catch (err) {
-      console.error('Error loading comentario:', err);
       setError(err.message);
       toast.error(err.message || 'Error al cargar comentario');
     } finally {

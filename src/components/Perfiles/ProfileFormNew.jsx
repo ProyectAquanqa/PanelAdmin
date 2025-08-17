@@ -1,6 +1,14 @@
 /**
- * SOLUCIÓN SIMPLE Y DIRECTA - SIN COMPLEJIDAD INNECESARIA
- * Enfoque: Los datos del backend son la verdad absoluta
+ * FORMULARIO DE GESTIÓN DE PERFILES CON VALIDACIONES DE SEGURIDAD
+ * 
+ * NIVELES DE ACCESO:
+ * - SUPERUSER: Acceso completo sin restricciones
+ * - ADMIN: Usuarios en grupos administrativos (SUPER_ADMIN_WEB, ADMIN_WEB, etc.)
+ * - LIMITED: Usuarios con permisos limitados (solo pueden asignar permisos que poseen)
+ * - INSUFFICIENT: Usuarios con muy pocos permisos (no pueden crear perfiles útiles)
+ * - UNAUTHORIZED: Usuarios sin permisos para gestionar perfiles
+ * 
+ * SEGURIDAD: Solo permite asignar permisos que el usuario actual posee.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -30,12 +38,98 @@ const ProfileFormNew = ({
   const [loadingPermissions, setLoadingPermissions] = useState(true);
   const [expandedApps, setExpandedApps] = useState({});
 
+  // Verificar permisos del usuario al cargar el componente
+  const [userPermissionCheck, setUserPermissionCheck] = useState({
+    canAccess: false,
+    reason: '',
+    userType: '',
+    loading: true
+  });
 
-
-  // Cargar permisos disponibles
+  // Verificar permisos de acceso
   useEffect(() => {
+    const checkUserPermissions = () => {
+      const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+      const userGroups = JSON.parse(localStorage.getItem('user_groups') || '[]');
+      const userPermissions = JSON.parse(localStorage.getItem('user_permissions') || '[]');
+      
+      const isSuperuser = userData.is_superuser || userData.isSuperuser;
+      const adminGroups = ['SUPER_ADMIN_WEB', 'ADMIN_WEB', 'Administrador', 'Admin'];
+      const hasAdminGroup = userGroups.some(group => {
+        const groupName = typeof group === 'object' ? group.name : group;
+        return adminGroups.includes(groupName) || groupName.includes('ADMIN') || groupName.includes('SUPER');
+      });
+
+      let permissionCheck = {
+        canAccess: false,
+        reason: '',
+        userType: '',
+        loading: false
+      };
+
+      if (isSuperuser) {
+        permissionCheck = {
+          canAccess: true,
+          reason: 'Superusuario con acceso completo al sistema',
+          userType: 'superuser',
+          loading: false
+        };
+      } else if (hasAdminGroup) {
+        permissionCheck = {
+          canAccess: true,
+          reason: 'Usuario administrativo autorizado para gestionar perfiles',
+          userType: 'admin',
+          loading: false
+        };
+      } else if (canManageProfiles) {
+        // Verificar si tiene suficientes permisos para ser útil
+        const hasGroupPermissions = userPermissions.some(perm => 
+          typeof perm === 'string' && (perm.includes('group') || perm.includes('auth.'))
+        );
+        
+        if (hasGroupPermissions && userPermissions.length >= 3) {
+          permissionCheck = {
+            canAccess: true,
+            reason: 'Usuario con permisos limitados - solo puede asignar permisos que posee',
+            userType: 'limited',
+            loading: false
+          };
+        } else {
+          permissionCheck = {
+            canAccess: false,
+            reason: 'Permisos insuficientes para gestionar perfiles. Necesita más permisos para crear perfiles útiles.',
+            userType: 'insufficient',
+            loading: false
+          };
+        }
+      } else {
+        permissionCheck = {
+          canAccess: false,
+          reason: 'No tiene autorización para gestionar perfiles y permisos',
+          userType: 'unauthorized',
+          loading: false
+        };
+      }
+
+      setUserPermissionCheck(permissionCheck);
+
+      // Si no puede acceder, mostrar toast explicativo
+      if (!permissionCheck.canAccess) {
+        toast.error(permissionCheck.reason, { duration: 5000 });
+      }
+    };
+
+    checkUserPermissions();
+  }, [canManageProfiles]);
+
+
+
+  // Cargar permisos disponibles solo si tiene acceso
+  useEffect(() => {
+    if (userPermissionCheck.canAccess && !userPermissionCheck.loading) {
     loadAvailablePermissions();
-  }, []);
+    }
+  }, [userPermissionCheck.canAccess, userPermissionCheck.loading]);
 
   // Inicializar formulario al editar
   useEffect(() => {
@@ -58,16 +152,116 @@ const ProfileFormNew = ({
     }
   }, [editingProfile, mode]);
 
+  // Función para filtrar permisos basándose en los permisos del usuario actual
+  const filterPermissionsByUserPermissions = (moduleStructure) => {
+    // Si el usuario puede gestionar perfiles completamente, devolver todos los permisos
+    if (canManageProfiles) {
+      // Verificar si es superusuario o tiene permisos completos
+      const userPermissions = JSON.parse(localStorage.getItem('user_permissions') || '[]');
+      const userGroups = JSON.parse(localStorage.getItem('user_groups') || '[]');
+      const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+      
+      // Superusuarios pueden asignar cualquier permiso
+      if (userData.is_superuser || userData.isSuperuser) {
+        return moduleStructure;
+      }
+      
+      // Usuarios con grupos administrativos específicos
+      const adminGroups = ['SUPER_ADMIN_WEB', 'ADMIN_WEB', 'Administrador', 'Admin'];
+      const hasAdminGroup = userGroups.some(group => {
+        const groupName = typeof group === 'object' ? group.name : group;
+        return adminGroups.includes(groupName) || groupName.includes('ADMIN') || groupName.includes('SUPER');
+      });
+      
+      if (hasAdminGroup) {
+        return moduleStructure;
+      }
+      
+      // Filtrar permisos basándose en los permisos del usuario
+      const filteredStructure = {};
+      
+      Object.entries(moduleStructure).forEach(([moduleKey, moduleData]) => {
+        const filteredSubmodules = [];
+        
+        moduleData.submodules?.forEach(submodule => {
+          const filteredPermissions = submodule.permissions.filter(permission => {
+            // Verificar si el usuario tiene este permiso
+            const hasPermission = userPermissions.some(userPerm => {
+              // Buscar por ID
+              if (userPerm === permission.id || String(userPerm) === String(permission.id)) {
+                return true;
+              }
+              
+              // Buscar por codename completo
+              if (permission.app_label && permission.codename) {
+                const fullCodename = `${permission.app_label}.${permission.codename}`;
+                if (userPerm === fullCodename || String(userPerm) === fullCodename) {
+                  return true;
+                }
+              }
+              
+              // Buscar por coincidencia parcial en objetos
+              if (typeof userPerm === 'object' && userPerm.id && userPerm.id === permission.id) {
+                return true;
+              }
+              
+              return false;
+            });
+            
+            return hasPermission;
+          });
+          
+          // Solo incluir submódulos que tienen al menos un permiso filtrado
+          if (filteredPermissions.length > 0) {
+            filteredSubmodules.push({
+              ...submodule,
+              permissions: filteredPermissions
+            });
+          }
+        });
+        
+        // Solo incluir módulos que tienen submódulos con permisos
+        if (filteredSubmodules.length > 0) {
+          filteredStructure[moduleKey] = {
+            ...moduleData,
+            submodules: filteredSubmodules
+          };
+        }
+      });
+      
+      return filteredStructure;
+    }
+    
+    // Si no puede gestionar perfiles, devolver estructura vacía
+    return {};
+  };
+
   const loadAvailablePermissions = async () => {
     try {
       setLoadingPermissions(true);
       dynamicPermissionsService.clearCache();
       const moduleStructure = await dynamicPermissionsService.getCompleteModuleStructureForProfiles();
-      setAvailablePermissions(moduleStructure);
+      
+      // Filtrar permisos basándose en los permisos del usuario actual
+      const filteredModuleStructure = filterPermissionsByUserPermissions(moduleStructure);
+      
+      // Verificar si se filtraron permisos
+      const originalModuleCount = Object.keys(moduleStructure).length;
+      const filteredModuleCount = Object.keys(filteredModuleStructure).length;
+      const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+      const isSuperuser = userData.is_superuser || userData.isSuperuser;
+      
+      if (!isSuperuser && originalModuleCount > filteredModuleCount) {
+        toast.info('Se muestran solo los permisos que puedes asignar según tu nivel de acceso', {
+          duration: 4000
+        });
+      }
+      
+      setAvailablePermissions(filteredModuleStructure);
       
       // Expandir todos los módulos
       const allExpanded = {};
-      Object.keys(moduleStructure).forEach(moduleKey => {
+      Object.keys(filteredModuleStructure).forEach(moduleKey => {
         allExpanded[moduleKey] = true;
       });
       setExpandedApps(allExpanded);
@@ -254,6 +448,13 @@ const ProfileFormNew = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validación de acceso final
+    if (!userPermissionCheck.canAccess) {
+      toast.error('No tienes permisos para crear perfiles');
+      return;
+    }
+    
     if (!validateForm()) {
       toast.error('Por favor corrige los errores del formulario');
       return;
@@ -345,10 +546,24 @@ const ProfileFormNew = ({
 
   const renderModuleStructure = () => {
     if (Object.keys(availablePermissions).length === 0) {
+      const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+      const isSuperuser = userData.is_superuser || userData.isSuperuser;
+      
       return (
         <div className="flex items-center justify-center h-full text-gray-500">
           <div className="text-center p-4">
+            {isSuperuser ? (
             <p className="text-[13px]">No hay módulos disponibles</p>
+            ) : (
+              <div>
+                <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p className="text-[13px] font-medium text-gray-600 mb-2">Permisos limitados</p>
+                <p className="text-[11px] text-gray-400">Solo puedes asignar permisos que tú mismo posees.</p>
+                <p className="text-[11px] text-gray-400">Contacta a un administrador para permisos adicionales.</p>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -576,6 +791,133 @@ const ProfileFormNew = ({
     );
   };
 
+  // Componente de acceso denegado
+  const renderAccessDenied = () => {
+    const getIconForUserType = () => {
+      switch (userPermissionCheck.userType) {
+        case 'unauthorized':
+          return (
+            <svg className="mx-auto h-16 w-16 text-red-400 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+            </svg>
+          );
+        case 'insufficient':
+          return (
+            <svg className="mx-auto h-16 w-16 text-amber-400 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          );
+        default:
+          return (
+            <svg className="mx-auto h-16 w-16 text-gray-400 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          );
+      }
+    };
+
+    const getMessageDetails = () => {
+      switch (userPermissionCheck.userType) {
+        case 'unauthorized':
+          return {
+            title: 'Acceso Denegado',
+            subtitle: 'No tienes autorización para gestionar perfiles',
+            description: 'Tu cuenta no tiene los permisos necesarios para crear o editar perfiles de usuario.',
+            suggestions: [
+              'Contacta a un administrador del sistema',
+              'Solicita permisos de gestión de usuarios',
+              'Verifica que perteneces a un grupo administrativo'
+            ]
+          };
+        case 'insufficient':
+          return {
+            title: 'Permisos Insuficientes',
+            subtitle: 'No tienes suficientes permisos para crear perfiles útiles',
+            description: 'Aunque tienes algunos permisos, no son suficientes para crear perfiles que sean útiles para otros usuarios.',
+            suggestions: [
+              'Solicita más permisos al administrador',
+              'Pide que te agreguen al grupo de gestores de contenido',
+              'Verifica tus permisos actuales con el administrador'
+            ]
+          };
+        default:
+          return {
+            title: 'Sin Acceso',
+            subtitle: 'No puedes acceder a esta funcionalidad',
+            description: 'No tienes los permisos necesarios para gestionar perfiles.',
+            suggestions: ['Contacta al administrador del sistema']
+          };
+      }
+    };
+
+    const messageDetails = getMessageDetails();
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+          {getIconForUserType()}
+          
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-gray-900 mb-2">
+              {messageDetails.title}
+            </h1>
+            <h2 className="text-md font-medium text-gray-600 mb-4">
+              {messageDetails.subtitle}
+            </h2>
+            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+              {messageDetails.description}
+            </p>
+            
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">¿Qué puedes hacer?</h3>
+              <ul className="text-sm text-gray-600 space-y-2">
+                {messageDetails.suggestions.map((suggestion, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="text-blue-500 mr-2">•</span>
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <button 
+                onClick={onCancel}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span>Volver</span>
+              </button>
+              
+              <div className="text-xs text-gray-400 mt-4">
+                Razón: {userPermissionCheck.reason}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Mostrar loading mientras verifica permisos
+  if (userPermissionCheck.loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D728F] mx-auto mb-4"></div>
+          <p className="text-sm text-gray-500">Verificando permisos de acceso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar acceso denegado si no tiene permisos
+  if (!userPermissionCheck.canAccess) {
+    return renderAccessDenied();
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
@@ -596,9 +938,16 @@ const ProfileFormNew = ({
               <button 
                 type="submit"
                 form="profile-form"
-                disabled={loading || !formData.name.trim()}
+                 disabled={loading || !formData.name.trim() || !userPermissionCheck.canAccess}
                 className="flex items-center space-x-2 px-4 py-2 text-[13px] text-white bg-[#2D728F] hover:bg-[#2D728F]/90 disabled:bg-gray-400 disabled:cursor-not-allowed border border-transparent rounded-lg transition-colors"
                 onClick={handleSubmit}
+                 title={
+                   !userPermissionCheck.canAccess 
+                     ? 'No tienes permisos para crear perfiles'
+                     : !formData.name.trim() 
+                       ? 'Ingresa un nombre para el perfil' 
+                       : 'Crear perfil'
+                 }
               >
                 {loading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -641,6 +990,45 @@ const ProfileFormNew = ({
                 <p className="text-[13px] text-gray-500 mt-1">
                   Selecciona los módulos y permisos específicos para este perfil
                 </p>
+                 {userPermissionCheck.userType === 'limited' && (
+                   <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                     <div className="flex items-center">
+                       <svg className="h-4 w-4 text-amber-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+                       </svg>
+                       <div>
+                         <p className="text-[12px] font-semibold text-amber-800">Permisos Limitados</p>
+                         <p className="text-[11px] text-amber-700">Solo puedes asignar permisos que tú mismo posees</p>
+                       </div>
+                     </div>
+                   </div>
+                 )}
+                 {userPermissionCheck.userType === 'admin' && (
+                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                     <div className="flex items-center">
+                       <svg className="h-4 w-4 text-blue-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                       </svg>
+                       <div>
+                         <p className="text-[12px] font-semibold text-blue-800">Usuario Administrativo</p>
+                         <p className="text-[11px] text-blue-700">Tienes acceso completo a la gestión de perfiles</p>
+                       </div>
+                     </div>
+                   </div>
+                 )}
+                 {userPermissionCheck.userType === 'superuser' && (
+                   <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                     <div className="flex items-center">
+                       <svg className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                       </svg>
+                       <div>
+                         <p className="text-[12px] font-semibold text-green-800">Superusuario</p>
+                         <p className="text-[11px] text-green-700">Acceso completo sin restricciones</p>
+                       </div>
+                     </div>
+                   </div>
+                 )}
               </div>
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-1 px-3 py-1.5 bg-white rounded-full border border-gray-200">

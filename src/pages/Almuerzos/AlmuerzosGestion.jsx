@@ -106,7 +106,7 @@ const AlmuerzosGestion = () => {
       await eliminarAlmuerzo(almuerzoId);
       setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
     } catch (error) {
-      console.error('Error al eliminar almuerzo:', error);
+      // Error al eliminar almuerzo
     }
   };
 
@@ -136,8 +136,6 @@ const AlmuerzosGestion = () => {
         handleCloseModal();
         return true;
       } catch (error) {
-        console.error('Error al guardar almuerzo:', error);
-        
         if (error.status === 422 && error.data?.error?.details) {
           // Errores de validación
           setModalErrors(error.data.error.details);

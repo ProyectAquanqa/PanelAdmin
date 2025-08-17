@@ -15,7 +15,7 @@ const UserModalOrganizacion = ({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h4 className="text-lg font-medium text-slate-800 mb-2">🏢 Organización</h4>
+        <h4 className="text-lg font-medium text-slate-800 mb-2">Organización</h4>
         <p className="text-sm text-slate-600">Asigna el cargo y la información organizacional</p>
       </div>
 

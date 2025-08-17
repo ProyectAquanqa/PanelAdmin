@@ -3,7 +3,7 @@
  * Siguiendo el mismo patrón que chatbotService.js
  */
 
-const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://192.168.18.13:8000/api';
 const API_BASE = RAW_BASE.replace(/\/(web|admin|mobile)\/?$/, '');
 
 // Configuración base para fetch
@@ -43,13 +43,12 @@ const apiCall = async (url, options = {}) => {
       return { success: true };
     }
   } catch (error) {
-    console.error('API Error:', error);
     throw error;
   }
 };
 
 const devicesService = {
-  // 📱 Gestión de dispositivos registrados (DeviceToken)
+  // Gestión de dispositivos registrados (DeviceToken)
   devices: {
     list: async (page = 1, limit = 10, search = '', deviceType = '', status = '') => {
       const params = new URLSearchParams({
@@ -229,7 +228,7 @@ const devicesService = {
     },
   },
 
-  // 📂 Gestión de tipos de dispositivos
+  // Gestión de tipos de dispositivos
   deviceTypes: {
     list: async () => {
       const res = await apiCall('/web/device-types/');
@@ -263,7 +262,7 @@ const devicesService = {
     },
   },
 
-  // 📊 Obtener estadísticas generales
+  // Obtener estadísticas generales
   getGeneralStats: async (queryParams = '') => {
     const url = `/web/devices/general-statistics/${queryParams}`;
     return await apiCall(url);

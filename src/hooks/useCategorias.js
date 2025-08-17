@@ -34,7 +34,6 @@ export const useCategorias = () => {
         throw new Error(response.error?.message || 'Error al cargar categorías');
       }
     } catch (err) {
-      console.error('Error loading categorías:', err);
       setError(err.message);
       toast.error(err.message || 'Error al cargar categorías');
       setCategorias([]);
@@ -64,7 +63,6 @@ export const useCategorias = () => {
         throw new Error(response.error?.message || 'Error al crear categoría');
       }
     } catch (err) {
-      console.error('Error creating categoría:', err);
       setError(err.message);
       
       if (err.status === 422 && err.data?.error?.details) {
@@ -105,7 +103,6 @@ export const useCategorias = () => {
         throw new Error(response.error?.message || 'Error al actualizar categoría');
       }
     } catch (err) {
-      console.error('Error updating categoría:', err);
       setError(err.message);
       
       if (err.status === 422 && err.data?.error?.details) {
@@ -135,7 +132,6 @@ export const useCategorias = () => {
       toast.success('Categoría eliminada exitosamente');
       return true;
     } catch (err) {
-      console.error('Error deleting categoría:', err);
       setError(err.message);
       toast.error(err.message || 'Error al eliminar categoría');
       return false;

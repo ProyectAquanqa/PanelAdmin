@@ -6,7 +6,8 @@ import {
   ChatBubbleLeftRightIcon,
   ChartBarIcon,
   ArrowPathIcon,
-  PlusIcon
+  PlusIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../hooks/useDashboard';
@@ -227,7 +228,8 @@ const Dashboard = () => {
               onClick={() => navigate('/eventos')}
               className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium whitespace-nowrap px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
-              Ver todos →
+              Ver todos
+              <ArrowRightIcon className="w-4 h-4 ml-1 inline" />
             </button>
           </div>
         </div>

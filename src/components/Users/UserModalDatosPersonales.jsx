@@ -36,7 +36,7 @@ const UserModalDatosPersonales = ({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h4 className="text-lg font-medium text-slate-800 mb-2">👤 Información Personal</h4>
+        <h4 className="text-lg font-medium text-slate-800 mb-2">Información Personal</h4>
         <p className="text-sm text-slate-600">Completa los datos básicos del usuario</p>
       </div>
 

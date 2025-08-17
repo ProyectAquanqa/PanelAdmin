@@ -74,7 +74,6 @@ export const useDashboard = () => {
       
       setDashboardData(prev => ({ ...prev, users: userStats }));
     } catch (error) {
-      console.error('Error fetching user stats:', error);
       throw error;
     } finally {
       setLoading(prev => ({ ...prev, users: false }));
@@ -130,7 +129,6 @@ export const useDashboard = () => {
       
       setDashboardData(prev => ({ ...prev, events: eventStats }));
     } catch (error) {
-      console.error('Error fetching event stats:', error);
       throw error;
     } finally {
       setLoading(prev => ({ ...prev, events: false }));
@@ -147,8 +145,6 @@ export const useDashboard = () => {
       
       let notificationData = { total: 0, sent: 0 };
       
-      console.log('📊 Stats Response:', statsResponse);
-      
       if (statsResponse && statsResponse.status === 'success' && statsResponse.data) {
         const data = statsResponse.data;
         // El backend devuelve total/sent; además dejamos fallback a campos legacy
@@ -156,18 +152,13 @@ export const useDashboard = () => {
           total: Number(data.total ?? data.total_notifications ?? 0),
           sent: Number(data.sent ?? data.sent_notifications ?? 0)
         };
-        
-        console.log('✅ Notification data mapped:', notificationData);
       } else if (statsResponse && statsResponse.data) {
         const data = statsResponse.data;
         notificationData = {
           total: Number(data.total ?? data.total_notifications ?? 0),
           sent: Number(data.sent ?? data.sent_notifications ?? 0)
         };
-        
-        console.log('✅ Direct notification data:', notificationData);
       } else {
-        console.log('⚠️ No stats endpoint, fallback to list');
         // Si no hay endpoint de estadísticas, usar lista general
         const notificationsResponse = await notificationsService.getNotifications({ page_size: 1 });
         if (notificationsResponse.status === 'success') {
@@ -178,8 +169,6 @@ export const useDashboard = () => {
       
       setDashboardData(prev => ({ ...prev, notifications: notificationData }));
     } catch (error) {
-      console.error('❌ Error fetching notification stats:', error);
-      
       // En caso de error, intentar obtener al menos el count básico
       try {
         const fallbackResponse = await notificationsService.getNotifications({ page_size: 1 });
@@ -189,10 +178,8 @@ export const useDashboard = () => {
             sent: fallbackResponse.data.count || 0
           };
           setDashboardData(prev => ({ ...prev, notifications: fallbackData }));
-          console.log('🔄 Using fallback notification data:', fallbackData);
         }
       } catch (fallbackError) {
-        console.error('❌ Fallback also failed:', fallbackError);
         throw error; // Re-throw original error para manejo en refreshData
       }
     } finally {
@@ -225,7 +212,6 @@ export const useDashboard = () => {
         
         // Validar que tenemos los campos esperados del backend
         if (!chatbotData.hasOwnProperty('total_conversations')) {
-          console.warn('Formato de respuesta del backend puede ser incorrecto:', chatbotData);
           // En lugar de throw, usar datos vacíos para evitar romper la UI
           chatbotData = {
             total_conversations: 0,
@@ -235,7 +221,6 @@ export const useDashboard = () => {
           };
         }
       } else {
-        console.warn('Sin respuesta del backend de estadísticas');
         // Datos vacíos por defecto
         chatbotData = {
           total_conversations: 0,
@@ -247,7 +232,6 @@ export const useDashboard = () => {
       
       setDashboardData(prev => ({ ...prev, chatbot: chatbotData }));
     } catch (error) {
-      console.error('Error fetching chatbot stats:', error);
       // En caso de error, no throw para que no rompa el polling
       setDashboardData(prev => ({ 
         ...prev, 
@@ -285,19 +269,17 @@ export const useDashboard = () => {
         .map(({ service }) => service);
       
       if (failedServices.length > 0) {
-        console.warn('Algunos servicios fallaron:', failedServices);
         if (failedServices.length === results.length) {
           setError('Error al cargar datos del dashboard');
           toast.error('Error al cargar datos del dashboard');
         } else {
           toast('Algunos datos pueden estar desactualizados', {
-            icon: '⚠️',
+            icon: '!',
             duration: 3000
           });
         }
       }
     } catch (error) {
-      console.error('Error al cargar datos del dashboard:', error);
       setError('Error al cargar datos del dashboard');
       toast.error('Error al cargar algunos datos del dashboard');
     }
@@ -396,7 +378,7 @@ export const useDashboard = () => {
     // Configurar polling para actualización automática del chatbot
     const pollInterval = setInterval(() => {
       // Solo actualizar estadísticas del chatbot para mantener datos frescos
-      fetchChatbotStats().catch(console.error);
+      fetchChatbotStats().catch(() => {});
     }, 30000); // 30 segundos
     
     // Cleanup

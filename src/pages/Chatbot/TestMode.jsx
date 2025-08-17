@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useChatbot } from '../../hooks/useChatbot';
 import TestChat from '../../components/Chatbot/TestChat';
+import { BeakerIcon, ArrowLeftIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 
 /**
  * Página dedicada al modo de prueba del chatbot
@@ -17,7 +18,8 @@ const TestMode = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              🧪 Modo de Prueba del Chatbot
+              <BeakerIcon className="w-6 h-6 inline mr-2" />
+              Modo de Prueba del Chatbot
             </h1>
             <p className="text-gray-600">
               Prueba y entrena el chatbot enviando preguntas y evaluando las respuestas
@@ -28,7 +30,8 @@ const TestMode = () => {
             to="/chatbot/dashboard"
             className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors inline-flex items-center"
           >
-            ← Volver al Dashboard
+            <ArrowLeftIcon className="w-5 h-5 mr-2" />
+            Volver al Dashboard
           </Link>
         </div>
       </div>
@@ -36,11 +39,11 @@ const TestMode = () => {
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
         <h2 className="text-lg font-semibold text-blue-900 mb-3">
-          📋 Instrucciones de Uso
+          Instrucciones de Uso
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
           <div>
-            <h3 className="font-semibold mb-2">🎯 Propósito:</h3>
+            <h3 className="font-semibold mb-2">Propósito:</h3>
             <ul className="space-y-1 list-disc list-inside">
               <li>Probar respuestas del chatbot en tiempo real</li>
               <li>Evaluar la precisión de las respuestas</li>
@@ -48,7 +51,7 @@ const TestMode = () => {
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">⚡ Acciones:</h3>
+            <h3 className="font-semibold mb-2">Acciones:</h3>
             <ul className="space-y-1 list-disc list-inside">
               <li>Escribe preguntas en el chat</li>
               <li>Revisa el score de confianza</li>
@@ -74,7 +77,7 @@ const TestMode = () => {
           {/* Métricas de Prueba */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📊 Métricas de Prueba
+              Métricas de Prueba
             </h3>
             
             <div className="space-y-4">
@@ -105,7 +108,7 @@ const TestMode = () => {
           {/* Consejos para Pruebas */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              💡 Consejos para Pruebas
+              Consejos para Pruebas
             </h3>
             
             <div className="space-y-3 text-sm text-gray-600">
@@ -134,7 +137,7 @@ const TestMode = () => {
           {/* Acciones Rápidas */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              🚀 Acciones Rápidas
+              Acciones Rápidas
             </h3>
             
             <div className="space-y-3">
@@ -142,21 +145,22 @@ const TestMode = () => {
                 to="/chatbot/knowledge"
                 className="block w-full bg-green-50 text-green-700 p-3 rounded-lg hover:bg-green-100 transition-colors text-center text-sm"
               >
-                📚 Gestionar Conocimientos
+                <AcademicCapIcon className="w-5 h-5 inline mr-2" />
+                Gestionar Conocimientos
               </Link>
               
               <Link
                 to="/chatbot/conversations"
                 className="block w-full bg-blue-50 text-blue-700 p-3 rounded-lg hover:bg-blue-100 transition-colors text-center text-sm"
               >
-                💬 Ver Conversaciones
+                Ver Conversaciones
               </Link>
               
               <button
                 onClick={() => window.location.reload()}
                 className="block w-full bg-gray-50 text-gray-700 p-3 rounded-lg hover:bg-gray-100 transition-colors text-center text-sm"
               >
-                🔄 Reiniciar Sesión
+                Reiniciar Sesión
               </button>
             </div>
           </div>
@@ -164,7 +168,7 @@ const TestMode = () => {
           {/* Ejemplos de Preguntas */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📝 Preguntas de Ejemplo
+              Preguntas de Ejemplo
             </h3>
             
             <div className="space-y-2 text-sm">
@@ -183,7 +187,7 @@ const TestMode = () => {
             </div>
             
             <p className="text-xs text-gray-500 mt-3">
-              💡 Haz clic en cualquier ejemplo para copiarlo
+              Haz clic en cualquier ejemplo para copiarlo
             </p>
           </div>
         </div>

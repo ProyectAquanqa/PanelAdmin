@@ -32,7 +32,7 @@ export const useUsers = () => {
     totalPages: 0
   });
 
-  // 🔄 Funciones para obtener datos
+  // Funciones para obtener datos
   
   // Función para obtener grupos
   const fetchGroups = useCallback(async () => {
@@ -50,13 +50,11 @@ export const useUsers = () => {
         // Formato DRF paginado: {results: [...], count: ...}
         grupos = result.results;
       } else {
-        console.warn('⚠️ Formato inesperado de grupos:', result);
         grupos = [];
       }
       
       setGroups(grupos);
     } catch (error) {
-      console.error('❌ Error al obtener grupos:', error);
       toast.error('Error al cargar grupos');
       setGroups([]); // Asegurar que groups sea siempre un array
     }
@@ -94,7 +92,7 @@ export const useUsers = () => {
         }));
       }
     } catch (error) {
-      console.error('❌ Error en fetchUsers:', error);
+      // Error en fetchUsers
       toast.error(`Error al cargar usuarios: ${error.message}`);
       setUsers([]);
     } finally {
@@ -120,7 +118,6 @@ export const useUsers = () => {
       
       setUserStats(stats);
     } catch (error) {
-      console.error('❌ Error en fetchUserStats:', error);
       toast.error(`Error al cargar estadísticas: ${error.message}`);
     } finally {
       setLoading(prev => ({ ...prev, userStats: false }));
@@ -129,7 +126,7 @@ export const useUsers = () => {
 
 
 
-  // 👤 Funciones CRUD de usuarios
+  // Funciones CRUD de usuarios
   const createUser = useCallback(async (userData) => {
     setLoading(prev => ({ ...prev, create: true }));
     try {
@@ -147,7 +144,6 @@ export const useUsers = () => {
         return true;
       }
     } catch (error) {
-      console.error('❌ Error en createUser:', error);
       toast.error(`Error al crear usuario: ${error.message}`);
       return false;
     } finally {
@@ -176,7 +172,6 @@ export const useUsers = () => {
         return true;
       }
     } catch (error) {
-      console.error('❌ Error en updateUser:', error);
       toast.error(`Error al actualizar usuario: ${error.message}`);
       return false;
     } finally {
@@ -205,7 +200,6 @@ export const useUsers = () => {
         return true;
       }
     } catch (error) {
-      console.error('❌ Error en patchUser:', error);
       toast.error(`Error al actualizar usuario: ${error.message}`);
       return false;
     } finally {
@@ -229,7 +223,6 @@ export const useUsers = () => {
         return true;
       }
     } catch (error) {
-      console.error('❌ Error en deleteUser:', error);
       toast.error(`Error al eliminar usuario: ${error.message}`);
       return false;
     } finally {
@@ -258,7 +251,6 @@ export const useUsers = () => {
         return true;
       }
     } catch (error) {
-      console.error('❌ Error en toggleUserActiveStatus:', error);
       toast.error(`Error al cambiar estado: ${error.message}`);
       return false;
     } finally {
@@ -266,7 +258,7 @@ export const useUsers = () => {
     }
   }, []);
 
-  // 🔐 Funciones de autenticación y perfil
+  // Funciones de autenticación y perfil
   const registerUser = useCallback(async (registrationData) => {
     setLoading(prev => ({ ...prev, create: true }));
     try {
@@ -276,7 +268,6 @@ export const useUsers = () => {
       await fetchUsers(pagination.current);
       return true;
     } catch (error) {
-      console.error('❌ Error en registerUser:', error);
       toast.error(`Error al registrar usuario: ${error.message}`);
       return false;
     } finally {
@@ -284,7 +275,7 @@ export const useUsers = () => {
     }
   }, []);
 
-  // 📊 Funciones de utilidades
+  // Funciones de utilidades
   const exportUsers = useCallback(async (filters = {}) => {
     setLoading(prev => ({ ...prev, export: true }));
     try {
@@ -303,7 +294,6 @@ export const useUsers = () => {
       toast.success('Usuarios exportados exitosamente');
       return true;
     } catch (error) {
-      console.error('❌ Error en exportUsers:', error);
       toast.error(`Error al exportar usuarios: ${error.message}`);
       return false;
     } finally {
@@ -323,7 +313,7 @@ export const useUsers = () => {
       ));
       return true;
     } catch (error) {
-      console.error('❌ Error en uploadUserImage:', error);
+      // Error en uploadUserImage
       toast.error(`Error al subir imagen: ${error.message}`);
       return false;
     } finally {
@@ -335,12 +325,11 @@ export const useUsers = () => {
     try {
       return await userService.utils.validateUsername(username);
     } catch (error) {
-      console.error('❌ Error en validateUsername:', error);
       return false;
     }
   }, []);
 
-  // 📦 Importación masiva de usuarios
+  /** Importación masiva de usuarios */
   const bulkImportUsers = useCallback(async (usersData) => {
     setLoading(prev => ({ ...prev, import: true }));
     try {
@@ -353,7 +342,7 @@ export const useUsers = () => {
         await fetchUsers(1);
         
         // Mostrar notificación de éxito
-        const successMessage = `✅ Importación completada: ${result.imported || 0} usuarios importados`;
+        const successMessage = `Importación completada: ${result.imported || 0} usuarios importados`;
         if (result.skipped > 0) {
           toast.success(`${successMessage}. ${result.skipped} omitidos.`);
         } else {
@@ -371,10 +360,8 @@ export const useUsers = () => {
       }
       
     } catch (error) {
-      console.error('❌ Error en bulkImportUsers:', error);
-      
       const errorMessage = error.response?.data?.message || error.message || 'Error al importar usuarios';
-      toast.error(`❌ ${errorMessage}`);
+      toast.error(` ${errorMessage}`);
       
       return {
         success: false,
@@ -386,7 +373,7 @@ export const useUsers = () => {
     }
   }, [fetchUsers]);
 
-  // 🎯 Funciones de utilidad
+  // Funciones de utilidad
   const getUserById = useCallback((id) => {
     return users.find(user => user.id === id);
   }, [users]);
@@ -416,7 +403,7 @@ export const useUsers = () => {
             fetchGroups()
           ]);
         } catch (error) {
-          console.error('❌ Error cargando datos iniciales de usuarios:', error);
+          // Error cargando datos iniciales de usuarios
         }
       }
     };

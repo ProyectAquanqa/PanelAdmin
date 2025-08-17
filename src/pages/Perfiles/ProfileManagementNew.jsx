@@ -154,9 +154,8 @@ const ProfileManagementNew = () => {
         await deleteProfile(profile.id);
         // Refrescar la lista después de eliminar
         await fetchProfiles();
-        console.log('✅ Perfil eliminado y lista actualizada');
       } catch (error) {
-        console.error('Error eliminando perfil:', error);
+        // Error eliminando perfil
       }
     }
   }, [deleteProfile, fetchProfiles]);
@@ -174,12 +173,10 @@ const ProfileManagementNew = () => {
     try {
       if (currentView === 'create') {
         await createProfile(data);
-        console.log('✅ Perfil creado correctamente');
         // Refrescar la lista de perfiles para mostrar el nuevo perfil con conteo correcto
         await fetchProfiles();
       } else if (currentView === 'edit') {
         await updateProfile(editingProfile.id, data);
-        console.log('✅ Perfil actualizado correctamente');
         // Refrescar la lista de perfiles para mostrar los cambios
         await fetchProfiles();
       }
@@ -187,7 +184,6 @@ const ProfileManagementNew = () => {
       setCurrentView('list');
       setEditingProfile(null);
     } catch (error) {
-      console.error('❌ Error guardando perfil:', error);
       // No cambiar de vista si hay error, mantener formulario abierto
     }
   }, [currentView, editingProfile, createProfile, updateProfile, fetchProfiles]);

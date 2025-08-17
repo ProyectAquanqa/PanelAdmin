@@ -1,26 +1,33 @@
+/**
+ * Configuración de rutas de la aplicación PanelAdmin
+ * 
+ * Define las rutas protegidas y públicas, implementa carga perezosa
+ * para optimizar el rendimiento y maneja la autenticación/autorización
+ */
+
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getUserPermissions } from '../services/permissionService';
 import AdminLayout from '../components/Layout/AdminLayout';
 
-// Carga perezosa de componentes para mejorar el rendimiento
+/** Carga perezosa de páginas principales */
 const Dashboard = lazy(() => import('../pages/Dashboard/Dashboard'));
 const Login = lazy(() => import('../pages/Auth/Login'));
 
-// 🤖 Páginas del módulo Chatbot
+/** Módulo Chatbot */
 const ChatbotDashboard = lazy(() => import('../pages/Chatbot/ChatbotDashboard'));
 const Conversations = lazy(() => import('../pages/Chatbot/Conversations'));
 const KnowledgeBase = lazy(() => import('../pages/Chatbot/KnowledgeBase'));
 const Categories = lazy(() => import('../pages/Chatbot/Categories'));
 const TestMode = lazy(() => import('../pages/Chatbot/TestMode'));
 
-// 📅 Páginas del módulo de Eventos
+/** Módulo de Eventos */
 const EventosGestion = lazy(() => import('../pages/Eventos/EventosGestion'));
 const EventosCategorias = lazy(() => import('../pages/Eventos/EventosCategorias'));
 const ComentariosGestion = lazy(() => import('../pages/Eventos/ComentariosGestion'));
 
-// 👥 Páginas del módulo de Usuarios
+/** Módulo de Usuarios */
 const Users = lazy(() => import('../pages/Users/Users'));
 const UserManagement = lazy(() => import('../pages/Users/UserManagement'));
 const Areas = lazy(() => import('../pages/Users/Areas'));
@@ -28,28 +35,31 @@ const Cargos = lazy(() => import('../pages/Users/Cargos'));
 
 
 
-// 🔐 Páginas del módulo de Perfiles
-const ProfileManagement = lazy(() => import('../pages/Perfiles/ProfileManagement'));
+/** Módulo de Perfiles */
 const ProfileManagementNew = lazy(() => import('../pages/Perfiles/ProfileManagementNew'));
 
-// 📱 Páginas del módulo de Notificaciones
+/** Módulo de Notificaciones */
 const NotificationManagement = lazy(() => import('../pages/Notifications/NotificationManagement'));
 
-// 📱 Páginas del módulo de Dispositivos
+/** Módulo de Dispositivos */
 const DeviceManagement = lazy(() => import('../pages/Devices/DeviceManagement'));
 
-// 🍽️ Páginas del módulo de Almuerzoss 
+/** Módulo de Almuerzos */
 const AlmuerzosGestion = lazy(() => import('../pages/Almuerzos/AlmuerzosGestion'));
 
 
-// Componente de carga
+/**
+ * Componente de carga mostrado durante lazy loading
+ */
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-full">
     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
   </div>
 );
 
-// Página de error 404
+/**
+ * Página de error 404
+ */
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-100 dark:bg-neutral-900 px-4 text-center">
     <h1 className="text-9xl font-bold text-blue-500">404</h1>
@@ -66,7 +76,9 @@ const NotFound = () => (
   </div>
 );
 
-// Páginas temporales para las secciones principales
+/**
+ * Páginas temporales para secciones en desarrollo
+ */
 const TemporaryPage = ({ title }) => (
   <div className="p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-soft border border-neutral-200 dark:border-neutral-700">
     <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-4">{title}</h1>
@@ -76,16 +88,17 @@ const TemporaryPage = ({ title }) => (
   </div>
 );
 
-// ✅ Componente para verificar autenticación y acceso al panel admin
+/**
+ * Componente de autenticación
+ * Verifica si el usuario está autenticado antes de permitir acceso
+ */
 const RequireAuth = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth();
   
-  // Mostrar loading mientras se verifica la autenticación
   if (loading) {
     return <LoadingFallback />;
   }
   
-  // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -93,28 +106,28 @@ const RequireAuth = ({ children }) => {
   return children;
 };
 
-// ✅ Componente para verificar acceso al panel admin (usuarios administrativos)
+/**
+ * Componente de autorización administrativa
+ * Verifica si el usuario tiene permisos de administrador
+ */
 const RequireAdminAccess = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth();
   
-  // Mostrar loading mientras se verifica la autenticación
   if (loading) {
     return <LoadingFallback />;
   }
   
-  // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   
-  // Verificar si el usuario tiene acceso al panel admin
+  /**
+   * Verifica permisos de acceso administrativo
+   */
   const hasAdminAccess = () => {
     if (!user) return false;
     
-    // Superusuarios y staff tienen acceso
     if (user.is_superuser || user.is_staff) return true;
-    
-    // Verificar grupos administrativos
     const userGroups = user.groups || [];
     const adminGroups = [
       'Administrador de Contenido',
@@ -131,31 +144,32 @@ const RequireAdminAccess = ({ children }) => {
     
     if (hasAdminGroup) return true;
     
-    // **NUEVA LÓGICA**: Verificar si tiene permisos asignados
-    // Si no tiene ningún permiso, no puede acceder al panel admin
+    /** Verificar permisos asignados */
     const userPermissions = getUserPermissions() || [];
     
     if (userPermissions.length === 0) {
-      return false; // Sin permisos = sin acceso al panel admin
+      return false;
     }
     
-    // Permisos básicos que no otorgan acceso admin
+    /** Permisos básicos que no otorgan acceso admin */
     const basicPermissions = [
-      'almuerzos.view_almuerzo', // Solo ver almuerzos
-      'auth.view_user'  // Solo ver su propio perfil
+      'almuerzos.view_almuerzo',
+      'auth.view_user'
     ];
     
-    // Si solo tiene permisos básicos, no tiene acceso admin
+    /** Verificar si solo tiene permisos básicos */
     const hasOnlyBasicPerms = userPermissions.every(perm => basicPermissions.includes(perm));
     if (hasOnlyBasicPerms && userPermissions.length <= 2) {
       return false;
     }
     
-    // Si tiene otros permisos, puede acceder al panel admin
+    /** Usuario con permisos suficientes para acceso admin */
     return true;
   };
   
-  // Función para obtener el tipo de usuario basado en grupos
+  /**
+   * Determina el tipo de usuario basado en grupos y permisos
+   */
   const getTipoUsuario = () => {
     if (!user) return 'Sin definir';
     
@@ -171,7 +185,6 @@ const RequireAdminAccess = ({ children }) => {
     }
   };
   
-  // Si es solo trabajador (sin acceso administrativo), mostrar página de acceso denegado
   if (!hasAdminAccess()) {
     return <WorkerAccessDenied />;
   }
@@ -179,7 +192,9 @@ const RequireAdminAccess = ({ children }) => {
   return children;
 };
 
-// Página de acceso denegado para trabajadores
+/**
+ * Página de acceso denegado para trabajadores
+ */
 const WorkerAccessDenied = () => {
   const { logout } = useAuth();
   
@@ -187,8 +202,6 @@ const WorkerAccessDenied = () => {
     try {
       await logout();
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      // En caso de error, redirigir al login anyway
       window.location.href = '/login';
     }
   };
@@ -255,14 +268,14 @@ const WorkerAccessDenied = () => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Rutas públicas */}
+      {/*** Rutas públicas */}
       <Route path="/login" element={
         <Suspense fallback={<LoadingFallback />}>
           <Login />
         </Suspense>
       } />
       
-      {/* Rutas protegidas dentro del layout de administración */}
+      {/*** Rutas protegidas dentro del layout de administración */}
       <Route path="/" element={
         <RequireAuth>
           <RequireAdminAccess>
@@ -276,7 +289,7 @@ const AppRoutes = () => {
           </Suspense>
         } />
         
-        {/* 📅 Módulo Eventos */}
+        {/*** Módulo Eventos */}
         <Route path="eventos" element={<Navigate to="/eventos/gestion" replace />} />
         <Route path="eventos/gestion" element={
           <Suspense fallback={<LoadingFallback />}>
@@ -295,7 +308,7 @@ const AppRoutes = () => {
         } />
         
         
-        {/* 🤖 Módulo Chatbot - 4 submódulos según el prompt */}
+        {/** Módulo Chatbot - 4 submódulos según el prompt */}
         <Route path="chatbot" element={<Navigate to="/chatbot/dashboard" replace />} />
         <Route path="chatbot/dashboard" element={
           <Suspense fallback={<LoadingFallback />}>
@@ -328,7 +341,7 @@ const AppRoutes = () => {
           </Suspense>
         } />
         
-        {/* Usuarios */}
+        {/** Usuarios */}
         <Route path="usuarios" element={<Navigate to="/usuarios/gestion" replace />} />
         <Route path="usuarios/gestion" element={
           <Suspense fallback={<LoadingFallback />}>
@@ -355,7 +368,7 @@ const AppRoutes = () => {
         } />
 
         
-        {/* 📱 Rutas del módulo de Notificaciones */}
+        {/** Rutas del módulo de Notificaciones */}
         <Route path="notificaciones" element={<Navigate to="/notificaciones/historial" replace />} />
         <Route path="notificaciones/historial" element={
           <Suspense fallback={<LoadingFallback />}>
@@ -368,30 +381,32 @@ const AppRoutes = () => {
           </Suspense>
         } />
         
-        {/* Almuerzos */}
+        {/** Almuerzos */}
         <Route path="almuerzos" element={
           <Suspense fallback={<LoadingFallback />}>
             <AlmuerzosGestion />
           </Suspense>
         } />
         
-        {/* Configuración */}
+        {/** Configuración */}
         <Route path="configuracion" element={<Navigate to="/configuracion/general" replace />} />
         <Route path="configuracion/general" element={<TemporaryPage title="Configuración General" />} />
         <Route path="configuracion/api" element={<TemporaryPage title="Configuración de API" />} />
         
-        {/* Permisos */}
+        {/** Permisos */}
         <Route path="permisos" element={<TemporaryPage title="Gestión de Permisos" />} />
         
-        {/* Perfil de usuario */}
+        {/** Perfil de usuario */}
         <Route path="perfil" element={<TemporaryPage title="Mi Perfil" />} />
       </Route>
       
-      {/* Ruta para páginas no encontradas */}
+      {/** Ruta para páginas no encontradas */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
 
-// Exportar como componente memorizado para evitar rerenderizados innecesarios
+/**
+ * Exportar como componente memorizado para optimizar rendimiento
+ */
 export default React.memo(AppRoutes); 

@@ -1,10 +1,24 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { AcademicCapIcon, EyeIcon } from '@heroicons/react/24/outline';
 
 /**
  * Componente para mostrar estadísticas del chatbot en tarjetas
  * Usa el color principal #2D728F según las directrices
  */
+
+const renderIcon = (iconName) => {
+  const iconProps = { className: "w-6 h-6" };
+  switch (iconName) {
+    case 'AcademicCapIcon':
+      return <AcademicCapIcon {...iconProps} />;
+    case 'EyeIcon':
+      return <EyeIcon {...iconProps} />;
+    default:
+      return null;
+  }
+};
+
 const StatsCards = ({ stats, loading }) => {
   if (loading) {
     return (
@@ -31,28 +45,28 @@ const StatsCards = ({ stats, loading }) => {
     {
       title: 'Total Conversaciones',
       value: stats.total_conversations || 0,
-      icon: '💬',
+      icon: 'AcademicCapIcon',
       color: 'bg-blue-500',
       change: stats.conversations_today ? `+${stats.conversations_today} hoy` : null,
     },
     {
       title: 'Base de Conocimiento',
       value: stats.total_knowledge_base || 0,
-      icon: '🧠',
+      icon: 'AcademicCapIcon',
       color: 'bg-green-500',
       change: null,
     },
     {
       title: 'Total de Vistas',
       value: stats.total_views || 0,
-      icon: '👁️',
+      icon: 'EyeIcon',
       color: 'bg-purple-500',
       change: null,
     },
     {
       title: 'Consultas de Hoy',
       value: stats.conversations_today || 0,
-      icon: '📊',
+      icon: 'AcademicCapIcon',
       color: 'bg-[#2D728F]', // Color principal de la aplicación
       change: null,
     },
@@ -67,8 +81,8 @@ const StatsCards = ({ stats, loading }) => {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center text-white text-xl`}>
-                {card.icon}
+              <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center text-white`}>
+                {renderIcon(card.icon)}
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">{card.title}</p>
